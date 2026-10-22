@@ -10,6 +10,7 @@ import { Field, SelectField, EMAIL_RE, PHONE_RE } from "@/src/components/Form";
 import { counties } from "@/src/data/home";
 import { fonts, makeStyles } from "@/src/theme";
 import { useApp } from "@/src/store/AppStore";
+import { api } from "@/src/services/api";
 
 export default function SignUp() {
   const s = useStyles();
@@ -21,7 +22,7 @@ export default function SignUp() {
   const [loading, setLoading] = useState(false);
   const set = (k: keyof typeof f) => (v: string) => setF((x) => ({ ...x, [k]: v }));
 
-  const submit = () => {
+  const submit = async () => {
     const err: Record<string, string> = {};
     if (f.name.trim().length < 3) err.name = "Enter your full names";
     if (!EMAIL_RE.test(f.email.trim())) err.email = "Enter a valid email address";
@@ -32,12 +33,16 @@ export default function SignUp() {
     setE(err);
     if (Object.keys(err).length) return;
     setLoading(true);
-    setTimeout(() => {
-      signIn({ name: f.name.trim(), email: f.email.trim(), phone: f.phone.trim(), county: f.county });
-      setLoading(false);
+    try {
+      const r = await api.register({ name: f.name.trim(), email: f.email.trim(), phone: f.phone.trim(), county: f.county, password: f.pw });
+      await signIn(r.access_token, r.user);
       toast("Account created — welcome to Mqulima!");
       router.replace("/account");
-    }, 900);
+    } catch (ex: any) {
+      setE(ex?.status === 409 ? { email: ex.message } : { pw2: ex?.message ?? "Sign up failed. Please try again." });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

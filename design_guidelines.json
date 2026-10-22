@@ -1,0 +1,206 @@
+{
+  "project_identity": {
+    "name": "Mqulima Africa Forum Upgrade",
+    "tagline": "World-Class Agriculture Ecosystem Forum & Knowledge Network",
+    "app_type": "mobile_web_app",
+    "theme_archetype": "ARCHETYPE 1: ORGANIC & EARTHY (Trust, Growth, Local Relevance) with Precision Mobile Utility",
+    "context": "React Native (Expo) forum upgrade preserving Mqulima brand identity while modernizing UX, navigation, searching, topic filtering, sorting, card typography, thread details, comments, and post creation."
+  },
+  "design_principles": [
+    "Fusion over Imitation: Merge high-density modern discussion feeds (Reddit/Discourse style) with warm, tactile African agricultural aesthetics (Forest Greens, Ochre, Sand, Lime accents).",
+    "Emotion First: Every discussion card feels like a community gather place under a Baobab tree — welcoming, trustworthy, and actionable for real farmers.",
+    "Content Hierarchy & Clarity: High contrast text, legible metadata in monospaced/clean typography, clear visual distinction for original post author (OP), tags, and location stamps.",
+    "Zero Visual Monotony: Asymmetric cards, horizontal pill carousels, subtle 1px inner borders, and high-contrast micro-badges.",
+    "Frictionless Mobile Interaction: Keyboard-aware sliding composer sheets, quick horizontal tag filtering, one-tap thread bookmarking, and instant optimistic like updates."
+  ],
+  "typography": {
+    "font_families": {
+      "wordmark": "Lora-700",
+      "headings": "Outfit-700, Outfit-800, Outfit-900",
+      "subheadings": "Outfit-600",
+      "body": "Jakarta-400, Jakarta-500, Jakarta-600",
+      "body_bold": "Jakarta-700, Jakarta-800"
+    },
+    "hierarchy": {
+      "h1": {
+        "fontFamily": "Outfit-900",
+        "fontSize": 26,
+        "lineHeight": 32,
+        "letterSpacing": -0.5,
+        "use_case": "Forum Hero Banner Heading, Thread Detail Title"
+      },
+      "h2": {
+        "fontFamily": "Outfit-800",
+        "fontSize": 20,
+        "lineHeight": 26,
+        "use_case": "Section Titles (e.g. Community Discussions, Agri Network)"
+      },
+      "h3": {
+        "fontFamily": "Outfit-700",
+        "fontSize": 16,
+        "lineHeight": 22,
+        "use_case": "Card Headlines, Comment Section Headers"
+      },
+      "body_main": {
+        "fontFamily": "Jakarta-400",
+        "fontSize": 14,
+        "lineHeight": 21,
+        "use_case": "Thread post main copy, comment body text"
+      },
+      "body_semibold": {
+        "fontFamily": "Jakarta-600",
+        "fontSize": 13,
+        "lineHeight": 18,
+        "use_case": "Author names, action button labels, form field labels"
+      },
+      "metadata": {
+        "fontFamily": "Jakarta-500",
+        "fontSize": 12,
+        "lineHeight": 16,
+        "use_case": "Timestamps, location tags, handle counts, status pills"
+      }
+    }
+  },
+  "colors": {
+    "surface": "#FAFBF9",
+    "surfaceSecondary": "#FFFFFF",
+    "surfaceTertiary": "#F1F5F9",
+    "onSurface": "#0F291E",
+    "onSurfaceSecondary": "#334155",
+    "onSurfaceTertiary": "#475569",
+    "muted": "#64748B",
+    "subtle": "#94A3B8",
+    "brand": "#1A5438",
+    "brandPrimary": "#16A34A",
+    "brandSecondary": "#85CC14",
+    "brandTertiary": "#E5F5D0",
+    "onBrandTertiary": "#35610D",
+    "forest": "#0F291E",
+    "forestDeep": "#0B2117",
+    "forestCard": "#16382B",
+    "limeText": "#6EA810",
+    "border": "#E2E8F0",
+    "borderStrong": "#CBD5E1",
+    "divider": "#F1F5F9",
+    "error": "#DC2626",
+    "warning": "#F5A623",
+    "success": "#16A34A",
+    "overlaySoft": "rgba(11,33,23,0.3)"
+  },
+  "layout_and_spacing": {
+    "padding_standard": 16,
+    "padding_large": 24,
+    "padding_small": 8,
+    "gap_standard": 12,
+    "gap_large": 16,
+    "card_radius": 20,
+    "pill_radius": 999,
+    "input_radius": 16,
+    "bento_grid_rules": [
+      "Thread list cards must have 16px horizontal margin and 12px vertical spacing.",
+      "Topic filter bar is horizontally scrollable with contentContainerStyle padding horizontal 16 and gap 8.",
+      "Thread card headers use flex direction row with avatar, author info column, and post category tag aligned to top right.",
+      "Media attachments inside thread cards use rounded corners (16px) with aspect ratio 16/10 to avoid screen hogging.",
+      "Comment list items are nested inside rounded surface cards with 12px padding and clear vertical connectors for thread depth."
+    ]
+  },
+  "key_screens_and_components": {
+    "forum_screen": {
+      "file_path": "/app/frontend/app/(tabs)/forum.tsx",
+      "features": [
+        "Header Search & Filter Bar: Live search input with magnify icon, query clear button, and filter reset.",
+        "Topic Pill Bar: Horizontal filter pills (All, Maize & Grains, Horticulture, Livestock & Dairy, Pest & Disease, Market & Prices, Weather & Water) with active state in forest dark green and white text.",
+        "Sorting Tabs Bar: Toggle between 'Latest', 'Popular', and 'Unanswered' posts to help farmers quickly find urgent queries.",
+        "Quick Composer Banner: Compact avatar pressable banner with placeholder 'Share your farm update or ask a question...' that triggers creation flow.",
+        "Thread Feed: Optimistic FlatList with pull-to-refresh, skeleton loaders, error states, and empty search results view.",
+        "Agri Network Sidebar / Widget: Highlights top active community members and their counties.",
+        "Floating Action Button (FAB): Fixed bottom-right elevated green button with '+' icon for 1-tap post creation."
+      ]
+    },
+    "thread_card": {
+      "file_path": "/app/frontend/src/components/ThreadCard.tsx",
+      "features": [
+        "Header: Author avatar, bold author name, county location pill, handle & time.",
+        "Category Pill: High contrast category tag pill (e.g., '🌽 Maize', '🐛 Pest Control').",
+        "Body Content: Up to 4 lines of rich post text preview in Jakarta-400 with 'Read more' affordance.",
+        "Attachment Image: Optional image preview with soft border and subtle dark background fallback.",
+        "Actions Bar: Modern border-top divider with 3 main actions — Like (heart icon + optimistic increment counter), Comments (chat bubble icon + comment count), Bookmark (bookmark icon), and Share (copy link with toast feedback)."
+      ]
+    },
+    "thread_detail_screen": {
+      "file_path": "/app/frontend/app/thread/[id].tsx",
+      "features": [
+        "Full Hero Post Card: Expanded full view of thread with image zoom support.",
+        "Author Distinction: Special 'OP' (Original Poster) badge on comments written by thread creator.",
+        "Comments Section: Section header with total comment counter, nested reply tree styling, and empty state ('Be the first to reply').",
+        "Sticky Bottom Comment Bar: KeyboardAvoidingView with multi-line TextInput, media attachment icon, and active Send button."
+      ]
+    },
+    "create_post_screen": {
+      "file_path": "/app/frontend/app/create-post.tsx",
+      "features": [
+        "User Profile Header: Displays author avatar, name, and county location.",
+        "Topic Selector: Flex-wrap tag chips allowing easy single selection.",
+        "Rich Text Field: Keyboard-aware multi-line text input with character count indicator.",
+        "Location Picker: Select county context to help local community answer.",
+        "Success Screen: Animated confirmation screen with direct action to view created post."
+      ]
+    }
+  },
+  "test_id_conventions": {
+    "mandatory_ids": [
+      "forum-screen",
+      "forum-search-input",
+      "forum-search-clear",
+      "forum-topic-filter-{tag}",
+      "forum-sort-latest",
+      "forum-sort-popular",
+      "forum-sort-unanswered",
+      "forum-thread-list",
+      "forum-composer-btn",
+      "forum-create-post-fab",
+      "forum-error-retry",
+      "thread-card-{id}",
+      "thread-like-{id}",
+      "thread-like-count-{id}",
+      "thread-share-{id}",
+      "thread-detail-screen",
+      "thread-comment-input",
+      "thread-comment-send",
+      "thread-comment-count",
+      "comment-{id}",
+      "create-post-screen",
+      "create-post-tag-{index}",
+      "create-post-text-input",
+      "create-post-county-select",
+      "create-post-publish-btn",
+      "create-post-success"
+    ]
+  },
+  "image_urls": [
+    {
+      "category": "Hero & Agri Technology",
+      "url": "https://images.pexels.com/photos/34182412/pexels-photo-34182412.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "description": "Aerial drones in a field, modern agricultural technology"
+    },
+    {
+      "category": "Maize Farming",
+      "url": "https://images.unsplash.com/photo-1605000797499-95a51c5269ae?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzN8MHwxfHNlYXJjaHwxfHxhZnJpY2FuJTIwYWdyaWN1bHR1cmUlMjBmYXJtaW5nJTIwY3JvcHMlMjB0ZWNobm9sb2d5fGVufDB8fHx8MTc5MjY2NDgxM3ww&ixlib=rb-4.1.0&q=85",
+      "description": "Farmer inspecting fresh harvest in field"
+    },
+    {
+      "category": "Crops & Harvesting",
+      "url": "https://images.pexels.com/photos/34181067/pexels-photo-34181067.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "description": "African farmer tending rice crops in green field"
+    }
+  ],
+  "instructions_to_main_agent": [
+    "Retain Mqulima's existing theme token structure in theme.ts while implementing the visual hierarchy described in this document.",
+    "Do NOT use fake engagement stats or synthetic online counts; use real threads and DB records.",
+    "Ensure every interactive element (buttons, text inputs, filter pills, like buttons, sort tabs, share buttons) has a proper data-testid or testID attribute as specified in test_id_conventions.",
+    "Implement high quality empty, loading (ListSkeleton), and error retry states on the forum screen and thread detail screen.",
+    "Ensure the floating action button (FAB) is safely placed above bottom navigation tabs using useTabBottom().",
+    "Support topic filtering (All, Maize, Pest Control, Livestock, Irrigation, etc.) and search filtering dynamically in frontend state."
+  ]
+},
+overwrite:true,path:

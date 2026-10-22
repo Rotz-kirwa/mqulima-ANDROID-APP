@@ -7,13 +7,17 @@ import { Avatar, Btn } from "@/src/components/ui";
 import { avatar } from "@/src/data/home";
 import { fonts, makeStyles, useTheme } from "@/src/theme";
 import { cartCount, useApp } from "@/src/store/AppStore";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/src/services/api";
 
 export default function Account() {
   const s = useStyles();
   const { colors } = useTheme();
   const router = useRouter();
   const bottom = useStackBottom();
-  const { user, signOut, orders, saved, cart, myThreads, ready } = useApp();
+  const { user, signOut, saved, cart, ready } = useApp();
+  const orders = useQuery({ queryKey: ["orders"], queryFn: api.getOrders, enabled: !!user });
+  const myThreads = useQuery({ queryKey: ["my-threads"], queryFn: api.getMyThreads, enabled: !!user });
 
   useEffect(() => {
     if (ready && !user) router.replace("/auth/sign-in");
@@ -21,10 +25,10 @@ export default function Account() {
   if (!user) return <Page title="Account"><View /></Page>;
 
   const links = [
-    { id: "orders", icon: "receipt", label: "Order History", count: orders.length, route: "/account/orders" },
+    { id: "orders", icon: "receipt", label: "Order History", count: orders.data?.length ?? 0, route: "/account/orders" },
     { id: "saved", icon: "heart", label: "Saved Items", count: saved.length, route: "/account/saved" },
     { id: "cart", icon: "shopping-cart", label: "My Cart", count: cartCount(cart), route: "/cart" },
-    { id: "posts", icon: "messages-square", label: "My Forum Posts", count: myThreads.length, route: "/(tabs)/forum" },
+    { id: "posts", icon: "messages-square", label: "My Forum Posts", count: myThreads.data?.length ?? 0, route: "/(tabs)/forum" },
     { id: "services", icon: "briefcase", label: "Request a Service", route: "/services" },
   ];
   return (
@@ -47,7 +51,7 @@ export default function Account() {
             <Lucide name="chevron-right" size={18} color={colors.subtle} />
           </Pressable>
         ))}
-        <Btn testID="account-sign-out-btn" full variant="outline" icon="log-out" label="Sign Out" onPress={() => { signOut(); router.replace("/"); }} style={{ marginTop: 8 }} />
+        <Btn testID="account-sign-out-btn" full variant="outline" icon="log-out" label="Sign Out" onPress={async () => { await signOut(); router.replace("/"); }} style={{ marginTop: 8 }} />
       </ScrollView>
     </Page>
   );

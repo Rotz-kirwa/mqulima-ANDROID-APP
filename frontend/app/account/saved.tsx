@@ -5,7 +5,9 @@ import { Lucide } from "@react-native-vector-icons/lucide";
 import { Page, useStackBottom } from "@/src/components/Page";
 import { ProductCard } from "@/src/components/Cards";
 import { Btn, Body } from "@/src/components/ui";
-import { products } from "@/src/data/products";
+import { GridSkeleton } from "@/src/components/Skeleton";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/src/services/api";
 import { fonts, useTheme } from "@/src/theme";
 import { useApp } from "@/src/store/AppStore";
 
@@ -14,7 +16,9 @@ export default function Saved() {
   const router = useRouter();
   const bottom = useStackBottom();
   const { saved } = useApp();
-  const items = products.filter((p) => saved.includes(p.id));
+  const q = useQuery({ queryKey: ["saved-products", saved.join(",")], queryFn: () => api.getProductsByIds(saved) });
+  const items = q.data ?? [];
+  if (q.isLoading) return <Page title="Saved Items"><View style={{ paddingTop: 16 }}><GridSkeleton /></View></Page>;
   return (
     <Page title="Saved Items" testID="saved-screen">
       <FlatList

@@ -13,7 +13,7 @@ export function Field({ label, error, testID, ...rest }: TextInputProps & { labe
   const [focus, setFocus] = useState(false);
   return (
     <View style={{ gap: 6 }}>
-      <Text style={s.label}>{label}</Text>
+      <Text testID={testID ? `${testID}-label` : undefined} style={s.label}>{label}</Text>
       <TextInput
         testID={testID}
         placeholderTextColor={colors.subtle}
@@ -34,15 +34,15 @@ export function SelectField({ label, value, options, onChange, error, testID, pl
   const [open, setOpen] = useState(false);
   return (
     <View style={{ gap: 6 }}>
-      <Text style={s.label}>{label}</Text>
+      <Text testID={testID ? `${testID}-label` : undefined} style={s.label}>{label}</Text>
       <Pressable testID={testID} onPress={() => setOpen(true)} style={[s.input, { flexDirection: "row", alignItems: "center", justifyContent: "space-between" }, !!error && { borderColor: colors.error }]}>
-        <Text style={{ fontFamily: fonts.b500, fontSize: 14, color: value ? colors.onSurface : colors.subtle }}>{value || placeholder}</Text>
+        <Text testID={testID ? `${testID}-value` : undefined} style={{ fontFamily: fonts.b500, fontSize: 14, color: value ? colors.onSurface : colors.subtle }}>{value || placeholder}</Text>
         <Lucide name="chevron-down" size={18} color={colors.muted} />
       </Pressable>
       {error ? <Text testID={testID ? `${testID}-error` : undefined} style={s.error}>{error}</Text> : null}
       <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
-        <Pressable style={{ flex: 1, backgroundColor: colors.scrim }} onPress={() => setOpen(false)} />
-        <View style={[s.sheet, { paddingBottom: insets.bottom + 16 }]}>
+        <Pressable testID={testID ? `${testID}-dismiss` : undefined} accessibilityLabel="Close selection" style={{ flex: 1, backgroundColor: colors.scrim }} onPress={() => setOpen(false)} />
+        <View testID={testID ? `${testID}-sheet` : undefined} style={[s.sheet, { paddingBottom: insets.bottom + 16 }]}>
           <View style={s.handle} />
           <Text style={s.sheetTitle}>{label}</Text>
           <ScrollView style={{ maxHeight: 420 }}>

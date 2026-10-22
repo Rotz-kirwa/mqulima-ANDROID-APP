@@ -9,6 +9,7 @@ import { Btn } from "@/src/components/ui";
 import { Field, EMAIL_RE } from "@/src/components/Form";
 import { fonts, makeStyles } from "@/src/theme";
 import { useApp } from "@/src/store/AppStore";
+import { api } from "@/src/services/api";
 
 export default function SignIn() {
   const s = useStyles();
@@ -20,20 +21,23 @@ export default function SignIn() {
   const [e, setE] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
 
-  const submit = () => {
+  const submit = async () => {
     const err: Record<string, string> = {};
     if (!EMAIL_RE.test(email.trim())) err.email = "Enter a valid email address";
     if (pw.length < 6) err.pw = "Password must be at least 6 characters";
     setE(err);
     if (Object.keys(err).length) return;
     setLoading(true);
-    setTimeout(() => {
-      const name = email.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
-      signIn({ name, email: email.trim(), phone: "" });
-      setLoading(false);
-      toast(`Welcome back, ${name}!`);
+    try {
+      const r = await api.login(email.trim(), pw);
+      await signIn(r.access_token, r.user);
+      toast(`Welcome back, ${r.user.name}!`);
       router.replace("/account");
-    }, 800);
+    } catch (err: any) {
+      setE({ pw: err?.message ?? "Sign in failed. Please try again." });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

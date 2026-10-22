@@ -29,9 +29,9 @@ export function FloatingButtons() {
   }, [ring]);
   const ringStyle = useAnimatedStyle(() => ({ transform: [{ scale: ring.value }], opacity: 1.5 - ring.value }));
   const hideAi = pathname === "/ai";
-  const hideAll = pathname.startsWith("/checkout") || pathname === "/cart" || pathname.startsWith("/product");
+  const hideAll = pathname.startsWith("/checkout") || pathname === "/cart" || pathname.startsWith("/product") || pathname.startsWith("/service/");
   // Chat-style screens have their own bottom input bar; floating buttons would cover it.
-  if (pathname === "/ai" || pathname.startsWith("/thread")) return null;
+  if (pathname === "/ai" || pathname === "/forum" || pathname === "/create-post" || pathname.startsWith("/thread")) return null;
   return (
     <>
       <View pointerEvents="box-none" style={{ position: "absolute", right: 16, bottom: hideAll ? bottom + 72 : bottom, alignItems: "center", justifyContent: "center" }}>

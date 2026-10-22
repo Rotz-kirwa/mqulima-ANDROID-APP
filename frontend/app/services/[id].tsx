@@ -53,7 +53,10 @@ export default function ServiceCategoryScreen() {
                 </View>
                 <Text style={s.title}>{sb.title}</Text>
                 <Body style={{ fontSize: 13 }}>{sb.text}</Body>
-                <Btn testID={`sub-service-request-${sb.id}`} full variant="green" label={sb.cta} onPress={() => router.push({ pathname: "/service-request", params: { service: sb.title, category: c.title } })} />
+                <View style={{ flexDirection: "row", gap: 10 }}>
+                  <Btn testID={`sub-service-request-${sb.id}`} variant="green" label={sb.cta} onPress={() => router.push({ pathname: "/service-request", params: { service: sb.title, category: c.title } })} style={{ flex: 1, paddingHorizontal: 10 }} />
+                  <Btn testID={`sub-service-learn-${sb.id}`} variant="outline" icon={null} label="Learn More" onPress={() => router.push(`/service/${sb.id}`)} style={{ paddingHorizontal: 16 }} />
+                </View>
               </View>
             </Animated.View>
           ))}

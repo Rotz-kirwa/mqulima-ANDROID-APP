@@ -1,113 +1,63 @@
-import React from "react";
-import { FlatList, Pressable, RefreshControl, Text, View } from "react-native";
-import { Image } from "@/src/components/Img";
-import { useQuery } from "@tanstack/react-query";
-import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } from "react-native";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { useRouter, useIsFocused } from "expo-router";
 import { Lucide } from "@react-native-vector-icons/lucide";
-import { TopBar } from "@/src/components/TopBar";
 import { ListSkeleton } from "@/src/components/Skeleton";
-import { Avatar, Btn, Body, Pill } from "@/src/components/ui";
 import { useTabBottom } from "@/src/components/Page";
-import { api } from "@/src/services/api";
-import { forumHero, network } from "@/src/data/forum";
-import { avatar } from "@/src/data/home";
+import { api, ForumFilters } from "@/src/services/api";
 import { fonts, makeStyles, useTheme } from "@/src/theme";
 import { ThreadCard } from "@/src/components/ThreadCard";
 import { useApp } from "@/src/store/AppStore";
+import { ForumState, ForumToolbar, Guidelines } from "@/src/components/forum/ForumUI";
+import { ForumFeedHeader } from "@/src/components/forum/ForumFeedHeader";
+
+const initial: ForumFilters = { q: "", tag: "", sort: "latest", scope: "all" };
 
 export default function Forum() {
   const s = useStyles();
   const { colors } = useTheme();
   const router = useRouter();
   const bottom = useTabBottom();
-  const { myThreads, user } = useApp();
-  const q = useQuery({ queryKey: ["threads"], queryFn: api.getThreads });
-  const data = [...myThreads, ...(q.data ?? [])];
-
-  return (
-    <View style={s.root} testID="forum-screen">
-      <TopBar />
-      <FlatList
-        testID="forum-thread-list"
-        data={q.isLoading ? [] : data}
-        keyExtractor={(t) => t.id}
-        contentContainerStyle={{ paddingBottom: bottom, gap: 12 }}
-        refreshControl={<RefreshControl refreshing={q.isRefetching} onRefresh={q.refetch} tintColor={colors.brandPrimary} colors={[colors.brandPrimary]} />}
-        ListHeaderComponent={
-          <View style={{ gap: 16 }}>
-            <View style={s.hero}>
-              <Pill label={forumHero.badge} />
-              <Text style={s.h1}>{forumHero.title}</Text>
-              <Body style={{ fontSize: 13 }}>{forumHero.text}</Body>
-              <Btn testID="forum-create-profile-btn" variant="green" label={user ? "Create Post" : forumHero.cta} onPress={() => router.push(user ? "/create-post" : "/auth/sign-up")} />
-              <Text style={s.handle}>{forumHero.ctaSub}</Text>
-              <Image source={{ uri: forumHero.image }} style={{ width: "100%", aspectRatio: 16 / 10, borderRadius: 20 }} contentFit="cover" transition={300} />
-              <View style={{ flexDirection: "row", gap: 8 }}>
-                {forumHero.stats.map((st) => <Pill key={st} label={st} />)}
-              </View>
-              {forumHero.steps.map((st) => (
-                <View key={st.n} style={{ flexDirection: "row", gap: 12 }}>
-                  <Text style={s.stepN}>{st.n}</Text>
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.author}>{st.title}</Text>
-                    <Body style={{ fontSize: 12 }}>{st.text}</Body>
-                  </View>
-                </View>
-              ))}
-            </View>
-            <Pressable testID="forum-composer-btn" onPress={() => router.push("/create-post")} style={s.composer}>
-              <Avatar uri={avatar(user?.name ?? "Mqulima Farmer")} size={36} />
-              <Text style={s.composerText}>Share your farm progress...</Text>
-              <Lucide name="image" size={20} color={colors.brandPrimary} />
-            </Pressable>
-            <View style={{ paddingHorizontal: 16 }}>
-              <Text style={s.h2}>Community Discussion & Posts</Text>
-              <Text style={s.handle}>{data.length} posts</Text>
-            </View>
-            {q.isLoading ? <ListSkeleton count={3} height={140} /> : null}
-          </View>
-        }
-        renderItem={({ item }) => (
-          <View style={{ paddingHorizontal: 16 }}>
-            <ThreadCard t={item} onPress={() => router.push(`/thread/${item.id}`)} />
-          </View>
-        )}
-        ListFooterComponent={
-          <View style={[s.card, { marginHorizontal: 16, marginTop: 4 }]}>
-            <Text style={s.h3}>Agri Network</Text>
-            {network.map((n) => (
-              <View key={n.name} style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                <Avatar uri={avatar(n.name)} size={32} />
-                <Text style={s.author}>{n.name}</Text>
-                <Text style={s.handle}>📍 {n.county}</Text>
-              </View>
-            ))}
-          </View>
-        }
-      />
-      <Pressable testID="forum-create-post-fab" onPress={() => router.push("/create-post")} style={[s.fab, { bottom: bottom - 96 + 84 }]}>
-        <Lucide name="plus" size={24} color={colors.white} />
-      </Pressable>
-    </View>
-  );
+  const focused = useIsFocused();
+  const { user, ready } = useApp();
+  const [filters, setFilters] = useState<ForumFilters>(initial);
+  const [search, setSearch] = useState("");
+  const [guidelines, setGuidelines] = useState(false);
+  useEffect(() => { const timer = setTimeout(() => setSearch(filters.q), 250); return () => clearTimeout(timer); }, [filters.q]);
+  const needsLogin = filters.scope !== "all" && !user;
+  const q = useInfiniteQuery({ queryKey: ["forum-feed", user?.id, { ...filters, q: search }], initialPageParam: 1, queryFn: ({ pageParam }) => api.getForumFeed({ ...filters, q: search }, pageParam), getNextPageParam: page => page.next_page ?? undefined, enabled: ready && !needsLogin, retry: 1 });
+  const data = needsLogin ? [] : q.data?.pages.flatMap(page => page.items) ?? [];
+  const total = needsLogin ? undefined : q.data?.pages[0]?.total;
+  const compose = () => router.push(user ? "/create-post" : "/auth/sign-in");
+  const filtered = !!(filters.q || filters.tag || filters.sort !== "latest");
+  const empty = () => {
+    if (needsLogin) return <ForumState testID="forum-sign-in-state" icon={filters.scope === "saved" ? "bookmark" : "user-round"} title={filters.scope === "saved" ? "Your next good idea, saved" : "Your voice belongs here"} description="Sign in to keep your discussions and saved advice in one place." action="Sign in to continue" onPress={() => router.push("/auth/sign-in")} />;
+    if (q.isPending) return <View testID="forum-loading"><ListSkeleton count={3} height={220} /></View>;
+    if (q.isError) return <ForumState testID="forum-error" icon="wifi-off" title="Let’s try that again" description="We couldn’t load the conversation. Your connection may have dropped." action="Try again" onPress={() => q.refetch()} />;
+    return <ForumState testID="forum-empty" icon={filters.scope === "saved" ? "bookmark" : "sprout"} title={filtered ? "No discussions found" : filters.scope === "saved" ? "Keep good advice close" : "Start something worth sharing"} description={filtered ? "Try another topic or search. Someone may be asking the same thing in a different way." : filters.scope === "saved" ? "Tap the bookmark on a discussion to find it here whenever you need it." : "Ask a question or share what’s working on your farm."} action={filtered ? "Clear filters" : filters.scope === "saved" ? "Explore discussions" : "Start a conversation"} onPress={() => filtered ? setFilters({ ...initial, scope: filters.scope }) : filters.scope === "saved" ? setFilters(initial) : compose()} />;
+  };
+  return <View testID={focused ? "forum-screen" : undefined} style={s.root}>
+    {focused && <ForumToolbar onInfo={() => setGuidelines(true)} />}
+    <FlatList testID="forum-thread-list" data={data} keyExtractor={item => item.id} contentContainerStyle={[s.list, { paddingBottom: bottom + 16 }]} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" refreshControl={<RefreshControl refreshing={q.isRefetching && !q.isFetchingNextPage} onRefresh={() => { if (!needsLogin) q.refetch(); }} tintColor={colors.brand} />}
+      ListHeaderComponent={<ForumFeedHeader filters={filters} setFilters={patch => setFilters(old => ({ ...old, ...patch }))} total={total} onCompose={compose} />}
+      ListEmptyComponent={empty}
+      renderItem={({ item }) => <View style={s.item}><ThreadCard t={item} onPress={() => router.push(`/thread/${item.id}`)} /></View>}
+      ListFooterComponent={data.length ? <View style={s.footer}>{q.isFetchNextPageError || (q.isRefetchError && !q.isFetching) ? <Pressable testID="forum-load-more-retry" onPress={() => q.isFetchNextPageError ? q.fetchNextPage() : q.refetch()} style={s.loadMore}><Text style={s.footerText}>Connection interrupted. Tap to retry.</Text></Pressable> : q.hasNextPage ? <Pressable testID="forum-load-more" onPress={() => q.fetchNextPage()} disabled={q.isFetchingNextPage} style={s.loadMore}>{q.isFetchingNextPage ? <ActivityIndicator color={colors.brand} /> : <Text style={s.footerText}>More conversations</Text>}</Pressable> : <><Lucide name="sprout" size={20} color={colors.brand} /><Text testID="forum-feed-end" style={s.footerText}>You’re all caught up. Keep growing.</Text></>}</View> : null}
+    />
+    <Pressable testID="forum-create-post-fab" accessibilityLabel="Start a new discussion" onPress={compose} style={({ pressed }) => [s.fab, { bottom: Math.max(18, bottom - 78) }, pressed && s.pressed]}><Lucide name="plus" size={20} color={colors.onBrand} /><Text style={s.fabText}>New post</Text></Pressable>
+    <Guidelines open={guidelines} onClose={() => setGuidelines(false)} />
+  </View>;
 }
 
-const useStyles = makeStyles((c) => ({
+const useStyles = makeStyles(c => ({
   root: { flex: 1, backgroundColor: c.surface },
-  hero: { padding: 16, paddingTop: 24, gap: 12 },
-  h1: { fontFamily: fonts.h900, fontSize: 28, lineHeight: 32, color: c.onSurface },
-  h2: { fontFamily: fonts.h900, fontSize: 22, color: c.onSurface },
-  h3: { fontFamily: fonts.h800, fontSize: 16, color: c.onSurface },
-  stepN: { fontFamily: fonts.h900, fontSize: 20, color: c.limeText },
-  card: { backgroundColor: c.white, borderWidth: 1, borderColor: c.border, borderRadius: 24, padding: 16, gap: 12 },
-  author: { fontFamily: fonts.h700, fontSize: 14, color: c.onSurface },
-  handle: { fontFamily: fonts.b500, fontSize: 12, color: c.muted },
-  text: { fontFamily: fonts.b400, fontSize: 14, lineHeight: 21, color: c.onSurfaceSecondary },
-  media: { width: "100%", aspectRatio: 4 / 3, borderRadius: 16, backgroundColor: c.surfaceTertiary },
-  actions: { flexDirection: "row", gap: 8, borderTopWidth: 1, borderTopColor: c.divider, paddingTop: 4 },
-  action: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 44, paddingHorizontal: 8 },
-  actionText: { fontFamily: fonts.b600, fontSize: 13, color: c.muted },
-  composer: { marginHorizontal: 16, flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: c.white, borderWidth: 1, borderColor: c.border, borderRadius: 999, padding: 8, paddingRight: 16, minHeight: 52 },
-  composerText: { flex: 1, fontFamily: fonts.b500, fontSize: 14, color: c.subtle },
-  fab: { position: "absolute", right: 18, width: 48, height: 48, borderRadius: 24, backgroundColor: c.brand, alignItems: "center", justifyContent: "center", elevation: 4, shadowColor: "#000", shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } },
+  list: { gap: 14 },
+  item: { paddingHorizontal: 16 },
+  footer: { paddingVertical: 24, paddingHorizontal: 16, alignItems: "center", gap: 8 },
+  footerText: { fontFamily: fonts.b500, fontSize: 12, color: c.muted },
+  loadMore: { minHeight: 48, paddingHorizontal: 20, borderWidth: 1, borderColor: c.border, borderRadius: 24, justifyContent: "center", alignItems: "center" },
+  fab: { position: "absolute", right: 18, minHeight: 52, paddingHorizontal: 20, borderRadius: 28, backgroundColor: c.brand, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, elevation: 5, shadowColor: c.forest, shadowOpacity: 0.2, shadowRadius: 12, shadowOffset: { width: 0, height: 5 } },
+  fabText: { fontFamily: fonts.b700, fontSize: 12, color: c.onBrand },
+  pressed: { opacity: 0.9, transform: [{ scale: 0.96 }] },
 }));

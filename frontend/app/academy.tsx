@@ -8,7 +8,8 @@ import { Page, useStackBottom } from "@/src/components/Page";
 import { Btn, Body } from "@/src/components/ui";
 import { Field, EMAIL_RE } from "@/src/components/Form";
 import { academy } from "@/src/data/pages";
-import { academyIntro } from "@/src/data/home";
+import { courses } from "@/src/data/academy";
+import { Image } from "@/src/components/Img";
 import { fonts, makeStyles, useTheme } from "@/src/theme";
 
 const FEATURES = [
@@ -67,15 +68,21 @@ export default function Academy() {
 
         {/* Learning tracks */}
         <View style={{ gap: 12 }}>
-          <Text style={s.h2}>Learning tracks</Text>
-          {academyIntro.steps.map((st) => (
-            <View key={st.n} style={s.track}>
-              <Text style={s.trackN}>{st.n}</Text>
-              <View style={{ flex: 1, gap: 4 }}>
-                <Text style={s.fTitle}>{st.title}</Text>
-                <Text style={s.fText}>{st.text}</Text>
+          <Text style={s.h2}>Preview the courses</Text>
+          <Text style={[s.fText, { marginTop: -6 }]}>Tap a track to see its outline and a free sample lesson.</Text>
+          {courses.map((c) => (
+            <Pressable key={c.id} testID={`academy-course-${c.id}`} onPress={() => router.push(`/course/${c.id}`)} style={({ pressed }) => [s.course, pressed && { opacity: 0.9 }]}>
+              <Image source={{ uri: c.image }} style={s.courseImg} contentFit="cover" transition={300} />
+              <View style={{ flex: 1, gap: 4, paddingVertical: 4 }}>
+                <Text style={s.courseMeta}>TRACK {c.n} • {c.level.toUpperCase()}</Text>
+                <Text style={s.fTitle}>{c.title}</Text>
+                <Text style={s.fText} numberOfLines={2}>{c.text}</Text>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 }}>
+                  <Lucide name="circle-play" size={14} color={colors.brandPrimary} />
+                  <Text style={s.courseLink}>{c.duration} • Free preview</Text>
+                </View>
               </View>
-            </View>
+            </Pressable>
           ))}
         </View>
 
@@ -139,8 +146,10 @@ const useStyles = makeStyles((c) => ({
   fIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: c.brandTertiary, alignItems: "center", justifyContent: "center" },
   fTitle: { fontFamily: fonts.h700, fontSize: 15, color: c.onSurface },
   fText: { fontFamily: fonts.b400, fontSize: 13, lineHeight: 19, color: c.onSurfaceTertiary },
-  track: { flexDirection: "row", gap: 14, backgroundColor: c.white, borderWidth: 1, borderColor: c.border, borderRadius: 20, padding: 16 },
-  trackN: { fontFamily: fonts.h900, fontSize: 22, color: c.limeText, width: 32 },
+  course: { flexDirection: "row", gap: 14, backgroundColor: c.white, borderWidth: 1, borderColor: c.border, borderRadius: 20, padding: 10 },
+  courseImg: { width: 96, height: 112, borderRadius: 14 },
+  courseMeta: { fontFamily: fonts.b800, fontSize: 10, letterSpacing: 1, color: c.limeText },
+  courseLink: { fontFamily: fonts.b700, fontSize: 12, color: c.brandPrimary },
   wait: { backgroundColor: c.white, borderWidth: 1, borderColor: c.border, borderRadius: 24, padding: 20, gap: 14 },
   waitTitle: { fontFamily: fonts.h800, fontSize: 18, color: c.onSurface, flexShrink: 1 },
   free: { backgroundColor: c.brandTertiary, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },

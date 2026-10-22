@@ -97,3 +97,33 @@ export const serviceCategories: ServiceCategory[] = [
     ],
   },
 ];
+
+// Pricing guide + process for each sub-service detail page (indicative; final quote after assessment).
+const PRICES: Record<string, string> = {
+  agri_loans_credit: "Rates from 1.2% / month", agri_insurance: "Premiums from KSh 1,500 / season", financial_advisory: "KSh 2,500 / session",
+  soil_testing_analysis: "From KSh 2,500 / sample", soil_treatment: "From KSh 4,000 / acre", fertilizer_recommendation: "KSh 1,000 / plan",
+  lease_land: "From KSh 8,000 / acre / season", rent_machinery: "From KSh 3,500 / acre", warehousing_cold_storage: "From KSh 50 / crate / month",
+  transportation: "From KSh 120 / km", greenhouse: "From KSh 180,000 (8m x 15m)", consult_agronomist: "KSh 2,000 / farm visit",
+  ai_breeding: "From KSh 1,500 / insemination", veterinary_diagnosis_treatment: "From KSh 1,000 / visit", vaccination: "From KSh 100 / head",
+  feed_formulation: "KSh 3,000 / formula", silage_shredding_packing: "From KSh 1,800 / ton", buy_rent_machinery_feed: "From KSh 2,500 / day", animal_nutrition_advisory: "KSh 2,000 / session",
+  borehole_sinking: "Survey from KSh 25,000", irrigation_irrigation_systems: "From KSh 35,000 / acre", water_engineering: "Assessment from KSh 10,000", consult_irrigation_expert: "KSh 2,500 / session",
+  get_coaching: "KSh 3,000 / session", learn_value_addition: "Free with Academy access",
+  shed_construction: "From KSh 1,200 / sq ft", climate_smart_agriculture: "KSh 2,500 / plan", buy_machinery: "Market price", incubation: "Cohort application — free",
+};
+
+export const serviceSteps = [
+  { title: "Place a request", text: "Tell us what you need, where your farm is and when." },
+  { title: "Get matched in minutes", text: "Mqulima assigns a vetted specialist near you — average response under 10 minutes." },
+  { title: "Confirm your quote", text: "Receive a transparent quote before any work starts. Pay securely via M-Pesa." },
+  { title: "Service delivered", text: "Your specialist visits or consults, then you rate the service." },
+];
+
+export const serviceIncludes = ["Vetted, certified professional", "Transparent written quote", "Follow-up support on WhatsApp", "Service guarantee & rating"];
+
+export function getSubService(id: string) {
+  for (const c of serviceCategories) {
+    const sub = c.subs.find((x) => x.id === id);
+    if (sub) return { sub, category: c, price: PRICES[id] ?? "Quote on request" };
+  }
+  return undefined;
+}

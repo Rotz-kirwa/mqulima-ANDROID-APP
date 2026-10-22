@@ -9,6 +9,8 @@ import { AiLogo } from "@/src/components/Logo";
 import { api } from "@/src/services/api";
 import { aiSuggestions } from "@/src/data/pages";
 import { fonts, makeStyles, useTheme } from "@/src/theme";
+import { RichText } from "@/src/components/RichText";
+import { storage } from "@/src/utils/storage";
 
 type Msg = { id: string; role: "user" | "ai"; text: string };
 
@@ -34,15 +36,50 @@ export default function AiChat() {
   const list = useRef<FlatList<Msg>>(null);
   const canSend = !!text.trim() && !typing;
 
+  const [sessionId, setSessionId] = useState<string>("");
+  React.useEffect(() => {
+    storage.getItem("mqulima_ai_session", "").then((v) => {
+      if (v) setSessionId(v);
+      else {
+        const id = `s${Date.now()}${Math.random().toString(36).slice(2, 8)}`;
+        storage.setItem("mqulima_ai_session", id);
+        setSessionId(id);
+      }
+    });
+  }, []);
+
   const send = async (t: string) => {
     const q = t.trim();
     if (!q || typing) return;
     setText("");
+    const aiId = `a${Date.now()}`;
     setMsgs((m) => [...m, { id: `u${Date.now()}`, role: "user", text: q }]);
     setTyping(true);
-    const reply = await api.askAI(q);
-    setMsgs((m) => [...m, { id: `a${Date.now()}`, role: "ai", text: reply }]);
+    let started = false;
+    try {
+      await api.streamAI(sessionId || "anon", q, (delta) => {
+        if (!started) {
+          started = true;
+          setTyping(false);
+          setMsgs((m) => [...m, { id: aiId, role: "ai", text: delta }]);
+        } else {
+          setMsgs((m) => m.map((x) => (x.id === aiId ? { ...x, text: x.text + delta } : x)));
+        }
+      });
+    } catch {
+      const fallback = await api.askAI(q);
+      const note = "\n\n_(Offline tip — Mqulima AI couldn't be reached.)_";
+      if (started) setMsgs((m) => m.map((x) => (x.id === aiId ? { ...x, text: x.text + note } : x)));
+      else setMsgs((m) => [...m, { id: aiId, role: "ai", text: fallback + note }]);
+    }
     setTyping(false);
+  };
+
+  const newChat = () => {
+    const id = `s${Date.now()}${Math.random().toString(36).slice(2, 8)}`;
+    storage.setItem("mqulima_ai_session", id);
+    setSessionId(id);
+    setMsgs([]);
   };
 
   const empty = (
@@ -82,6 +119,15 @@ export default function AiChat() {
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={msgs.length ? { padding: 16, gap: 14 } : { flexGrow: 1 }}
           ListEmptyComponent={empty}
+          ListHeaderComponent={msgs.length ? (
+            <View style={s.headerRow}>
+              <View style={s.poweredPill}><Lucide name="sparkles" size={12} color={colors.onBrandTertiary} /><Text style={s.poweredText}>Live AI farm advisor</Text></View>
+              <Pressable testID="ai-new-chat" onPress={newChat} style={s.newChat} hitSlop={6}>
+                <Lucide name="square-pen" size={16} color={colors.brandPrimary} />
+                <Text style={s.newChatText}>New chat</Text>
+              </Pressable>
+            </View>
+          ) : null}
           onContentSizeChange={() => msgs.length && list.current?.scrollToEnd({ animated: true })}
           renderItem={({ item }) =>
             item.role === "user" ? (
@@ -96,7 +142,7 @@ export default function AiChat() {
                 <View style={{ flex: 1, gap: 4 }}>
                   <Text style={s.aiName}>Mqulima AI</Text>
                   <View style={[s.bubble, s.ai]} testID="ai-msg-ai">
-                    <Text style={s.text}>{item.text}</Text>
+                    <RichText text={item.text} style={s.text} boldStyle={s.bold} />
                   </View>
                 </View>
               </Animated.View>
@@ -155,6 +201,12 @@ const useStyles = makeStyles((c) => ({
   ai: { alignSelf: "flex-start", backgroundColor: c.white, borderWidth: 1, borderColor: c.border, borderTopLeftRadius: 6 },
   user: { backgroundColor: c.brand, borderBottomRightRadius: 6 },
   typing: { flexDirection: "row", gap: 6, alignItems: "center", paddingVertical: 16 },
+  bold: { fontFamily: fonts.b800, color: c.onSurface },
+  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 2 },
+  poweredPill: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: c.brandTertiary, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
+  poweredText: { fontFamily: fonts.b700, fontSize: 11, color: c.onBrandTertiary },
+  newChat: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 36, paddingHorizontal: 10 },
+  newChatText: { fontFamily: fonts.b700, fontSize: 13, color: c.brandPrimary },
   text: { fontFamily: fonts.b500, fontSize: 14, lineHeight: 21, color: c.onSurface },
   bar: { paddingHorizontal: 12, paddingTop: 10, backgroundColor: c.white, borderTopWidth: 1, borderTopColor: c.border },
   inputWrap: { flexDirection: "row", alignItems: "flex-end", gap: 8, borderWidth: 1, borderColor: c.border, borderRadius: 26, backgroundColor: c.surface, paddingLeft: 16, paddingRight: 5, paddingVertical: 5 },

@@ -4,11 +4,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { TopBar } from "./TopBar";
 import { useTheme } from "@/src/theme";
 import { usesNativeTabs } from "@/src/navigation";
+import { useIsFocused } from "expo-router";
 
 export function Page({ children, title, back = true, testID }: { children: React.ReactNode; title?: string; back?: boolean; testID?: string }) {
   const { colors } = useTheme();
+  const focused = useIsFocused();
   return (
-    <View testID={testID} style={{ flex: 1, backgroundColor: colors.surface }}>
+    <View testID={focused ? testID : undefined} style={{ flex: 1, backgroundColor: colors.surface }}>
       <TopBar back={back} title={title} />
       {children}
     </View>

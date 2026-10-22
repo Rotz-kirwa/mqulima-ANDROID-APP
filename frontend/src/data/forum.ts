@@ -1,4 +1,4 @@
-export type Comment = { id: string; author: string; text: string; time: string };
+export type Comment = { id: string; author: string; text: string; time: string; user_id?: string | null; parent_id?: string | null };
 export type Thread = {
   id: string;
   author: string;

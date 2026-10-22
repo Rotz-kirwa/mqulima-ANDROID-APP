@@ -101,3 +101,49 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+user_problem_statement: "Upgrade Mqulima forum to a modern, world-class mobile discussion experience. Approved: topic filters, search, sorting, polished posting/replies, preserving brand identity. Prior migration requires baseline verification."
+backend:
+  - task: "Baseline JWT, Mongo catalog, forum and orders migration"
+    implemented: true
+    working: NA
+    file: "/app/backend/routes/"
+    stuck_count: 0
+    priority: high
+    needs_retesting: true
+    status_history:
+      - working: NA
+        agent: main
+        comment: "Prior session migrated APIs; smoke tested only. Verify baseline before forum upgrade."
+frontend:
+  - task: "Forum redesign"
+    implemented: true
+    working: NA
+    file: "/app/frontend/app/(tabs)/forum.tsx"
+    stuck_count: 0
+    priority: high
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: user
+        comment: "Forum looks shaggy and poorly designed; user approved complete upgrade."
+      - working: NA
+        agent: main
+        comment: "Rebuilt forum/feed, thread detail and composer with compact brand hero, live server-side paginated search/filter/sort, saved and own-post scopes, durable drafts, nested replies, owner-only resolved questions, real share/copy, guidelines and error states. Backend adds /threads/feed, /bookmark, /resolved and optional reply parent_id/title; legacy records preserved. Fixed empty-title React Native warning. Active-screen Page/TopBar IDs fixed for previous baseline automation. Needs complete validation."
+metadata:
+  created_by: main_agent
+  version: "2.0"
+  test_sequence: 2
+  run_ui: true
+test_plan:
+  current_focus:
+    - "Baseline JWT, Mongo catalog, forum and orders migration"
+    - "Forum redesign"
+  stuck_tasks: []
+  test_all: false
+  test_priority: high_first
+agent_communication:
+  - agent: main
+    message: "Baseline only: verify registration/login, 189-item catalog, local cart persistence, backend checkout/order history, forum posting/replies/likes. Current UI has known design clutter and fake share toast slated for replacement. Existing account in memory/test_credentials.md. No implementation changes yet."
+  - agent: main
+    message: "Iteration 2 baseline: 7 backend tests passed; frontend partial because duplicate mounted IDs. Page roots and TopBar now expose IDs only when focused. Use visible/scoped selectors for reused thread cards in stack. New implementation ready: full forum tests + finish checkout UI baseline. Do not delete real user post by kosgei eliud; clean ONLY exact known test artifacts. See testing call for IDs."

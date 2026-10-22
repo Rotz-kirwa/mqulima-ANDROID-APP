@@ -1,6 +1,6 @@
 import React from "react";
 import { Pressable, Text, View } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useIsFocused } from "expo-router";
 import { Lucide } from "@react-native-vector-icons/lucide";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Logo } from "./Logo";
@@ -14,6 +14,8 @@ export function TopBar({ back, title }: { back?: boolean; title?: string }) {
   const s = useStyles();
   const { cart, user } = useApp();
   const count = cartCount(cart);
+  const focused = useIsFocused();
+  if (!focused) return null;
   return (
     <View style={[s.bar, { paddingTop: insets.top + 8 }]} testID="top-bar">
       {back ? (

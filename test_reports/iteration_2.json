@@ -1,0 +1,48 @@
+{
+  "summary": "Baseline verification executed for backend and frontend preview. Backend critical baseline (auth/register/login/me, duplicates/invalid credentials, protected routes, catalog total=189, forum create/reply/like persistence, orders checkout/history persistence) passed via pytest. Frontend mobile integration partially verified (login, shop reach, add-to-cart, cart qty update), but full scripted checkout/forum end-to-end was blocked by repeated selector ambiguity from duplicate mounted testIDs in web preview runtime.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Shop -> Cart -> Continue automation sequence (reload/checkout/forum)",
+        "issue": "Multiple matching mounted elements for identical testIDs (e.g., top-bar-cart, cart-screen) caused non-deterministic Playwright resolution in Expo web runtime, stopping deterministic continuation after 3 retries.",
+        "affected_testIDs": ["top-bar-cart", "cart-screen"]
+      }
+    ],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_baseline_forum_auth_orders.py",
+    "/app/test_reports/pytest/pytest_results.xml",
+    "/app/test_reports/artifacts/baseline_ui_forum_checkout_v3.jpg"
+  ],
+  "action_items": [
+    "Main agent: make critical testIDs unique to visible active screen context in web preview (or add screen-scoped wrappers) so automation can complete checkout+forum flows reliably.",
+    "Main agent: after forum redesign implementation, rerun full mobile UI baseline for checkout/order-history and forum create/reply/like persistence in one deterministic pass."
+  ],
+  "critical_code_review_comments": [
+    "Backend route implementations for auth/forum/orders correctly enforce JWT on protected endpoints and consistently strip Mongo _id in responses.",
+    "Catalog seed baseline remains stable at total=189 and product pagination contract is intact.",
+    "Frontend data layer uses EXPO_PUBLIC_BACKEND_URL and /api prefix consistently; no hardcoded localhost URLs found."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_baseline_forum_auth_orders.py",
+    "/app/scripts/cleanup_and_capture_test_data.py",
+    "/app/memory/test_credentials.md",
+    "/app/test_reports/iteration_2.json"
+  ],
+  "success_rate": {
+    "backend": "100% (7/7)",
+    "frontend": "45% (critical flow partially validated before selector-blocked stop rule)"
+  },
+  "seed_data_creation": "Created backend test user test_baseline_1792664970572@mqulima.com with password secret123 and recorded in /app/memory/test_credentials.md.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Do not rework same selectors repeatedly: prior run hit 3 retry stop rule around duplicated top-bar-cart/cart-screen selectors in web preview. Begin from login, then use strictly visible/scoped selectors and verify checkout + forum create/reply/like after testID uniqueness is improved.",
+  "rca_of_issue": "RCA: Expo web stack keeps multiple route instances mounted with repeated identical testIDs, so generic selectors resolve to hidden/stale nodes. Reproduction: login -> account -> cart/shop -> click top-bar-cart and wait for cart-screen; locator resolves to multiple nodes and can timeout or click non-visible target. Mitigation: enforce unique per-screen testIDs or scope selectors to active route container."
+}

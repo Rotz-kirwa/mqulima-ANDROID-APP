@@ -19,9 +19,19 @@ Frontend-only Expo/React Native app for "Mqulima" (Africa's 360° agriculture ec
 ## Implemented (2026-06)
 - All screens above; validation + local success states for checkout, service request, contact, sign up/in, forgot, create post, academy waitlist, trace
 - Testing: iteration_1 — 46/46 flows passed
+- Real Mqulima AI (Gemini 3.1 Pro via Emergent key, SSE streaming), service detail pages, academy course previews, 189-item catalog
+
+## Backend migration (2026-06, this session)
+- FastAPI split into `db.py`, `auth.py`, `seed.py`, `routes/{auth,catalog,forum,orders,ai}.py`; `seed.json` (exported from frontend mock data via `scripts/export_seed.js`) auto-seeds Mongo on first boot
+- JWT auth (pwdlib/argon2 + PyJWT, 30-day tokens, `JWT_SECRET` in backend/.env): `POST /api/auth/register|login`, `GET /api/auth/me`
+- Catalog: `GET /api/products?category&q&page`, `/products/featured`, `/products/by-ids?ids=`, `/products/{id}`, `/articles?group`, `/articles/{id}` (increments reads), `/search?q`
+- Forum (Mongo): `GET/POST /api/threads`, `GET /api/threads/{id}`, `POST /threads/{id}/comments`, `POST /threads/{id}/like` (toggle; auth required for writes, `?mine=true` for own posts)
+- Orders: `POST /api/orders` (server-side pricing from catalog, free delivery ≥ KSh 5,000 else 300), `GET /api/orders`
+- Frontend `api.ts` now HTTP; token stored via `storage.secure*("auth_token")`; `AppStore` keeps only cart + saved locally and restores session from `/auth/me`
+- Checkout requires sign-in; forum like/comment/post require sign-in (redirect to sign-in)
+- Services, academy, tools market prices remain static frontend content
 
 ## Backlog
-- P1: Plug real backend into api.ts (auth, orders, M-Pesa)
-- P1: Real AI (LLM) replies for Mqulima AI
+- P1: M-Pesa payment integration for orders
 - P2: Photo upload for forum posts / AI crop doctor (camera)
-- P2: Pagination of full 189-item catalog
+- P2: Admin order status updates
