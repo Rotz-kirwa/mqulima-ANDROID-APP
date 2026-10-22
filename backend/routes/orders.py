@@ -1,4 +1,4 @@
-import random
+import uuid
 from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException
@@ -30,7 +30,7 @@ class OrderIn(BaseModel):
 @router.post("", status_code=201)
 async def create_order(body: OrderIn, user: CurrentUser):
     ids = list({i.productId for i in body.items})
-    products = {p["id"]: p for p in await db.products.find({"id": {"$in": ids}}, NO_ID).to_list(len(ids))}
+    products = {p["id"]: p for p in await db.products.find({"id": {"$in": ids}, "status": {"$nin": ["draft", "archived"]}}, NO_ID).to_list(len(ids))}
     items = []
     for i in body.items:
         p = products.get(i.productId)
@@ -46,7 +46,7 @@ async def create_order(body: OrderIn, user: CurrentUser):
     subtotal = sum(x["price"] * x["qty"] for x in items)
     delivery = 0 if subtotal >= FREE_DELIVERY_FROM else DELIVERY_FEE
     order = {
-        "id": f"MQ-{random.randint(100000, 999999)}",
+        "id": f"MQ-{uuid.uuid4().hex[:10].upper()}",
         "user_id": user["id"],
         "date": now_iso(),
         "items": items,
@@ -60,12 +60,26 @@ async def create_order(body: OrderIn, user: CurrentUser):
         "location": body.location.strip(),
         "status": "Processing",
         "payment": "M-Pesa on confirmation",
+        "payment_status": "Pending",
+        "stock_reserved": True,
     }
-    await db.orders.insert_one(order)
+    quantities = {pid: sum(item["qty"] for item in items if item["productId"] == pid) for pid in ids}
+    reserved = []
+    try:
+        for pid, quantity in quantities.items():
+            result = await db.products.update_one({"id": pid, "stock": {"$gte": quantity}, "status": {"$nin": ["draft", "archived"]}}, {"$inc": {"stock": -quantity}})
+            if not result.modified_count:
+                raise HTTPException(409, f"Not enough stock for {products[pid]['name']}. Update your cart.")
+            reserved.append((pid, quantity))
+        await db.orders.insert_one(order)
+    except Exception:
+        for pid, quantity in reserved:
+            await db.products.update_one({"id": pid}, {"$inc": {"stock": quantity}})
+        raise
     order.pop("_id", None)
     return order
 
 
 @router.get("")
 async def my_orders(user: CurrentUser):
-    return await db.orders.find({"user_id": user["id"]}, NO_ID).sort("date", -1).to_list(200)
+    return await db.orders.find({"user_id": user["id"]}, {"_id": 0, "notes": 0}).sort("date", -1).to_list(200)

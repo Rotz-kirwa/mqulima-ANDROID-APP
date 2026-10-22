@@ -1,206 +1,161 @@
 {
-  "project_identity": {
-    "name": "Mqulima Africa Forum Upgrade",
-    "tagline": "World-Class Agriculture Ecosystem Forum & Knowledge Network",
-    "app_type": "mobile_web_app",
-    "theme_archetype": "ARCHETYPE 1: ORGANIC & EARTHY (Trust, Growth, Local Relevance) with Precision Mobile Utility",
-    "context": "React Native (Expo) forum upgrade preserving Mqulima brand identity while modernizing UX, navigation, searching, topic filtering, sorting, card typography, thread details, comments, and post creation."
+  "project_context": {
+    "app_type": "Expo React Native Mobile App (Mobile Web & Native iOS/Android)",
+    "target_section": "Home Ecosystem Section (Lines 83-96 of index.tsx & ecosystem data)",
+    "design_archetype": "Swiss & Architectural Editorial (Sharp edges, high-contrast typography, precision grid, tactical micro-badges)",
+    "emotional_tone": "Authoritative, technical yet accessible, premium agricultural ecosystem, clean and structured"
   },
-  "design_principles": [
-    "Fusion over Imitation: Merge high-density modern discussion feeds (Reddit/Discourse style) with warm, tactile African agricultural aesthetics (Forest Greens, Ochre, Sand, Lime accents).",
-    "Emotion First: Every discussion card feels like a community gather place under a Baobab tree — welcoming, trustworthy, and actionable for real farmers.",
-    "Content Hierarchy & Clarity: High contrast text, legible metadata in monospaced/clean typography, clear visual distinction for original post author (OP), tags, and location stamps.",
-    "Zero Visual Monotony: Asymmetric cards, horizontal pill carousels, subtle 1px inner borders, and high-contrast micro-badges.",
-    "Frictionless Mobile Interaction: Keyboard-aware sliding composer sheets, quick horizontal tag filtering, one-tap thread bookmarking, and instant optimistic like updates."
-  ],
+  "color_palette": {
+    "section_bg": "#0F291E",
+    "card_bg": "#143527",
+    "card_bg_hover": "#1A4232",
+    "card_border": "rgba(255, 255, 255, 0.12)",
+    "accent_brand": "#85CC14",
+    "accent_primary": "#16A34A",
+    "accent_gold": "#F5A623",
+    "text_primary": "#FFFFFF",
+    "text_secondary": "rgba(255, 255, 255, 0.75)",
+    "text_muted": "rgba(255, 255, 255, 0.5)",
+    "badge_bg": "rgba(133, 204, 20, 0.15)",
+    "badge_text": "#85CC14"
+  },
   "typography": {
-    "font_families": {
-      "wordmark": "Lora-700",
-      "headings": "Outfit-700, Outfit-800, Outfit-900",
-      "subheadings": "Outfit-600",
-      "body": "Jakarta-400, Jakarta-500, Jakarta-600",
-      "body_bold": "Jakarta-700, Jakarta-800"
+    "section_badge": {
+      "fontFamily": "Outfit-800",
+      "fontSize": 10,
+      "letterSpacing": 2,
+      "textTransform": "uppercase"
     },
-    "hierarchy": {
-      "h1": {
-        "fontFamily": "Outfit-900",
-        "fontSize": 26,
-        "lineHeight": 32,
-        "letterSpacing": -0.5,
-        "use_case": "Forum Hero Banner Heading, Thread Detail Title"
-      },
-      "h2": {
-        "fontFamily": "Outfit-800",
-        "fontSize": 20,
-        "lineHeight": 26,
-        "use_case": "Section Titles (e.g. Community Discussions, Agri Network)"
-      },
-      "h3": {
-        "fontFamily": "Outfit-700",
-        "fontSize": 16,
-        "lineHeight": 22,
-        "use_case": "Card Headlines, Comment Section Headers"
-      },
-      "body_main": {
-        "fontFamily": "Jakarta-400",
-        "fontSize": 14,
-        "lineHeight": 21,
-        "use_case": "Thread post main copy, comment body text"
-      },
-      "body_semibold": {
-        "fontFamily": "Jakarta-600",
-        "fontSize": 13,
-        "lineHeight": 18,
-        "use_case": "Author names, action button labels, form field labels"
-      },
-      "metadata": {
-        "fontFamily": "Jakarta-500",
-        "fontSize": 12,
-        "lineHeight": 16,
-        "use_case": "Timestamps, location tags, handle counts, status pills"
-      }
+    "section_title": {
+      "fontFamily": "Outfit-900",
+      "fontSize": 28,
+      "lineHeight": 32,
+      "letterSpacing": -0.5
+    },
+    "card_number": {
+      "fontFamily": "Outfit-900",
+      "fontSize": 12,
+      "letterSpacing": 2,
+      "color": "#85CC14"
+    },
+    "card_title": {
+      "fontFamily": "Outfit-700",
+      "fontSize": 17,
+      "letterSpacing": 0.5,
+      "textTransform": "uppercase",
+      "color": "#FFFFFF"
+    },
+    "card_body": {
+      "fontFamily": "Jakarta-400",
+      "fontSize": 12.5,
+      "lineHeight": 19,
+      "color": "rgba(255, 255, 255, 0.75)"
     }
   },
-  "colors": {
-    "surface": "#FAFBF9",
-    "surfaceSecondary": "#FFFFFF",
-    "surfaceTertiary": "#F1F5F9",
-    "onSurface": "#0F291E",
-    "onSurfaceSecondary": "#334155",
-    "onSurfaceTertiary": "#475569",
-    "muted": "#64748B",
-    "subtle": "#94A3B8",
-    "brand": "#1A5438",
-    "brandPrimary": "#16A34A",
-    "brandSecondary": "#85CC14",
-    "brandTertiary": "#E5F5D0",
-    "onBrandTertiary": "#35610D",
-    "forest": "#0F291E",
-    "forestDeep": "#0B2117",
-    "forestCard": "#16382B",
-    "limeText": "#6EA810",
-    "border": "#E2E8F0",
-    "borderStrong": "#CBD5E1",
-    "divider": "#F1F5F9",
-    "error": "#DC2626",
-    "warning": "#F5A623",
-    "success": "#16A34A",
-    "overlaySoft": "rgba(11,33,23,0.3)"
-  },
-  "layout_and_spacing": {
-    "padding_standard": 16,
-    "padding_large": 24,
-    "padding_small": 8,
-    "gap_standard": 12,
-    "gap_large": 16,
-    "card_radius": 20,
-    "pill_radius": 999,
-    "input_radius": 16,
-    "bento_grid_rules": [
-      "Thread list cards must have 16px horizontal margin and 12px vertical spacing.",
-      "Topic filter bar is horizontally scrollable with contentContainerStyle padding horizontal 16 and gap 8.",
-      "Thread card headers use flex direction row with avatar, author info column, and post category tag aligned to top right.",
-      "Media attachments inside thread cards use rounded corners (16px) with aspect ratio 16/10 to avoid screen hogging.",
-      "Comment list items are nested inside rounded surface cards with 12px padding and clear vertical connectors for thread depth."
-    ]
-  },
-  "key_screens_and_components": {
-    "forum_screen": {
-      "file_path": "/app/frontend/app/(tabs)/forum.tsx",
-      "features": [
-        "Header Search & Filter Bar: Live search input with magnify icon, query clear button, and filter reset.",
-        "Topic Pill Bar: Horizontal filter pills (All, Maize & Grains, Horticulture, Livestock & Dairy, Pest & Disease, Market & Prices, Weather & Water) with active state in forest dark green and white text.",
-        "Sorting Tabs Bar: Toggle between 'Latest', 'Popular', and 'Unanswered' posts to help farmers quickly find urgent queries.",
-        "Quick Composer Banner: Compact avatar pressable banner with placeholder 'Share your farm update or ask a question...' that triggers creation flow.",
-        "Thread Feed: Optimistic FlatList with pull-to-refresh, skeleton loaders, error states, and empty search results view.",
-        "Agri Network Sidebar / Widget: Highlights top active community members and their counties.",
-        "Floating Action Button (FAB): Fixed bottom-right elevated green button with '+' icon for 1-tap post creation."
-      ]
+  "icon_mapping": {
+    "01_agroshop": {
+      "icon": "shopping-bag",
+      "color": "#85CC14",
+      "bg": "rgba(133, 204, 20, 0.12)"
     },
-    "thread_card": {
-      "file_path": "/app/frontend/src/components/ThreadCard.tsx",
-      "features": [
-        "Header: Author avatar, bold author name, county location pill, handle & time.",
-        "Category Pill: High contrast category tag pill (e.g., '🌽 Maize', '🐛 Pest Control').",
-        "Body Content: Up to 4 lines of rich post text preview in Jakarta-400 with 'Read more' affordance.",
-        "Attachment Image: Optional image preview with soft border and subtle dark background fallback.",
-        "Actions Bar: Modern border-top divider with 3 main actions — Like (heart icon + optimistic increment counter), Comments (chat bubble icon + comment count), Bookmark (bookmark icon), and Share (copy link with toast feedback)."
-      ]
+    "02_insights": {
+      "icon": "trending-up",
+      "color": "#52B788",
+      "bg": "rgba(82, 183, 136, 0.12)"
     },
-    "thread_detail_screen": {
-      "file_path": "/app/frontend/app/thread/[id].tsx",
-      "features": [
-        "Full Hero Post Card: Expanded full view of thread with image zoom support.",
-        "Author Distinction: Special 'OP' (Original Poster) badge on comments written by thread creator.",
-        "Comments Section: Section header with total comment counter, nested reply tree styling, and empty state ('Be the first to reply').",
-        "Sticky Bottom Comment Bar: KeyboardAvoidingView with multi-line TextInput, media attachment icon, and active Send button."
-      ]
+    "03_services": {
+      "icon": "wrench",
+      "color": "#F5A623",
+      "bg": "rgba(245, 166, 35, 0.12)"
     },
-    "create_post_screen": {
-      "file_path": "/app/frontend/app/create-post.tsx",
-      "features": [
-        "User Profile Header: Displays author avatar, name, and county location.",
-        "Topic Selector: Flex-wrap tag chips allowing easy single selection.",
-        "Rich Text Field: Keyboard-aware multi-line text input with character count indicator.",
-        "Location Picker: Select county context to help local community answer.",
-        "Success Screen: Animated confirmation screen with direct action to view created post."
-      ]
+    "04_community": {
+      "icon": "users",
+      "color": "#6EA810",
+      "bg": "rgba(110, 168, 16, 0.12)"
+    },
+    "05_academy": {
+      "icon": "graduation-cap",
+      "color": "#FFFFFF",
+      "bg": "rgba(255, 255, 255, 0.12)"
     }
   },
-  "test_id_conventions": {
-    "mandatory_ids": [
-      "forum-screen",
-      "forum-search-input",
-      "forum-search-clear",
-      "forum-topic-filter-{tag}",
-      "forum-sort-latest",
-      "forum-sort-popular",
-      "forum-sort-unanswered",
-      "forum-thread-list",
-      "forum-composer-btn",
-      "forum-create-post-fab",
-      "forum-error-retry",
-      "thread-card-{id}",
-      "thread-like-{id}",
-      "thread-like-count-{id}",
-      "thread-share-{id}",
-      "thread-detail-screen",
-      "thread-comment-input",
-      "thread-comment-send",
-      "thread-comment-count",
-      "comment-{id}",
-      "create-post-screen",
-      "create-post-tag-{index}",
-      "create-post-text-input",
-      "create-post-county-select",
-      "create-post-publish-btn",
-      "create-post-success"
-    ]
+  "ecosystem_items_copy_and_routes": [
+    {
+      "n": "01",
+      "icon": "shopping-bag",
+      "title": "AGROSHOP",
+      "text": "Source verified inputs, seeds, and equipment directly from vetted suppliers with nationwide delivery.",
+      "cta": "View Shop",
+      "route": "/(tabs)/shop",
+      "testID_card": "ecosystem-card-01",
+      "testID_cta": "ecosystem-cta-01"
+    },
+    {
+      "n": "02",
+      "icon": "trending-up",
+      "title": "INSIGHTS",
+      "text": "Access practical agronomy guides, market price trends, weather advisories, and expert research.",
+      "cta": "View Updates",
+      "route": "/(tabs)/news",
+      "testID_card": "ecosystem-card-02",
+      "testID_cta": "ecosystem-cta-02"
+    },
+    {
+      "n": "03",
+      "icon": "wrench",
+      "title": "SERVICES",
+      "text": "Book professional agricultural support on demand — from soil testing and vet care to machinery rentals.",
+      "cta": "Book a Service",
+      "route": "/services",
+      "testID_card": "ecosystem-card-03",
+      "testID_cta": "ecosystem-cta-03"
+    },
+    {
+      "n": "04",
+      "icon": "users",
+      "title": "COMMUNITY",
+      "text": "Connect with fellow farmers and agronomists to exchange field experience, ask questions, and collaborate.",
+      "cta": "Connect",
+      "route": "/(tabs)/forum",
+      "testID_card": "ecosystem-card-04",
+      "testID_cta": "ecosystem-cta-04"
+    },
+    {
+      "n": "05",
+      "icon": "graduation-cap",
+      "title": "ACADEMY",
+      "text": "Learn modern sustainable farming techniques through step-by-step practical guides and agronomy modules.",
+      "cta": "Visit Academy",
+      "route": "/academy",
+      "testID_card": "ecosystem-card-05",
+      "testID_cta": "ecosystem-cta-05"
+    }
+  ],
+  "card_layout_and_interaction": {
+    "card_shape": "Sharp editorial structure (borderRadius: 12, borderWidth: 1, subtle top-left accent border line)",
+    "min_touch_target": "44px height for all pressable buttons and card containers",
+    "touch_handling": "CardPressable container with scale active feedback (transform scale 0.985); single touchable wrapper to avoid nested pressable conflicts",
+    "small_screen_support": "Tested for screens down to 320px width (flexible flex-shrink, full width stacked buttons, responsive gap: 12px)",
+    "tablet_support": "Grid wrap layout on wider viewports (md: 2 columns, gap: 16px)"
   },
   "image_urls": [
     {
-      "category": "Hero & Agri Technology",
-      "url": "https://images.pexels.com/photos/34182412/pexels-photo-34182412.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
-      "description": "Aerial drones in a field, modern agricultural technology"
+      "category": "ecosystem_hero_bg",
+      "url": "https://images.pexels.com/photos/30255157/pexels-photo-30255157.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "description": "Aerial view of patchwork farms in Mau Narok, Nakuru County, Kenya"
     },
     {
-      "category": "Maize Farming",
-      "url": "https://images.unsplash.com/photo-1605000797499-95a51c5269ae?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzN8MHwxfHNlYXJjaHwxfHxhZnJpY2FuJTIwYWdyaWN1bHR1cmUlMjBmYXJtaW5nJTIwY3JvcHMlMjB0ZWNobm9sb2d5fGVufDB8fHx8MTc5MjY2NDgxM3ww&ixlib=rb-4.1.0&q=85",
-      "description": "Farmer inspecting fresh harvest in field"
-    },
-    {
-      "category": "Crops & Harvesting",
-      "url": "https://images.pexels.com/photos/34181067/pexels-photo-34181067.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
-      "description": "African farmer tending rice crops in green field"
+      "category": "farmer_field",
+      "url": "https://images.unsplash.com/photo-1741874299706-2b8e16839aaa?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NTN8MHwxfHNlYXJjaHw0fHxhZnJpY2FuJTIwZmFybSUyMGFncmljdWx0dXJlJTIwY3JvcHN8ZW58MHx8fHwxNzkyNjY4NjU1fDA&ixlib=rb-4.1.0&q=85",
+      "description": "Farmer inspecting green healthy crops"
     }
   ],
-  "instructions_to_main_agent": [
-    "Retain Mqulima's existing theme token structure in theme.ts while implementing the visual hierarchy described in this document.",
-    "Do NOT use fake engagement stats or synthetic online counts; use real threads and DB records.",
-    "Ensure every interactive element (buttons, text inputs, filter pills, like buttons, sort tabs, share buttons) has a proper data-testid or testID attribute as specified in test_id_conventions.",
-    "Implement high quality empty, loading (ListSkeleton), and error retry states on the forum screen and thread detail screen.",
-    "Ensure the floating action button (FAB) is safely placed above bottom navigation tabs using useTabBottom().",
-    "Support topic filtering (All, Maize, Pest Control, Livestock, Irrigation, etc.) and search filtering dynamically in frontend state."
+  "UNIVERSAL GUIDELINES FOR MAIN AGENT": [
+    "Preserve all existing routes exactly: /(tabs)/shop, /(tabs)/news, /services, /(tabs)/forum, /academy.",
+    "Preserve testIDs ecosystem-card-01 to 05 and ecosystem-cta-01 to 05.",
+    "Replace emojis with Lucide React Native icons: shopping-bag, trending-up, wrench, users, graduation-cap.",
+    "Ensure touch target heights are at least 44px for accessibility.",
+    "Maintain zero fake counts in copy (avoid unverified stats like 'thousands of active users' or 'paid courses').",
+    "Preserve rest of Home page intact."
   ]
-},
-overwrite:true,path:
+}

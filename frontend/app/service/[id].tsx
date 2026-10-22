@@ -11,7 +11,6 @@ import { Page } from "@/src/components/Page";
 import { Btn, Body, Pill } from "@/src/components/ui";
 import { Skeleton } from "@/src/components/Skeleton";
 import { api } from "@/src/services/api";
-import { serviceIncludes, serviceSteps } from "@/src/data/services";
 import { contactInfo } from "@/src/data/home";
 import { fonts, makeStyles, useTheme } from "@/src/theme";
 
@@ -72,7 +71,7 @@ export default function ServiceDetail() {
 
           <View style={{ gap: 12 }}>
             <Text style={s.h2}>How it works</Text>
-            {serviceSteps.map((st, i) => (
+            {d.steps.map((st, i) => (
               <Animated.View key={st.title} entering={FadeInDown.delay(i * 70)} style={s.step}>
                 <View style={s.stepN}><Text style={s.stepNText}>{i + 1}</Text></View>
                 <View style={{ flex: 1, gap: 2 }}>
@@ -85,7 +84,7 @@ export default function ServiceDetail() {
 
           <View style={s.card}>
             <Text style={s.h3}>What&apos;s included</Text>
-            {serviceIncludes.map((x) => (
+            {d.includes.map((x) => (
               <View key={x} style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
                 <Lucide name="circle-check" size={18} color={colors.brandPrimary} />
                 <Text style={s.incl}>{x}</Text>

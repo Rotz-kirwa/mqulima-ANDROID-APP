@@ -9,6 +9,7 @@ import { Btn, SectionTitle } from "@/src/components/ui";
 import { Field, SuccessState, EMAIL_RE, PHONE_RE } from "@/src/components/Form";
 import { contactInfo } from "@/src/data/home";
 import { fonts, makeStyles, useTheme } from "@/src/theme";
+import { api } from "@/src/services/api";
 
 export default function Contact() {
   const { subject } = useLocalSearchParams<{ subject?: string }>();
@@ -18,15 +19,20 @@ export default function Contact() {
   const [f, setF] = useState({ name: "", contact: "", subject: subject ?? "", message: "" });
   const [e, setE] = useState<Record<string, string>>({});
   const [done, setDone] = useState(false);
+  const [loading, setLoading] = useState(false);
   const set = (k: keyof typeof f) => (v: string) => setF((x) => ({ ...x, [k]: v }));
-  const submit = () => {
+  const submit = async () => {
     const err: Record<string, string> = {};
     if (f.name.trim().length < 2) err.name = "Enter your name";
     const c = f.contact.trim().replace(/\s/g, "");
     if (!EMAIL_RE.test(c) && !PHONE_RE.test(c)) err.contact = "Enter a valid email or phone number";
     if (f.message.trim().length < 10) err.message = "Message should be at least 10 characters";
     setE(err);
-    if (!Object.keys(err).length) setDone(true);
+    if (Object.keys(err).length) return;
+    setLoading(true);
+    try { await api.submitContact(f); setDone(true); }
+    catch (error: any) { setE({ message: error.message || "Could not send message. Please try again." }); }
+    finally { setLoading(false); }
   };
   const rows = [
     { id: "phone", icon: "phone", label: contactInfo.phone, url: `tel:${contactInfo.phoneRaw}` },
@@ -54,7 +60,7 @@ export default function Contact() {
             <Field testID="contact-contact-input" label="Email or Phone" value={f.contact} onChangeText={set("contact")} placeholder="you@example.com or 0712..." autoCapitalize="none" error={e.contact} />
             <Field testID="contact-subject-input" label="Subject (optional)" value={f.subject} onChangeText={set("subject")} placeholder="e.g. Partnership" />
             <Field testID="contact-message-input" label="Message" value={f.message} onChangeText={set("message")} placeholder="How can we help?" multiline error={e.message} />
-            <Btn testID="contact-submit-btn" full variant="green" label="Send Message" icon="send" onPress={submit} />
+            <Btn testID="contact-submit-btn" full variant="green" label="Send Message" icon="send" loading={loading} onPress={submit} />
           </View>
         )}
       </KeyboardAwareScrollView>

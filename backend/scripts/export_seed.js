@@ -27,5 +27,14 @@ const { catalogProducts } = load("catalog");
 const { articles } = load("articles");
 const { threads } = load("forum");
 const out = { products: [...products, ...catalogProducts], articles, threads };
-fs.writeFileSync("/app/backend/seed.json", JSON.stringify(out));
-console.log(`products=${out.products.length} articles=${out.articles.length} threads=${out.threads.length}`);
+if (process.argv.includes("--operations")) {
+  const services = load("services");
+  const { courses } = load("academy");
+  const categories = services.serviceCategories.map(({subs, ...category}) => ({...category, status: "published"}));
+  const items = services.serviceCategories.flatMap(c => c.subs.map(s => ({...s, category_id: c.id, price: services.getSubService(s.id).price, steps: services.serviceSteps, includes: services.serviceIncludes, status: "published"})));
+  fs.writeFileSync("/app/backend/operations_seed.json", JSON.stringify({service_categories: categories, services: items, courses: courses.map(c => ({...c, status: "published"}))}));
+  console.log(`Exported ${categories.length} service categories, ${items.length} services, ${courses.length} courses`);
+} else {
+  fs.writeFileSync("/app/backend/seed.json", JSON.stringify(out));
+  console.log(`products=${out.products.length} articles=${out.articles.length} threads=${out.threads.length}`);
+}

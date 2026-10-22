@@ -1,0 +1,161 @@
+{
+  "project_context": {
+    "app_type": "Expo React Native Mobile App (Mobile Web & Native iOS/Android)",
+    "target_section": "Home Ecosystem Section (Lines 83-96 of index.tsx & ecosystem data)",
+    "design_archetype": "Swiss & Architectural Editorial (Sharp edges, high-contrast typography, precision grid, tactical micro-badges)",
+    "emotional_tone": "Authoritative, technical yet accessible, premium agricultural ecosystem, clean and structured"
+  },
+  "color_palette": {
+    "section_bg": "#0F291E",
+    "card_bg": "#143527",
+    "card_bg_hover": "#1A4232",
+    "card_border": "rgba(255, 255, 255, 0.12)",
+    "accent_brand": "#85CC14",
+    "accent_primary": "#16A34A",
+    "accent_gold": "#F5A623",
+    "text_primary": "#FFFFFF",
+    "text_secondary": "rgba(255, 255, 255, 0.75)",
+    "text_muted": "rgba(255, 255, 255, 0.5)",
+    "badge_bg": "rgba(133, 204, 20, 0.15)",
+    "badge_text": "#85CC14"
+  },
+  "typography": {
+    "section_badge": {
+      "fontFamily": "Outfit-800",
+      "fontSize": 10,
+      "letterSpacing": 2,
+      "textTransform": "uppercase"
+    },
+    "section_title": {
+      "fontFamily": "Outfit-900",
+      "fontSize": 28,
+      "lineHeight": 32,
+      "letterSpacing": -0.5
+    },
+    "card_number": {
+      "fontFamily": "Outfit-900",
+      "fontSize": 12,
+      "letterSpacing": 2,
+      "color": "#85CC14"
+    },
+    "card_title": {
+      "fontFamily": "Outfit-700",
+      "fontSize": 17,
+      "letterSpacing": 0.5,
+      "textTransform": "uppercase",
+      "color": "#FFFFFF"
+    },
+    "card_body": {
+      "fontFamily": "Jakarta-400",
+      "fontSize": 12.5,
+      "lineHeight": 19,
+      "color": "rgba(255, 255, 255, 0.75)"
+    }
+  },
+  "icon_mapping": {
+    "01_agroshop": {
+      "icon": "shopping-bag",
+      "color": "#85CC14",
+      "bg": "rgba(133, 204, 20, 0.12)"
+    },
+    "02_insights": {
+      "icon": "trending-up",
+      "color": "#52B788",
+      "bg": "rgba(82, 183, 136, 0.12)"
+    },
+    "03_services": {
+      "icon": "wrench",
+      "color": "#F5A623",
+      "bg": "rgba(245, 166, 35, 0.12)"
+    },
+    "04_community": {
+      "icon": "users",
+      "color": "#6EA810",
+      "bg": "rgba(110, 168, 16, 0.12)"
+    },
+    "05_academy": {
+      "icon": "graduation-cap",
+      "color": "#FFFFFF",
+      "bg": "rgba(255, 255, 255, 0.12)"
+    }
+  },
+  "ecosystem_items_copy_and_routes": [
+    {
+      "n": "01",
+      "icon": "shopping-bag",
+      "title": "AGROSHOP",
+      "text": "Source verified inputs, seeds, and equipment directly from vetted suppliers with nationwide delivery.",
+      "cta": "View Shop",
+      "route": "/(tabs)/shop",
+      "testID_card": "ecosystem-card-01",
+      "testID_cta": "ecosystem-cta-01"
+    },
+    {
+      "n": "02",
+      "icon": "trending-up",
+      "title": "INSIGHTS",
+      "text": "Access practical agronomy guides, market price trends, weather advisories, and expert research.",
+      "cta": "View Updates",
+      "route": "/(tabs)/news",
+      "testID_card": "ecosystem-card-02",
+      "testID_cta": "ecosystem-cta-02"
+    },
+    {
+      "n": "03",
+      "icon": "wrench",
+      "title": "SERVICES",
+      "text": "Book professional agricultural support on demand — from soil testing and vet care to machinery rentals.",
+      "cta": "Book a Service",
+      "route": "/services",
+      "testID_card": "ecosystem-card-03",
+      "testID_cta": "ecosystem-cta-03"
+    },
+    {
+      "n": "04",
+      "icon": "users",
+      "title": "COMMUNITY",
+      "text": "Connect with fellow farmers and agronomists to exchange field experience, ask questions, and collaborate.",
+      "cta": "Connect",
+      "route": "/(tabs)/forum",
+      "testID_card": "ecosystem-card-04",
+      "testID_cta": "ecosystem-cta-04"
+    },
+    {
+      "n": "05",
+      "icon": "graduation-cap",
+      "title": "ACADEMY",
+      "text": "Learn modern sustainable farming techniques through step-by-step practical guides and agronomy modules.",
+      "cta": "Visit Academy",
+      "route": "/academy",
+      "testID_card": "ecosystem-card-05",
+      "testID_cta": "ecosystem-cta-05"
+    }
+  ],
+  "card_layout_and_interaction": {
+    "card_shape": "Sharp editorial structure (borderRadius: 12, borderWidth: 1, subtle top-left accent border line)",
+    "min_touch_target": "44px height for all pressable buttons and card containers",
+    "touch_handling": "CardPressable container with scale active feedback (transform scale 0.985); single touchable wrapper to avoid nested pressable conflicts",
+    "small_screen_support": "Tested for screens down to 320px width (flexible flex-shrink, full width stacked buttons, responsive gap: 12px)",
+    "tablet_support": "Grid wrap layout on wider viewports (md: 2 columns, gap: 16px)"
+  },
+  "image_urls": [
+    {
+      "category": "ecosystem_hero_bg",
+      "url": "https://images.pexels.com/photos/30255157/pexels-photo-30255157.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "description": "Aerial view of patchwork farms in Mau Narok, Nakuru County, Kenya"
+    },
+    {
+      "category": "farmer_field",
+      "url": "https://images.unsplash.com/photo-1741874299706-2b8e16839aaa?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NTN8MHwxfHNlYXJjaHw0fHxhZnJpY2FuJTIwZmFybSUyMGFncmljdWx0dXJlJTIwY3JvcHN8ZW58MHx8fHwxNzkyNjY4NjU1fDA&ixlib=rb-4.1.0&q=85",
+      "description": "Farmer inspecting green healthy crops"
+    }
+  ],
+  "UNIVERSAL GUIDELINES FOR MAIN AGENT": [
+    "Preserve all existing routes exactly: /(tabs)/shop, /(tabs)/news, /services, /(tabs)/forum, /academy.",
+    "Preserve testIDs ecosystem-card-01 to 05 and ecosystem-cta-01 to 05.",
+    "Replace emojis with Lucide React Native icons: shopping-bag, trending-up, wrench, users, graduation-cap.",
+    "Ensure touch target heights are at least 44px for accessibility.",
+    "Maintain zero fake counts in copy (avoid unverified stats like 'thousands of active users' or 'paid courses').",
+    "Preserve rest of Home page intact."
+  ]
+}

@@ -7,11 +7,11 @@ import { Page } from "@/src/components/Page";
 import { Btn, Pill } from "@/src/components/ui";
 import { Field, SelectField, SuccessState, PHONE_RE } from "@/src/components/Form";
 import { counties } from "@/src/data/home";
-import { serviceCategories } from "@/src/data/services";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/src/services/api";
 import { fonts, makeStyles } from "@/src/theme";
 import { useApp } from "@/src/store/AppStore";
 
-const allServices = serviceCategories.flatMap((c) => c.subs.map((s) => s.title));
 
 export default function ServiceRequest() {
   const params = useLocalSearchParams<{ service?: string; category?: string }>();
@@ -19,13 +19,15 @@ export default function ServiceRequest() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user } = useApp();
+  const services = useQuery({ queryKey: ["serviceCategories"], queryFn: api.getServiceCategories });
+  const allServices = (services.data ?? []).flatMap(c => c.subs.map(item => item.title));
   const [f, setF] = useState({ service: params.service ?? "", name: user?.name ?? "", phone: user?.phone ?? "", county: user?.county ?? "", subcounty: "", date: "", details: "" });
   const [e, setE] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const set = (k: keyof typeof f) => (v: string) => setF((x) => ({ ...x, [k]: v }));
 
-  const submit = () => {
+  const submit = async () => {
     const err: Record<string, string> = {};
     if (!f.service) err.service = "Select a service";
     if (f.name.trim().length < 3) err.name = "Enter your full names";
@@ -35,13 +37,15 @@ export default function ServiceRequest() {
     setE(err);
     if (Object.keys(err).length) return;
     setLoading(true);
-    setTimeout(() => { setLoading(false); setDone(true); }, 900);
+    try { await api.submitServiceRequest({ ...f, phone: f.phone.replace(/\s/g, "") }); setDone(true); }
+    catch (error: any) { setE({ details: error.message || "Could not send request. Please try again." }); }
+    finally { setLoading(false); }
   };
 
   if (done) {
     return (
       <Page title="Request Sent">
-        <SuccessState testID="service-request-success" title="Request received!" text={`Thank you ${f.name.split(" ")[0]}. A vetted ${f.service} specialist in ${f.county} will contact you on ${f.phone} — average response under 10 minutes.`}>
+        <SuccessState testID="service-request-success" title="Request received!" text={`Thank you ${f.name.split(" ")[0]}. Our team has received your ${f.service} request for ${f.county} and will contact you on ${f.phone}.`}>
           <Btn testID="service-request-more-btn" full variant="green" label="Browse More Services" onPress={() => router.replace("/services")} />
           <Btn testID="service-request-home-btn" full variant="outline" label="Back to Home" onPress={() => router.navigate("/")} />
         </SuccessState>
@@ -55,6 +59,7 @@ export default function ServiceRequest() {
         {params.category ? <Pill label={params.category} /> : null}
         <Text style={s.h2}>Tell us what you need</Text>
         <Text style={s.muted}>Place a request and Mqulima will send an expert.</Text>
+        {services.isError && <Btn testID="service-request-retry" label="Reload available services" onPress={() => services.refetch()} />}
         <SelectField testID="service-request-service-select" label="Service" value={f.service} options={allServices} onChange={set("service")} error={e.service} placeholder="Select service" />
         <Field testID="service-request-name-input" label="Full Names" value={f.name} onChangeText={set("name")} placeholder="e.g. Eliud Rotich" error={e.name} />
         <Field testID="service-request-phone-input" label="Phone Number" value={f.phone} onChangeText={set("phone")} placeholder="0712 345 678" keyboardType="phone-pad" error={e.phone} />

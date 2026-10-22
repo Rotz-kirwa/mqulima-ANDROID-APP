@@ -9,6 +9,7 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
+      "infoPlist": { "NSPhotoLibraryUsageDescription": "Choose images for products and articles" },
       "bundleIdentifier": "com.emergent.agriecosystem.dg1zxg"
     },
     "android": {
@@ -38,6 +39,7 @@
       "expo-image",
       "expo-secure-store",
       "expo-web-browser",
+      ["expo-image-picker", { "photosPermission": "Choose images for products and articles", "cameraPermission": false, "microphonePermission": false }],
       "expo-status-bar",
       "@react-native-vector-icons/lucide",
       "@react-native-vector-icons/fontawesome6"

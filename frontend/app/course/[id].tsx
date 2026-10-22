@@ -1,135 +1,50 @@
-import React, { useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
-import { Image } from "@/src/components/Img";
-import { LinearGradient } from "expo-linear-gradient";
+import React, { useRef, useState } from "react";
+import { Pressable, RefreshControl, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
+import { KeyboardAwareScrollView, KeyboardAwareScrollViewRef } from "react-native-keyboard-controller";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Lucide } from "@react-native-vector-icons/lucide";
-import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
-import { Page, useStackBottom } from "@/src/components/Page";
-import { Btn, Body, Pill } from "@/src/components/ui";
+import { Page } from "@/src/components/Page";
 import { Skeleton } from "@/src/components/Skeleton";
+import { AcademyButton, AcademyState, CourseArtwork, courseLength, courseSamples, useAcademyStyles } from "@/src/components/academy/AcademyUI";
+import { CourseOutline, LessonReader } from "@/src/components/academy/CourseOutline";
+import { WaitlistSection } from "@/src/components/academy/WaitlistSection";
+import { Course } from "@/src/data/academy";
 import { api } from "@/src/services/api";
-import type { Lesson } from "@/src/data/academy";
 import { fonts, makeStyles, useTheme } from "@/src/theme";
 import { useApp } from "@/src/store/AppStore";
 
-export default function CoursePreview() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const s = useStyles();
-  const { colors } = useTheme();
-  const router = useRouter();
-  const bottom = useStackBottom();
-  const { toast } = useApp();
-  const q = useQuery({ queryKey: ["course", id], queryFn: () => api.getCourse(id) });
-  const [open, setOpen] = useState(0);
-  const [lesson, setLesson] = useState<Lesson | null>(null);
-  const c = q.data;
-
-  if (q.isLoading) return <Page title="Course"><View style={{ padding: 16, gap: 12 }}><Skeleton style={{ height: 220, borderRadius: 24 }} /><Skeleton style={{ height: 24, width: "60%" }} /><Skeleton style={{ height: 120 }} /></View></Page>;
-  if (!c) return <Page title="Course"><View style={{ padding: 24, alignItems: "center", gap: 12 }}><Text style={s.h2}>Course not found</Text><Btn label="Academy" onPress={() => router.replace("/academy")} /></View></Page>;
-  const total = c.modules.reduce((a, m) => a + m.lessons.length, 0);
-  const preview = lesson ?? c.modules.flatMap((m) => m.lessons).find((l) => l.preview)!;
-
-  return (
-    <Page title="Course Preview" testID="course-preview-screen">
-      <ScrollView contentContainerStyle={{ paddingBottom: bottom }}>
-        <View style={{ height: 240 }}>
-          <Image source={{ uri: c.image }} style={s.abs} contentFit="cover" transition={300} />
-          <LinearGradient colors={["transparent", colors.overlay]} style={[s.abs, { justifyContent: "flex-end", padding: 16, gap: 8 }]}>
-            <View style={{ flexDirection: "row", gap: 8 }}>
-              <Pill dark label={`TRACK ${c.n}`} />
-              <Pill dark label={c.level.toUpperCase()} />
-            </View>
-            <Text style={s.h1} testID="course-title">{c.title}</Text>
-            <Text style={s.heroMeta}>{c.duration} • Coming 2026</Text>
-          </LinearGradient>
-        </View>
-        <View style={{ padding: 16, gap: 20 }}>
-          <Body style={{ fontSize: 15, lineHeight: 23 }}>{c.text}</Body>
-
-          <View style={s.card}>
-            <Text style={s.h3}>You&apos;ll learn to</Text>
-            {c.outcomes.map((o) => (
-              <View key={o} style={{ flexDirection: "row", gap: 10, alignItems: "center" }}>
-                <Lucide name="circle-check" size={18} color={colors.brandPrimary} />
-                <Text style={s.item}>{o}</Text>
-              </View>
-            ))}
-          </View>
-
-          {/* Sample lesson */}
-          <Animated.View key={preview.title} entering={FadeIn.duration(300)} style={s.sample} testID="course-sample-lesson">
-            <View style={s.player}>
-              <View style={s.play}><Lucide name="play" size={26} color={colors.forestDeep} /></View>
-              <Text style={s.playText}>FREE PREVIEW • {preview.duration}</Text>
-            </View>
-            <View style={{ padding: 18, gap: 10 }}>
-              <Text style={[s.h3, { color: colors.white }]}>{preview.title}</Text>
-              <Body dark style={{ fontSize: 13 }}>{preview.summary}</Body>
-              {preview.points?.map((p) => (
-                <View key={p} style={{ flexDirection: "row", gap: 8 }}>
-                  <Text style={{ color: colors.brandSecondary, fontFamily: fonts.b800 }}>•</Text>
-                  <Text style={s.point}>{p}</Text>
-                </View>
-              ))}
-            </View>
-          </Animated.View>
-
-          <View style={{ gap: 10 }}>
-            <Text style={s.h2}>Course outline</Text>
-            <Text style={s.muted}>{c.modules.length} modules • {total} lessons shown</Text>
-            {c.modules.map((m, mi) => (
-              <Animated.View key={m.title} entering={FadeInDown.delay(mi * 60)} style={s.module}>
-                <Pressable testID={`course-module-${mi}`} onPress={() => setOpen(open === mi ? -1 : mi)} style={s.moduleHead}>
-                  <Text style={s.moduleN}>{String(mi + 1).padStart(2, "0")}</Text>
-                  <Text style={s.moduleTitle}>{m.title}</Text>
-                  <Lucide name={open === mi ? "chevron-up" : "chevron-down"} size={20} color={colors.muted} />
-                </Pressable>
-                {open === mi
-                  ? m.lessons.map((l, li) => (
-                      <Pressable
-                        key={l.title}
-                        testID={`course-lesson-${mi}-${li}`}
-                        onPress={() => (l.preview ? setLesson(l) : toast("Unlocks at launch — join the waitlist"))}
-                        style={s.lesson}
-                      >
-                        <Lucide name={l.preview ? "circle-play" : "lock"} size={18} color={l.preview ? colors.brandPrimary : colors.subtle} />
-                        <Text style={[s.lessonTitle, !l.preview && { color: colors.muted }]}>{l.title}</Text>
-                        {l.preview ? <Text style={s.free}>Preview</Text> : null}
-                        <Text style={s.muted}>{l.duration}</Text>
-                      </Pressable>
-                    ))
-                  : null}
-              </Animated.View>
-            ))}
-          </View>
-          <Btn testID="course-join-waitlist-btn" full variant="green" label="Join Waitlist for Early Access" onPress={() => router.replace("/academy")} />
-        </View>
-      </ScrollView>
-    </Page>
-  );
+function CourseContent({ course, refreshing, refresh }: { course: Course; refreshing: boolean; refresh: () => void }) {
+  const s = useStyles(); const shared = useAcademyStyles(); const { colors } = useTheme(); const insets = useSafeAreaInsets(); const router = useRouter(); const { toast } = useApp();
+  const scroll = useRef<KeyboardAwareScrollViewRef>(null); const anchors = useRef({ outline: 0, sample: 0, waitlist: 0 });
+  const [selectedKey, setSelectedKey] = useState<string | undefined>();
+  const samples = courseSamples(course); const selected = samples.find(sample => sample.key === selectedKey) ?? samples[0];
+  const jump = (section: keyof typeof anchors.current) => scroll.current?.scrollTo({ y: Math.max(0, anchors.current[section] - 12), animated: true });
+  return <KeyboardAwareScrollView ref={scroll} testID="course-scroll" keyboardShouldPersistTaps="handled" bottomOffset={24} showsVerticalScrollIndicator={false} contentContainerStyle={[shared.content, { paddingBottom: insets.bottom + 28 }]} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.brand} />}>
+    <View style={s.heading}><View style={s.titleMeta}><Text testID="course-track" style={shared.kicker}>LEARNING PATH {course.n}</Text><Text testID="course-level" style={s.level}>{course.level}</Text></View><Text testID="course-title" style={shared.h1}>{course.title}</Text><Text testID="course-description" style={shared.body}>{course.text}</Text></View>
+    <View testID="course-hero-banner" style={shared.card}><CourseArtwork course={course} testID="course-cover-image" /><View style={s.facts}><View style={s.fact}><Lucide name="calendar-days" size={18} color={colors.brand} /><Text testID="course-planned-length" style={s.factValue}>{courseLength(course)}</Text><Text style={shared.meta}>Planned duration</Text></View><View style={[s.fact, s.factBorder]}><Lucide name="layers" size={18} color={colors.brand} /><Text testID="course-module-total" style={s.factValue}>{course.modules.length} modules</Text><Text style={shared.meta}>In the outline</Text></View><View style={[s.fact, s.factBorder]}><Lucide name="file-text" size={18} color={colors.brand} /><Text testID="course-sample-total" style={s.factValue}>{samples.length} {samples.length === 1 ? "sample" : "samples"}</Text><Text style={shared.meta}>Free to explore</Text></View></View></View>
+    <View style={s.actions}><AcademyButton testID="course-read-sample-button" label={selected ? "Read a free lesson" : "Explore course outline"} icon={selected ? "book-open" : "list"} onPress={() => jump(selected ? "sample" : "outline")} /><Text testID="course-availability" style={s.availability}>Full course coming soon · No enrolment required for samples</Text></View>
+    {!!course.outcomes.filter(outcome => outcome.trim()).length && <View testID="course-outcomes-card" style={s.outcomes}><Text testID="course-outcomes-title" style={shared.h2}>What you’ll learn</Text>{course.outcomes.filter(outcome => outcome.trim()).map((outcome, index) => <View key={index} style={s.outcome}><Lucide name="check" size={18} color={colors.brand} /><Text testID={`course-outcome-${index}`} style={s.outcomeText}>{outcome}</Text></View>)}</View>}
+    <View onLayout={event => { anchors.current.outline = event.nativeEvent.layout.y; }}><CourseOutline course={course} selected={selected?.key} onSelect={key => { setSelectedKey(key); jump("sample"); }} onUnavailable={() => { toast("Full lessons are coming soon. Register your interest below."); jump("waitlist"); }} /></View>
+    <View onLayout={event => { anchors.current.sample = event.nativeEvent.layout.y; }}>{selected ? <LessonReader lesson={selected.lesson} moduleTitle={selected.module} onOutline={() => jump("outline")} /> : <AcademyState testID="course-no-preview" title="A sample is on its way" description="Explore the course outline above. A free text lesson will appear here when it is ready." />}</View>
+    {samples.length > 1 && <View style={s.sampleSwitch}><Text testID="course-sample-position" style={shared.meta}>Sample {samples.findIndex(sample => sample.key === selected.key) + 1} of {samples.length}</Text><Pressable testID="course-next-sample" onPress={() => { const next = samples[(samples.findIndex(sample => sample.key === selected.key) + 1) % samples.length]; setSelectedKey(next.key); jump("sample"); }} style={s.inlineAction}><Text style={s.inlineActionText}>Next free sample</Text><Lucide name="arrow-right" size={17} color={colors.brand} /></Pressable></View>}
+    <View onLayout={event => { anchors.current.waitlist = event.nativeEvent.layout.y; }}><WaitlistSection prefix="course" /></View>
+    <Pressable testID="course-back-to-academy" onPress={() => router.navigate("/academy")} style={s.back}><Lucide name="arrow-left" size={18} color={colors.brand} /><Text style={s.inlineActionText}>Explore all learning paths</Text></Pressable>
+  </KeyboardAwareScrollView>;
 }
 
-const useStyles = makeStyles((c) => ({
-  abs: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
-  h1: { fontFamily: fonts.h900, fontSize: 32, color: c.white },
-  heroMeta: { fontFamily: fonts.b600, fontSize: 13, color: c.whiteA85 },
-  h2: { fontFamily: fonts.h900, fontSize: 20, color: c.onSurface },
-  h3: { fontFamily: fonts.h800, fontSize: 16, color: c.onSurface },
-  muted: { fontFamily: fonts.b500, fontSize: 12, color: c.muted },
-  card: { backgroundColor: c.white, borderWidth: 1, borderColor: c.border, borderRadius: 20, padding: 16, gap: 10 },
-  item: { fontFamily: fonts.b600, fontSize: 14, color: c.onSurfaceSecondary, flex: 1 },
-  sample: { backgroundColor: c.forest, borderRadius: 24, overflow: "hidden" },
-  player: { height: 150, backgroundColor: c.forestCard, alignItems: "center", justifyContent: "center", gap: 10 },
-  play: { width: 60, height: 60, borderRadius: 30, backgroundColor: c.brandSecondary, alignItems: "center", justifyContent: "center" },
-  playText: { fontFamily: fonts.b800, fontSize: 11, letterSpacing: 1, color: c.brandSecondary },
-  point: { flex: 1, fontFamily: fonts.b500, fontSize: 13, lineHeight: 19, color: c.white },
-  module: { backgroundColor: c.white, borderWidth: 1, borderColor: c.border, borderRadius: 18, overflow: "hidden" },
-  moduleHead: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: 56, paddingHorizontal: 14 },
-  moduleN: { fontFamily: fonts.h900, fontSize: 16, color: c.limeText },
-  moduleTitle: { flex: 1, fontFamily: fonts.h700, fontSize: 15, color: c.onSurface },
-  lesson: { flexDirection: "row", alignItems: "center", gap: 10, minHeight: 48, paddingHorizontal: 14, borderTopWidth: 1, borderTopColor: c.divider },
-  lessonTitle: { flex: 1, fontFamily: fonts.b600, fontSize: 13, color: c.onSurface },
-  free: { fontFamily: fonts.b800, fontSize: 10, color: c.onBrandTertiary, backgroundColor: c.brandTertiary, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2, overflow: "hidden" },
+export default function CoursePreview() {
+  const { id } = useLocalSearchParams<{ id: string }>(); const { colors } = useTheme(); const s = useStyles(); const shared = useAcademyStyles(); const router = useRouter();
+  const q = useQuery({ queryKey: ["course", id], queryFn: () => api.getCourse(id), retry: 1 });
+  return <Page title="Course preview" testID="course-preview-screen">{q.isPending ? <View style={shared.content} testID="course-loading"><Skeleton style={s.loadingTitle} /><Skeleton style={s.loadingImage} /><Skeleton style={s.loadingButton} /></View> : q.isError ? <View style={shared.content}><AcademyState testID="course-error" icon="wifi-off" title="Let’s try that again" description="The course couldn’t load. Check your connection and try again." action="Reload course" onPress={() => q.refetch()} /></View> : !q.data ? <View style={shared.content}><AcademyState testID="course-not-found" title="This path isn’t available" description="It may no longer be published. Explore the other learning paths in the Academy." action="Back to Academy" onPress={() => router.replace("/academy")} /></View> : <View style={{ flex: 1, backgroundColor: colors.surface }}><CourseContent key={q.data.id} course={q.data} refreshing={q.isRefetching} refresh={() => q.refetch()} /></View>}</Page>;
+}
+
+const useStyles = makeStyles(c => ({
+  heading: { paddingHorizontal: 4, paddingTop: 8, gap: 14 }, titleMeta: { flexDirection: "row", gap: 10, alignItems: "center", justifyContent: "space-between" }, level: { fontFamily: fonts.b700, fontSize: 10, color: c.onBrandTertiary, backgroundColor: c.brandTertiary, paddingHorizontal: 10, paddingVertical: 6 },
+  facts: { flexDirection: "row", paddingVertical: 18 }, fact: { flex: 1, alignItems: "center", gap: 8, paddingHorizontal: 5 }, factBorder: { borderLeftWidth: 1, borderLeftColor: c.border }, factValue: { fontFamily: fonts.b700, fontSize: 11, lineHeight: 18, color: c.onSurface, textAlign: "center" },
+  actions: { gap: 10 }, availability: { fontFamily: fonts.b400, fontSize: 10, lineHeight: 18, color: c.muted, textAlign: "center" },
+  outcomes: { gap: 18, paddingVertical: 24, borderTopWidth: 1, borderBottomWidth: 1, borderColor: c.borderStrong }, outcome: { flexDirection: "row", gap: 12, alignItems: "flex-start" }, outcomeText: { flex: 1, fontFamily: fonts.b500, fontSize: 14, lineHeight: 23, color: c.onSurfaceSecondary },
+  sampleSwitch: { flexDirection: "row", flexWrap: "wrap", gap: 12, justifyContent: "space-between", alignItems: "center" }, inlineAction: { minHeight: 44, flexDirection: "row", alignItems: "center", gap: 8 }, inlineActionText: { fontFamily: fonts.b700, fontSize: 12, color: c.brand }, back: { minHeight: 48, flexDirection: "row", gap: 10, alignItems: "center", justifyContent: "center" },
+  loadingTitle: { height: 90, borderRadius: 0 }, loadingImage: { height: 220, borderRadius: 0 }, loadingButton: { height: 50, borderRadius: 0 },
 }));

@@ -11,6 +11,7 @@ export type Article = {
   reads: number;
   image: string;
   body: string[];
+  featured?: boolean;
 };
 
 export const articleFilters = ["All", "Agronomy & Farm Tips", "Policy & Market", "Agri-Tech & Tools", "Weather Advisory", "Livestock & Dairy"];

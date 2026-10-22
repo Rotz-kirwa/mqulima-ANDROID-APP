@@ -1,0 +1,116 @@
+{
+  "project_title": "Mqulima News & Article Reader Refresh",
+  "app_type": "mobile_web_app (Expo React Native iOS/Android/Web)",
+  "design_archetype": "Swiss & Organic Precision (Sharp-Edge Editorial Blueprint)",
+  "emotional_tone": "Authoritative, trustworthy, sharp, clean agricultural intelligence",
+  "color_system": {
+    "surface": "#FAFBF9",
+    "surfaceSecondary": "#FFFFFF",
+    "surfaceTertiary": "#F1F5F9",
+    "surfaceForest": "#0F291E",
+    "onSurface": "#0F291E",
+    "onSurfaceSecondary": "#334155",
+    "onSurfaceTertiary": "#475569",
+    "muted": "#64748B",
+    "subtle": "#94A3B8",
+    "brandPrimary": "#16A34A",
+    "onBrandPrimary": "#FFFFFF",
+    "brandSecondary": "#85CC14",
+    "onBrandSecondary": "#0B2117",
+    "brandTertiary": "#E5F5D0",
+    "onBrandTertiary": "#35610D",
+    "border": "#E2E8F0",
+    "borderStrong": "#CBD5E1",
+    "forest": "#0F291E",
+    "forestCard": "#16382B",
+    "overlay": "rgba(11,33,23,0.92)",
+    "white": "#FFFFFF"
+  },
+  "typography": {
+    "fonts": {
+      "wordmark": "Lora-700",
+      "h600": "Outfit-600",
+      "h700": "Outfit-700",
+      "h800": "Outfit-800",
+      "h900": "Outfit-900",
+      "b400": "Jakarta-400",
+      "b500": "Jakarta-500",
+      "b600": "Jakarta-600",
+      "b700": "Jakarta-700",
+      "b800": "Jakarta-800"
+    },
+    "scale": {
+      "heroTitle": { "fontFamily": "Outfit-900", "fontSize": 24, "lineHeight": 28 },
+      "articleDetailTitle": { "fontFamily": "Outfit-900", "fontSize": 26, "lineHeight": 31 },
+      "sectionHeading": { "fontFamily": "Outfit-900", "fontSize": 22, "lineHeight": 26 },
+      "cardTitle": { "fontFamily": "Outfit-700", "fontSize": 15, "lineHeight": 20 },
+      "bodyLead": { "fontFamily": "Jakarta-600", "fontSize": 16, "lineHeight": 24 },
+      "bodyParagraph": { "fontFamily": "Jakarta-400", "fontSize": 15, "lineHeight": 25 },
+      "meta": { "fontFamily": "Jakarta-500", "fontSize": 12, "lineHeight": 16 },
+      "kicker": { "fontFamily": "Jakarta-800", "fontSize": 10, "letterSpacing": 1 }
+    }
+  },
+  "layout_and_geometry": {
+    "image_cards": "Sharp edges (borderRadius: 0) with crisp 1px borders (#E2E8F0)",
+    "featured_hero": "Sharp rectangular hero card (borderRadius: 0), 1px border (#CBD5E1), 380px height, sharp image framing, multi-stop gradient overlay",
+    "badges": "Sharp rectangular pills (borderRadius: 0 or 2px) with uppercase text",
+    "buttons": "Explicit sharp-edged or minimal radius CTA buttons with arrow icon triggers",
+    "spacing": {
+      "screenPadding": 16,
+      "cardGap": 12,
+      "sectionGap": 20,
+      "contentPadding": 16
+    }
+  },
+  "news_screen_blueprint": {
+    "file_path": "/app/frontend/app/(tabs)/news.tsx",
+    "key_upgrades": [
+      "Implement sharp-edged featured hero banner (borderRadius: 0) with clear gradient overlay for maximum readability.",
+      "Fix double-rendering bug: when category filter is 'All', slice the article list so the hero story is excluded from the main feed list (`q.data.slice(1)`).",
+      "Update article cards to sharp-edge style (borderRadius: 0) with crisp 1px borders, sharp thumbnail images (104x104px), category pills, author line, and dedicated Read touch target.",
+      "Enhance horizontal category filter bar with crisp sharp chips and proper testIDs (`news-filter-all`, `news-filter-[cat]`).",
+      "Preserve pull-to-refresh functionality, loading skeletons, and empty state handler with `testID='news-empty'`."
+    ]
+  },
+  "article_detail_blueprint": {
+    "file_path": "/app/frontend/app/article/[id].tsx",
+    "key_upgrades": [
+      "Use sharp hero banner image (aspectRatio: 16/10, borderRadius: 0) with crisp 1px border.",
+      "Improve typography hierarchy with Outfit-900 title, Jakarta-600 lead paragraph, and Jakarta-400 body copy.",
+      "Refine author block and metadata row.",
+      "Upgrade agronomist service request CTA box to a sharp forest-green container with clear action button `testID='article-request-service-btn'`.",
+      "Display related articles using sharp-edge ArticleCard components."
+    ]
+  },
+  "cards_component_blueprint": {
+    "file_path": "/app/frontend/src/components/Cards.tsx",
+    "key_upgrades": [
+      "Update `ArticleCard` container to sharp edges (`borderRadius: 0`), crisp 1px border (`borderColor: c.border`), sharp category badge, and standalone direct `Btn` call-to-action.",
+      "Keep `ProductCard` functional and compatible across the rest of the application."
+    ]
+  },
+  "accessibility_and_testing": {
+    "required_test_ids": [
+      "news-screen",
+      "news-list",
+      "news-featured-story",
+      "news-filter-all",
+      "news-item-0",
+      "news-empty",
+      "article-detail-screen",
+      "article-title",
+      "article-request-service-btn",
+      "article-card-[id]"
+    ]
+  },
+  "instructions_to_main_agent": [
+    "1. Refactor `/app/frontend/app/(tabs)/news.tsx` to apply sharp edges (`borderRadius: 0`) to all news image cards and the hero card.",
+    "2. Deduplicate articles: when filter is 'All', use `q.data?.[0]` for hero story and pass `q.data?.slice(1)` to `FlatList` data.",
+    "3. Refactor `/app/frontend/app/article/[id].tsx` for sharp image hero, elevated typography, and sharp CTA container.",
+    "4. Refactor `ArticleCard` in `/app/frontend/src/components/Cards.tsx` to match the sharp-edge architectural design system.",
+    "5. Ensure all interactive components have explicit testIDs and clear non-nested press handlers."
+  ]
+},
+  "overwrite": true,
+  "path": "/app/news_design_guidelines.json"
+}

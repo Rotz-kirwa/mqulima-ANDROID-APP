@@ -102,8 +102,19 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Upgrade Mqulima forum to a modern, world-class mobile discussion experience. Approved: topic filters, search, sorting, polished posting/replies, preserving brand identity. Prior migration requires baseline verification."
+user_problem_statement: "Current priority: do the same on the academy, the ui/ux is not well fixed make it proper. Approved: Academy and course previews, sharp-edged course cards, clearer learning paths, improved lesson previews, cleaner waitlist preserving live content. Prior admin/forum/news full E2E tasks were paused."
 backend:
+  - task: "Complete operations admin APIs and public data pipelines"
+    implemented: true
+    working: NA
+    file: "/app/backend/routes/admin.py"
+    stuck_count: 0
+    priority: high
+    needs_retesting: true
+    status_history:
+      - working: NA
+        agent: main
+        comment: "Implemented role/status/version guards, initial admin password change, login attempt limits, content models and management APIs, stock reservation, workflow states, moderation, managed image storage, service/category/course migration, public request/contact/waitlist persistence."
   - task: "Baseline JWT, Mongo catalog, forum and orders migration"
     implemented: true
     working: NA
@@ -116,6 +127,39 @@ backend:
         agent: main
         comment: "Prior session migrated APIs; smoke tested only. Verify baseline before forum upgrade."
 frontend:
+  - task: "Academy and course preview redesign"
+    implemented: true
+    working: NA
+    file: "/app/frontend/app/academy.tsx"
+    stuck_count: 0
+    priority: high
+    needs_retesting: true
+    status_history:
+      - working: NA
+        agent: main
+        comment: "Rebuilt Academy and course pages with news-aligned square imagery/cards/CTAs, level filters, live course/module/sample counts, real text lesson reader, accordion outline and jumps between sample/outline/waitlist. Waitlist reusable on both screens with validation/loading/error/success and duplicate-registration messaging. Removed fake video player, unsupported launch date and floating overlays. TypeScript/lint and screenshots of Academy -> Intermediate -> Crop Management -> read sample passed."
+  - task: "News editorial refresh and article reading journey"
+    implemented: true
+    working: NA
+    file: "/app/frontend/app/(tabs)/news.tsx"
+    stuck_count: 0
+    priority: high
+    needs_retesting: true
+    status_history:
+      - working: NA
+        agent: main
+        comment: "Implemented square image/card geometry, journal masthead, stronger featured story, standalone Read article controls, deduplicated hero/feed, live category filters, accurate empty/error/retry states, responsive editorial reader, actual sharing/copy and live related stories. Removed floating overlays on reading screens only. Homepage cards unchanged."
+  - task: "Mobile operations admin and public propagation"
+    implemented: true
+    working: NA
+    file: "/app/frontend/app/admin/"
+    stuck_count: 0
+    priority: high
+    needs_retesting: true
+    status_history:
+      - working: NA
+        agent: main
+        comment: "Admin login/security/overview/manage/list/editor/workflow screens implemented. Public content APIs connected incl home/service/course/news and request forms. Initial admin sign-in screenshot and lint/TypeScript checks passed."
   - task: "Forum redesign"
     implemented: true
     working: NA
@@ -137,12 +181,15 @@ metadata:
   run_ui: true
 test_plan:
   current_focus:
-    - "Baseline JWT, Mongo catalog, forum and orders migration"
-    - "Forum redesign"
+    - "Academy and course preview redesign"
   stuck_tasks: []
   test_all: false
   test_priority: high_first
 agent_communication:
+  - agent: main
+    message: "Current focused test: Academy/course public UI plus GET courses/course and POST academy/waitlist backend. Do not change admin credentials or exercise unrelated admin workflows. Verify sharp geometry, no horizontal overflow 320/390, level filters, course CTAs, accordion, text sample, unavailable lesson -> waitlist, actual waitlist persistence and duplicate, validation/error/retry states. Clean only test-created waitlist entries. Previously paused admin/forum/news tasks remain pending."
+  - agent: main
+    message: "User reprioritised News refresh. Scope tests to news/article pages, categories, featured/read actions, sharing, related stories and admin publication visibility ONLY. Do not change administrator initial credentials for these tests. Full admin/forum E2E remains pending from paused tasks; no need to exercise unrelated admin workflows. Native phone rendering/upload tests are not performed by browser preview."
   - agent: main
     message: "Baseline only: verify registration/login, 189-item catalog, local cart persistence, backend checkout/order history, forum posting/replies/likes. Current UI has known design clutter and fake share toast slated for replacement. Existing account in memory/test_credentials.md. No implementation changes yet."
   - agent: main

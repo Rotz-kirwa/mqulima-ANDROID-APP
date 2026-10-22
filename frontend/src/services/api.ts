@@ -2,8 +2,8 @@
 import type { Article } from "@/src/data/articles";
 import type { Product } from "@/src/data/products";
 import type { Thread, Comment } from "@/src/data/forum";
-import { getSubService, serviceCategories, ServiceCategory } from "@/src/data/services";
-import { courses } from "@/src/data/academy";
+import type { ServiceCategory, SubService } from "@/src/data/services";
+import type { Course } from "@/src/data/academy";
 import { marketPrices } from "@/src/data/tools";
 import { aiReplies, aiFallback } from "@/src/data/pages";
 import { storage } from "@/src/utils/storage";
@@ -14,7 +14,7 @@ export const PAGE_SIZE = 24;
 export const TOKEN_KEY = "auth_token";
 const BASE = `${process.env.EXPO_PUBLIC_BACKEND_URL}/api`;
 
-export type User = { id: string; name: string; email: string; phone: string; county: string };
+export type User = { id: string; name: string; email: string; phone: string; county: string; role?: "admin" | "customer"; status?: string; must_change_password?: boolean };
 export type AuthResponse = { access_token: string; user: User };
 export type OrderItem = { key: string; productId: string; name: string; image: string; variant?: string | null; price: number; qty: number };
 export type Order = { id: string; date: string; items: OrderItem[]; subtotal: number; delivery: number; total: number; county: string; subcounty: string; location: string; phone: string; status: string };
@@ -28,7 +28,7 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+export async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = await storage.secureGet(TOKEN_KEY, "");
   const headers: Record<string, string> = { "Content-Type": "application/json", ...(init.headers as Record<string, string>) };
   if (token) headers.Authorization = `Bearer ${token}`;
@@ -80,18 +80,23 @@ export const api = {
   // ---- Search (products + articles from API, services local) ----
   search: async (q: string) => {
     const t = q.trim().toLowerCase();
-    const services = t ? serviceCategories.flatMap((c) => c.subs.filter((s) => s.title.toLowerCase().includes(t)).map((s) => ({ ...s, categoryId: c.id }))) : [];
+    const categories = t ? await request<ServiceCategory[]>("/services/categories") : [];
+    const services = categories.flatMap((c) => c.subs.filter((s) => s.title.toLowerCase().includes(t)).map((s) => ({ ...s, categoryId: c.id })));
     if (!t) return { products: [] as Product[], articles: [] as Article[], services };
     const r = await request<{ products: Product[]; articles: Article[] }>(`/search?q=${encodeURIComponent(q)}`);
     return { ...r, services };
   },
 
   // ---- Static content (services, academy, tools) ----
-  getServiceCategories: (): Promise<ServiceCategory[]> => delay(serviceCategories),
-  getServiceCategory: (id: string): Promise<ServiceCategory | undefined> => delay(serviceCategories.find((c) => c.id === id)),
-  getSubService: (id: string) => delay(getSubService(id)),
-  getCourses: () => delay(courses),
-  getCourse: (id: string) => delay(courses.find((c) => c.id === id)),
+  getServiceCategories: () => request<ServiceCategory[]>("/services/categories"),
+  getServiceCategory: (id: string) => request<ServiceCategory>(`/services/categories/${encodeURIComponent(id)}`).catch((e: ApiError) => e.status === 404 ? undefined : Promise.reject(e)),
+  getSubService: (id: string) => request<{ sub: SubService; category: ServiceCategory; price: string; steps: { title: string; text: string }[]; includes: string[] }>(`/services/${encodeURIComponent(id)}`).catch((e: ApiError) => e.status === 404 ? undefined : Promise.reject(e)),
+  getCourses: () => request<Course[]>("/courses"),
+  getCourse: (id: string) => request<Course>(`/courses/${encodeURIComponent(id)}`).catch((e: ApiError) => e.status === 404 ? undefined : Promise.reject(e)),
+  submitServiceRequest: (body: Record<string, string>) => request<{ id: string }>("/service-requests", { method: "POST", body: JSON.stringify(body) }),
+  submitContact: (body: Record<string, string>) => request<{ id: string }>("/contact", { method: "POST", body: JSON.stringify(body) }),
+  joinWaitlist: (email: string) => request<{ status: string }>("/academy/waitlist", { method: "POST", body: JSON.stringify({ email }) }),
+  changePassword: (current_password: string, new_password: string) => request<AuthResponse>("/auth/password", { method: "POST", body: JSON.stringify({ current_password, new_password }) }),
   getMarketPrices: () => delay(marketPrices),
 
   /** Real Mqulima AI (Gemini 3.1 Pro) via backend SSE stream. Calls onDelta for each text chunk. */

@@ -96,6 +96,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setUser(null);
         queryClient.removeQueries({ queryKey: ["orders"] });
         queryClient.removeQueries({ queryKey: ["my-threads"] });
+        queryClient.removeQueries({ queryKey: ["admin"] });
+        queryClient.removeQueries({ queryKey: ["admin-session"] });
+        queryClient.invalidateQueries({ queryKey: ["forum-feed"] });
+        queryClient.invalidateQueries({ queryKey: ["thread"] });
         queryClient.invalidateQueries({ queryKey: ["threads"] });
       },
       addToCart: (item, qty = 1) =>

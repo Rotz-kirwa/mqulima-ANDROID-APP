@@ -1,165 +1,44 @@
-import React, { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import React, { useRef, useState } from "react";
+import { Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
-import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
+import { useQuery } from "@tanstack/react-query";
+import { KeyboardAwareScrollView, KeyboardAwareScrollViewRef } from "react-native-keyboard-controller";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Lucide } from "@react-native-vector-icons/lucide";
-import Animated, { FadeInDown, ZoomIn } from "react-native-reanimated";
-import { Page, useStackBottom } from "@/src/components/Page";
-import { Btn, Body } from "@/src/components/ui";
-import { Field, EMAIL_RE } from "@/src/components/Form";
-import { academy } from "@/src/data/pages";
-import { courses } from "@/src/data/academy";
-import { Image } from "@/src/components/Img";
+import Animated, { FadeInDown } from "react-native-reanimated";
+import { Page } from "@/src/components/Page";
+import { Skeleton } from "@/src/components/Skeleton";
+import { AcademyState, CourseCard, useAcademyStyles } from "@/src/components/academy/AcademyUI";
+import { WaitlistSection } from "@/src/components/academy/WaitlistSection";
+import { api } from "@/src/services/api";
 import { fonts, makeStyles, useTheme } from "@/src/theme";
 
-const FEATURES = [
-  { icon: "circle-play", title: "Video courses", text: "Certified, practical lessons you can watch anywhere." },
-  { icon: "users", title: "Expert masterclasses", text: "Live sessions with agronomists and vets." },
-  { icon: "award", title: "Certificates", text: "Earn proof of skill for every completed track." },
-];
-
 export default function Academy() {
-  const s = useStyles();
-  const { colors } = useTheme();
-  const router = useRouter();
-  const bottom = useStackBottom();
-  const [email, setEmail] = useState("");
-  const [err, setErr] = useState("");
-  const [joined, setJoined] = useState(false);
-
-  const links = [
-    { id: "products", icon: "shopping-bag", label: "Browse Products", route: "/(tabs)/shop" },
-    { id: "services", icon: "briefcase", label: "Explore Specialist Services", route: "/services" },
-    { id: "tools", icon: "wrench", label: "View Tools", route: "/tools" },
-  ];
-
-  return (
-    <Page title="Academy" testID="academy-screen">
-      <KeyboardAwareScrollView bottomOffset={24} contentContainerStyle={{ padding: 16, gap: 24, paddingBottom: bottom }}>
-        {/* Hero */}
-        <View style={s.hero}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-            <View style={s.mh}><Text style={s.mhText}>MH</Text></View>
-            <View style={{ flex: 1 }}>
-              <Text style={s.brand}>{academy.badge}</Text>
-              <Text style={s.kicker}>{academy.sub.toUpperCase()}</Text>
-            </View>
-          </View>
-          <Animated.Text entering={ZoomIn.duration(600)} style={s.soon} testID="academy-coming-soon">
-            COMING{"\n"}<Text style={{ color: colors.brandSecondary }}>SOON!!</Text>
-          </Animated.Text>
-          <Body dark style={{ fontSize: 14, lineHeight: 22 }}>{academy.text}</Body>
-          <Btn testID="academy-browse-products-btn" full variant="orange" label="Browse Products" onPress={() => router.navigate("/(tabs)/shop")} />
-        </View>
-
-        {/* What's coming */}
-        <View style={{ gap: 12 }}>
-          <Text style={s.h2}>What&apos;s coming</Text>
-          {FEATURES.map((f, i) => (
-            <Animated.View key={f.title} entering={FadeInDown.delay(100 + i * 80)} style={s.feature}>
-              <View style={s.fIcon}><Lucide name={f.icon as any} size={20} color={colors.onBrandTertiary} /></View>
-              <View style={{ flex: 1, gap: 2 }}>
-                <Text style={s.fTitle}>{f.title}</Text>
-                <Text style={s.fText}>{f.text}</Text>
-              </View>
-            </Animated.View>
-          ))}
-        </View>
-
-        {/* Learning tracks */}
-        <View style={{ gap: 12 }}>
-          <Text style={s.h2}>Preview the courses</Text>
-          <Text style={[s.fText, { marginTop: -6 }]}>Tap a track to see its outline and a free sample lesson.</Text>
-          {courses.map((c) => (
-            <Pressable key={c.id} testID={`academy-course-${c.id}`} onPress={() => router.push(`/course/${c.id}`)} style={({ pressed }) => [s.course, pressed && { opacity: 0.9 }]}>
-              <Image source={{ uri: c.image }} style={s.courseImg} contentFit="cover" transition={300} />
-              <View style={{ flex: 1, gap: 4, paddingVertical: 4 }}>
-                <Text style={s.courseMeta}>TRACK {c.n} • {c.level.toUpperCase()}</Text>
-                <Text style={s.fTitle}>{c.title}</Text>
-                <Text style={s.fText} numberOfLines={2}>{c.text}</Text>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 }}>
-                  <Lucide name="circle-play" size={14} color={colors.brandPrimary} />
-                  <Text style={s.courseLink}>{c.duration} • Free preview</Text>
-                </View>
-              </View>
-            </Pressable>
-          ))}
-        </View>
-
-        {/* Waitlist */}
-        <View style={s.wait}>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-            <Text style={s.waitTitle}>{academy.waitlist}</Text>
-            <View style={s.free}><Text style={s.freeText}>{academy.free}</Text></View>
-          </View>
-          <Text style={s.fText}>Be first to know when courses go live.</Text>
-          {joined ? (
-            <View style={s.joined} testID="academy-waitlist-success">
-              <Lucide name="circle-check" size={20} color={colors.brandPrimary} />
-              <Text style={s.joinedText}>You&apos;re on the waitlist! We&apos;ll email {email} at launch.</Text>
-            </View>
-          ) : (
-            <>
-              <Field testID="academy-email-input" label="Email address" value={email} onChangeText={(v) => { setEmail(v); setErr(""); }} placeholder="you@example.com" keyboardType="email-address" autoCapitalize="none" error={err} />
-              <Btn testID="academy-join-waitlist-btn" full variant="green" label="Join Waitlist" onPress={() => (EMAIL_RE.test(email.trim()) ? setJoined(true) : setErr("Enter a valid email address"))} />
-            </>
-          )}
-        </View>
-
-        {/* Explore meanwhile */}
-        <View style={{ gap: 10 }}>
-          <Text style={s.h2}>Explore in the meantime</Text>
-          <View style={s.linkCard}>
-            {links.map((l, i) => (
-              <Pressable
-                key={l.id}
-                testID={`academy-link-${l.id}`}
-                onPress={() => router.push(l.route as any)}
-                style={({ pressed }) => [s.linkRow, i > 0 && s.linkDivider, pressed && { opacity: 0.7 }]}
-              >
-                <Lucide name={l.icon as any} size={20} color={colors.brandPrimary} />
-                <Text style={s.linkText}>{l.label}</Text>
-                <Lucide name="chevron-right" size={18} color={colors.subtle} />
-              </Pressable>
-            ))}
-          </View>
-        </View>
-
-        <Pressable testID="academy-back-home-btn" onPress={() => router.navigate("/")} style={s.back}>
-          <Lucide name="house" size={16} color={colors.muted} />
-          <Text style={s.backText}>Back to Home  •  {academy.handle}</Text>
-        </Pressable>
-      </KeyboardAwareScrollView>
-    </Page>
-  );
+  const s = useStyles(); const shared = useAcademyStyles(); const { colors } = useTheme(); const insets = useSafeAreaInsets(); const router = useRouter();
+  const scroll = useRef<KeyboardAwareScrollViewRef>(null); const waitlistY = useRef(0);
+  const [level, setLevel] = useState("All");
+  const q = useQuery({ queryKey: ["courses"], queryFn: api.getCourses, retry: 1 });
+  const courses = (q.data ?? []).filter(course => level === "All" || course.level === level);
+  const levels = [...new Set(["All", "Beginner", "Intermediate", "Advanced", ...(q.data ?? []).map(course => course.level)])];
+  const links = [{ id: "products", label: "Find the right farm inputs", caption: "Explore AgroShop", icon: "shopping-bag", route: "/(tabs)/shop" }, { id: "services", label: "Put your learning into practice", caption: "Explore agricultural services", icon: "sprout", route: "/services" }, { id: "tools", label: "Make more informed decisions", caption: "Explore farm tools", icon: "wrench", route: "/tools" }];
+  return <Page title="Academy" testID="academy-screen"><KeyboardAwareScrollView ref={scroll} testID="academy-scroll" bottomOffset={24} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={[shared.content, { paddingBottom: insets.bottom + 28 }]} refreshControl={<RefreshControl refreshing={q.isRefetching} onRefresh={() => q.refetch()} tintColor={colors.brand} />}>
+    <View style={s.masthead}><View style={s.eyebrowRow}><View style={s.rule} /><Text testID="academy-eyebrow" style={shared.kicker}>MQULIMA ACADEMY</Text></View><Text testID="academy-heading" style={shared.h1}>Grow your{`\n`}knowledge<Text style={s.accent}>.</Text></Text><Text testID="academy-description" style={shared.body}>Practical learning for better decisions on your farm.</Text><View style={s.statusRow}><Text testID="academy-preview-status" style={s.available}>FREE PREVIEWS AVAILABLE</Text><Pressable testID="academy-header-waitlist" accessibilityLabel="Go to Academy waitlist" onPress={() => scroll.current?.scrollTo({ y: Math.max(0, waitlistY.current - 12), animated: true })} style={s.waitlistLink}><Text style={s.waitlistLinkText}>Join the waitlist</Text><Lucide name="arrow-down" size={14} color={colors.brand} /></Pressable></View></View>
+    <View style={s.section}><View style={s.sectionHeading}><Text testID="academy-paths-heading" style={shared.h2}>Find your learning path</Text>{q.data && <Text testID="academy-course-count" style={shared.meta}>{courses.length} {courses.length === 1 ? "path" : "paths"}</Text>}</View><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filters} testID="academy-level-filters">{levels.map(item => <Pressable testID={`academy-filter-${item.toLowerCase().replace(/\W+/g, "-")}`} key={item} accessibilityRole="tab" accessibilityState={{ selected: level === item }} onPress={() => setLevel(item)} style={({ pressed }) => [s.filter, item === level && s.filterActive, pressed && shared.pressed]}><Text style={[s.filterText, item === level && s.filterActiveText]}>{item === "All" ? "All paths" : item}</Text></Pressable>)}</ScrollView></View>
+    {q.isPending ? <View testID="academy-courses-loading" style={s.section}><Skeleton style={s.loadingImage} /><Skeleton style={s.loadingTitle} /><Skeleton style={s.loadingButton} /></View> : q.isError && !q.data ? <AcademyState testID="academy-courses-error" icon="wifi-off" title="Let’s get you back to learning" description="We couldn’t load the courses. Check your connection and try again." action="Reload learning paths" onPress={() => q.refetch()} /> : !courses.length ? <AcademyState testID="academy-courses-empty" title="More learning is on the way" description={level === "All" ? "No courses are published just yet. Join the waitlist for future course access." : "There are no published paths at this level yet. Explore the other levels."} action={level === "All" ? "View the waitlist" : "Explore all paths"} onPress={() => level === "All" ? scroll.current?.scrollTo({ y: waitlistY.current, animated: true }) : setLevel("All")} /> : <View style={s.courseList}>{courses.map((course, index) => <Animated.View key={course.id} entering={FadeInDown.duration(240).delay(Math.min(index, 2) * 60)}><CourseCard course={course} featured={index === 0} /></Animated.View>)}</View>}
+    {q.isRefetchError && q.data && <View testID="academy-refresh-error" style={s.refreshError}><Text style={[shared.body, { flex: 1 }]}>Couldn’t refresh. Showing the last loaded courses.</Text><Pressable testID="academy-refresh-retry" onPress={() => q.refetch()} style={s.waitlistLink}><Text style={s.waitlistLinkText}>Retry</Text></Pressable></View>}
+    <View style={s.learningNote}><Lucide name="book-open" size={23} color={colors.brand} /><View style={shared.flex}><Text testID="academy-availability-title" style={shared.h3}>Start with a free lesson.</Text><Text testID="academy-availability-description" style={shared.body}>Explore course outlines and text-based samples today. Full courses are still being prepared.</Text></View></View>
+    <View onLayout={event => { waitlistY.current = event.nativeEvent.layout.y; }}><WaitlistSection /></View>
+    <View style={s.section}><Text testID="academy-explore-heading" style={shared.h2}>Keep growing with Mqulima</Text>{links.map(link => <Pressable key={link.id} testID={`academy-link-${link.id}`} onPress={() => router.push(link.route as any)} style={({ pressed }) => [s.exploreLink, pressed && shared.pressed]}><Lucide name={link.icon as any} size={22} color={colors.brand} /><View style={shared.flex}><Text style={s.exploreTitle}>{link.label}</Text><Text style={shared.meta}>{link.caption}</Text></View><Lucide name="arrow-up-right" size={19} color={colors.brand} /></Pressable>)}</View>
+  </KeyboardAwareScrollView></Page>;
 }
 
-const useStyles = makeStyles((c) => ({
-  hero: { backgroundColor: c.forest, borderRadius: 28, padding: 24, gap: 20 },
-  mh: { width: 48, height: 48, borderRadius: 14, backgroundColor: c.brandSecondary, alignItems: "center", justifyContent: "center" },
-  mhText: { fontFamily: fonts.h900, fontSize: 17, color: c.forestDeep },
-  brand: { fontFamily: fonts.h800, fontSize: 17, color: c.white },
-  kicker: { fontFamily: fonts.b800, fontSize: 11, letterSpacing: 1.2, color: c.brandSecondary, marginTop: 2 },
-  soon: { fontFamily: fonts.h900, fontSize: 52, lineHeight: 54, color: c.white, letterSpacing: -1 },
-  h2: { fontFamily: fonts.h900, fontSize: 20, color: c.onSurface },
-  feature: { flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: c.white, borderWidth: 1, borderColor: c.border, borderRadius: 20, padding: 16 },
-  fIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: c.brandTertiary, alignItems: "center", justifyContent: "center" },
-  fTitle: { fontFamily: fonts.h700, fontSize: 15, color: c.onSurface },
-  fText: { fontFamily: fonts.b400, fontSize: 13, lineHeight: 19, color: c.onSurfaceTertiary },
-  course: { flexDirection: "row", gap: 14, backgroundColor: c.white, borderWidth: 1, borderColor: c.border, borderRadius: 20, padding: 10 },
-  courseImg: { width: 96, height: 112, borderRadius: 14 },
-  courseMeta: { fontFamily: fonts.b800, fontSize: 10, letterSpacing: 1, color: c.limeText },
-  courseLink: { fontFamily: fonts.b700, fontSize: 12, color: c.brandPrimary },
-  wait: { backgroundColor: c.white, borderWidth: 1, borderColor: c.border, borderRadius: 24, padding: 20, gap: 14 },
-  waitTitle: { fontFamily: fonts.h800, fontSize: 18, color: c.onSurface, flexShrink: 1 },
-  free: { backgroundColor: c.brandTertiary, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
-  freeText: { fontFamily: fonts.b800, fontSize: 11, color: c.onBrandTertiary },
-  joined: { flexDirection: "row", gap: 10, alignItems: "center", backgroundColor: c.brandTertiary, borderRadius: 14, padding: 14 },
-  joinedText: { flex: 1, fontFamily: fonts.b600, fontSize: 14, lineHeight: 20, color: c.onBrandTertiary },
-  linkCard: { backgroundColor: c.white, borderWidth: 1, borderColor: c.border, borderRadius: 20, paddingHorizontal: 16 },
-  linkRow: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: 56 },
-  linkDivider: { borderTopWidth: 1, borderTopColor: c.divider },
-  linkText: { flex: 1, fontFamily: fonts.b700, fontSize: 14, color: c.onSurface },
-  back: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 48 },
-  backText: { fontFamily: fonts.b600, fontSize: 13, color: c.muted },
+const useStyles = makeStyles(c => ({
+  masthead: { paddingHorizontal: 4, paddingTop: 8, gap: 10 }, eyebrowRow: { flexDirection: "row", alignItems: "center", gap: 8 }, rule: { width: 22, height: 2, backgroundColor: c.brand }, accent: { color: c.limeText },
+  statusRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", columnGap: 8 }, available: { fontFamily: fonts.b800, fontSize: 8, letterSpacing: 0.8, color: c.brand },
+  waitlistLink: { minHeight: 44, minWidth: 44, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 }, waitlistLinkText: { fontFamily: fonts.b700, fontSize: 10, color: c.brand },
+  section: { gap: 14 }, sectionHeading: { flexDirection: "row", flexWrap: "wrap", alignItems: "baseline", gap: 8, justifyContent: "space-between" },
+  filters: { gap: 8 }, filter: { minHeight: 44, paddingHorizontal: 14, justifyContent: "center", borderWidth: 1, borderColor: c.border, borderRadius: 0, backgroundColor: c.surfaceSecondary }, filterActive: { backgroundColor: c.brand, borderColor: c.brand }, filterText: { fontFamily: fonts.b600, fontSize: 11, color: c.onSurfaceTertiary }, filterActiveText: { color: c.onBrand },
+  courseList: { gap: 16 }, learningNote: { flexDirection: "row", gap: 14, paddingVertical: 24, borderTopWidth: 1, borderBottomWidth: 1, borderColor: c.borderStrong },
+  exploreLink: { flexDirection: "row", alignItems: "center", gap: 14, minHeight: 80, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: c.border }, exploreTitle: { fontFamily: fonts.b600, fontSize: 12, lineHeight: 19, color: c.onSurface },
+  refreshError: { flexDirection: "row", gap: 12, alignItems: "center" }, loadingImage: { height: 180, borderRadius: 0 }, loadingTitle: { height: 75, borderRadius: 0 }, loadingButton: { height: 50, borderRadius: 0 },
 }));

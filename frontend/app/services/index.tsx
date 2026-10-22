@@ -73,7 +73,7 @@ export default function Services() {
             </View>
             <View style={s.chipRow}>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 16, alignItems: "center" }}>
-                <Chip testID="services-filter-all" label="All (8)" active={cat === "all"} onPress={() => setCat("all")} />
+                <Chip testID="services-filter-all" label={`All (${q.data?.length ?? 0})`} active={cat === "all"} onPress={() => setCat("all")} />
                 {(q.data ?? []).map((c) => <Chip key={c.id} testID={`services-filter-${c.id}`} label={`${c.title} (${c.subs.length})`} active={cat === c.id} onPress={() => setCat(c.id)} />)}
               </ScrollView>
             </View>

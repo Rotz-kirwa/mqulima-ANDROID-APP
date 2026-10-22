@@ -24,6 +24,9 @@ export default function Home() {
   const bottom = useTabBottom();
   const featured = useQuery({ queryKey: ["featured"], queryFn: api.getFeaturedProducts });
   const latest = useQuery({ queryKey: ["articles", "All"], queryFn: () => api.getArticles("All") });
+  const services = useQuery({ queryKey: ["serviceCategories"], queryFn: api.getServiceCategories });
+  const courses = useQuery({ queryKey: ["courses"], queryFn: api.getCourses });
+  const serviceCards = (services.data ?? []).slice(0, 6).map(c => ({ ...c, category: c.id, items: c.subs.map(item => item.title), icon: H.homeServiceCards.find(original => original.category === c.id)?.icon || "sprout" }));
   const cardW = (width - 32 - 12) / 2;
 
   return (
@@ -134,7 +137,7 @@ export default function Home() {
         <View style={[s.section, { backgroundColor: colors.surface, borderTopWidth: 1, borderColor: colors.border }]}>
           <SectionTitle badge={H.servicesIntro.badge} title={H.servicesIntro.title} highlight={H.servicesIntro.highlight} />
           <Body>{H.servicesIntro.text}</Body>
-          {H.homeServiceCards.map((c) => (
+          {serviceCards.map((c) => (
             <View key={c.title} style={s.svcCard} testID={`home-service-card-${c.category}`}>
               <View style={{ height: 200 }}>
                 <Image source={{ uri: c.image }} style={StyleSheetAbs} contentFit="cover" transition={300} />
@@ -162,7 +165,7 @@ export default function Home() {
           <SectionTitle badge={H.academyIntro.badge} title={H.academyIntro.title} highlight={H.academyIntro.highlight} />
           <Body>{H.academyIntro.text}</Body>
           <Btn testID="home-visit-academy-btn" label="Visit Academy" onPress={() => router.push("/academy")} />
-          {H.academyIntro.steps.map((st) => (
+          {(courses.data ?? []).map((st) => (
             <View key={st.n} style={s.stepCard}>
               <Text style={s.stepN}>{st.n}</Text>
               <View style={{ flex: 1 }}>

@@ -103,7 +103,7 @@ export default function Checkout() {
             <Text style={s.h3}>Total</Text>
             <Text style={s.total} testID="checkout-total">{ksh(total + delivery)}</Text>
           </View>
-          <Text style={s.lineName}>Payment: M-Pesa on confirmation (secure escrow)</Text>
+          <Text style={s.lineName}>Payment: M-Pesa arranged on confirmation. No payment is collected in this app.</Text>
         </View>
         <Btn testID="checkout-place-order-btn" full variant="green" label={cart.length ? (user ? "Place Order" : "Sign In to Place Order") : "Cart is empty"} loading={loading} onPress={cart.length ? submit : () => router.navigate("/(tabs)/shop")} />
       </KeyboardAwareScrollView>

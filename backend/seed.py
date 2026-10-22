@@ -33,3 +33,16 @@ async def seed_if_empty() -> None:
     await db.threads.create_index("id", unique=True)
     await db.threads.create_index([("created_at", -1)])
     await db.orders.create_index([("user_id", 1), ("date", -1)])
+    operations_file = Path(__file__).parent / "operations_seed.json"
+    if operations_file.exists():
+        operations_data = json.loads(operations_file.read_text())
+        for collection, documents in operations_data.items():
+            if await db[collection].count_documents({}) == 0:
+                await db[collection].insert_many(documents)
+            await db[collection].create_index("id", unique=True)
+    await db.login_limits.create_index("key", unique=True)
+    await db.login_limits.create_index("expires_at", expireAfterSeconds=0)
+    await db.audit.create_index([("created_at", -1)])
+    await db.waitlist.create_index("email", unique=True)
+    await db.service_requests.create_index([("status", 1), ("created_at", -1)])
+    await db.inbox.create_index([("status", 1), ("created_at", -1)])

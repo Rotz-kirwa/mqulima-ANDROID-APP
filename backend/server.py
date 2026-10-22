@@ -1,4 +1,5 @@
 import logging
+import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import APIRouter, FastAPI
@@ -6,7 +7,8 @@ from starlette.middleware.cors import CORSMiddleware
 
 from db import client
 from seed import seed_if_empty
-from routes import ai, auth, catalog, forum, orders
+from routes import ai, auth, catalog, forum, orders, admin, content, media
+from starlette.concurrency import run_in_threadpool
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
@@ -14,7 +16,14 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(level
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     await seed_if_empty()
+    async def warm_storage():
+        try:
+            await run_in_threadpool(media.init_storage)
+        except Exception:
+            logging.warning("Image storage warmup unavailable; uploads will retry on demand")
+    storage_task = asyncio.create_task(warm_storage())
     yield
+    storage_task.cancel()
     client.close()
 
 
@@ -36,7 +45,7 @@ async def root():
     return {"message": "Mqulima API"}
 
 
-for r in (auth.router, catalog.router, forum.router, orders.router, ai.router):
+for r in (auth.router, catalog.router, forum.router, orders.router, ai.router, content.router, media.router, admin.router):
     api_router.include_router(r)
 
 app.include_router(api_router)

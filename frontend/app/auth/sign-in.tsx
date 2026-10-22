@@ -32,7 +32,7 @@ export default function SignIn() {
       const r = await api.login(email.trim(), pw);
       await signIn(r.access_token, r.user);
       toast(`Welcome back, ${r.user.name}!`);
-      router.replace("/account");
+      router.replace(r.user.role === "admin" ? (r.user.must_change_password ? "/admin/security" : "/admin") : "/account");
     } catch (err: any) {
       setE({ pw: err?.message ?? "Sign in failed. Please try again." });
     } finally {

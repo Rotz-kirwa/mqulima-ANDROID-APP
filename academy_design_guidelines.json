@@ -1,0 +1,142 @@
+{
+  "project_name": "Mqulima Academy UI/UX Refresh Blueprint",
+  "design_persona": "E1 Anti-AI Designer - Swiss Editorial & Precision Agriculture",
+  "app_type": "mobile_web_app",
+  "theme": "Light theme default with deep forest dark accents (#0F291E)",
+  "typography": {
+    "fonts": {
+      "wordmark": "Lora-700",
+      "h600": "Outfit-600",
+      "h700": "Outfit-700",
+      "h800": "Outfit-800",
+      "h900": "Outfit-900",
+      "b400": "Jakarta-400",
+      "b500": "Jakarta-500",
+      "b600": "Jakarta-600",
+      "b700": "Jakarta-700",
+      "b800": "Jakarta-800"
+    },
+    "hierarchy_rules": {
+      "hero_title": "text-4xl (32px-36px), Outfit-900, tight tracking (-0.5px)",
+      "section_h2": "text-2xl (20px-24px), Outfit-800, color: #0F291E",
+      "card_title": "text-lg (18px), Outfit-700, letterSpacing: -0.25px",
+      "body_text": "text-sm (13px-14px), Jakarta-400/500, lineHeight: 21px-23px",
+      "meta_labels": "text-xs (10px-11px), Jakarta-800, uppercase, letterSpacing: 1.15px"
+    }
+  },
+  "colors": {
+    "surface": "#FAFBF9",
+    "surfaceSecondary": "#FFFFFF",
+    "onSurface": "#0F291E",
+    "onSurfaceSecondary": "#334155",
+    "onSurfaceTertiary": "#475569",
+    "brand": "#1A5438",
+    "brandPrimary": "#16A34A",
+    "brandSecondary": "#85CC14",
+    "onBrandSecondary": "#0B2117",
+    "brandTertiary": "#E5F5D0",
+    "onBrandTertiary": "#35610D",
+    "forest": "#0F291E",
+    "forestCard": "#16382B",
+    "border": "#E2E8F0",
+    "borderStrong": "#CBD5E1",
+    "muted": "#64748B",
+    "subtle": "#94A3B8"
+  },
+  "design_principles_and_news_page_alignment": {
+    "sharp_edges_mandate": "All course cards, thumbnails, preview containers, and CTAs MUST have borderRadius: 0 matching NewsUI.tsx editorial design language.",
+    "cta_button_styling": "Primary actions use rectangular sharp-edged buttons with side arrow boxes, bold uppercase typography, and zero rounded corners.",
+    "content_reprioritization": "Buried coming-soon marketing is removed from top. Actual learning tracks from MongoDB/API appear immediately at the top with level filters.",
+    "no_fake_elements": "STRICT PROHIBITION of fake video players, fake reviews, learner counts, certification badges, or invented launch dates. Lesson previews are 100% text-based."
+  },
+  "screen_hierarchy": {
+    "academy_page": [
+      {
+        "section": "Header & Level Filter Pills",
+        "description": "Compact page title with editorial pill selector (ALL, BEGINNER, INTERMEDIATE, ADVANCED) allowing fast discovery.",
+        "testID_prefix": "academy-filter-"
+      },
+      {
+        "section": "Featured Learning Track (Hero)",
+        "description": "Sharp-edged hero course card using NewsUI FeaturedStory layout: top aspect-ratio image, IN FOCUS badge, level tag, title, outcome excerpt, and Read/Preview CTA.",
+        "testID": "academy-featured-course"
+      },
+      {
+        "section": "Live Published Courses List",
+        "description": "Sharp-edged horizontal story card stack matching NewsStoryCard layout with course thumbnail on right, level tag, title, duration, and Preview CTA.",
+        "testID_prefix": "academy-course-"
+      },
+      {
+        "section": "Free Text Lesson Sample Spotlight",
+        "description": "Forest-green dark block showcasing key text takeaways of the selected preview lesson, featuring clear bullet points and readable typography.",
+        "testID": "academy-lesson-spotlight"
+      },
+      {
+        "section": "Persistent Email Waitlist",
+        "description": "Clean, sharp-edged rectangular waitlist box with crisp field inputs and green rectangular submit CTA.",
+        "testID": "academy-waitlist-section"
+      },
+      {
+        "section": "Ecosystem Exploration Links",
+        "description": "Sharp divider links to Shop, Specialist Services, and Tools.",
+        "testID_prefix": "academy-link-"
+      }
+    ],
+    "course_detail_page": [
+      {
+        "section": "Course Editorial Banner",
+        "description": "Sharp image header with dark gradient overlay, track pill, level badge, title, and duration.",
+        "testID": "course-hero-banner"
+      },
+      {
+        "section": "Learning Outcomes",
+        "description": "Sharp white card with check icon list of verified outcomes.",
+        "testID": "course-outcomes-card"
+      },
+      {
+        "section": "Free Text Lesson Reader",
+        "description": "Expanded forest card featuring the full text summary and actionable key points for the preview lesson (no fake video controls).",
+        "testID": "course-sample-lesson-reader"
+      },
+      {
+        "section": "Expandable Module Outline",
+        "description": "Accordion module list clearly marking free preview lessons vs locked future lessons.",
+        "testID_prefix": "course-module-"
+      },
+      {
+        "section": "Waitlist CTA Footer",
+        "description": "Sharp-edged rectangular button to register for full course launch.",
+        "testID": "course-join-waitlist-btn"
+      }
+    ]
+  },
+  "component_guidelines": {
+    "CourseCard": {
+      "style": "borderRadius: 0, borderWidth: 1, borderColor: #E2E8F0, backgroundColor: #FFFFFF, paddingHorizontal: 16, paddingTop: 16",
+      "thumbnail_style": "width: 96, height: 112, borderRadius: 0",
+      "category_text": "fontFamily: Outfit-800, fontSize: 10, uppercase, color: #1A5438",
+      "title_text": "fontFamily: Outfit-700, fontSize: 18, lineHeight: 24, color: #0F291E",
+      "cta_button": "ReadArticleButton equivalent for course preview: rectangular, sharp, with arrow icon."
+    },
+    "WaitlistSection": {
+      "style": "borderRadius: 0, borderWidth: 1, borderColor: #E2E8F0, backgroundColor: #FFFFFF, padding: 20",
+      "input_style": "borderRadius: 0, borderWidth: 1, borderColor: #CBD5E1",
+      "button_style": "borderRadius: 0, backgroundColor: #16A34A"
+    },
+    "TextLessonPreview": {
+      "style": "borderRadius: 0, backgroundColor: #0F291E, padding: 20",
+      "badge": "TEXT PREVIEW • 6 MIN READ (no play icon)",
+      "bullet_points": "Jakarta-500 text with lime bullet indicators"
+    }
+  },
+  "image_urls": {
+    "foundations": "https://www.mqulima.com/images/services/soil_testing_analysis.webp",
+    "crop_management": "https://www.mqulima.com/images/services/consult_agronomist.webp",
+    "agripreneurship": "https://www.mqulima.com/images/services/get_coaching.webp"
+  },
+  "general_ui_ux_design_guidelines": {
+    "data_testid_requirement": "All pressable cards, buttons, module triggers, and filter chips MUST retain explicit data-testid attributes (e.g. data-testid='academy-filter-beginner', data-testid='academy-course-foundations').",
+    "accessibility_and_contrast": "Ensure minimum 4.5:1 text contrast for normal text and 3:1 for large headers against forest dark and white surfaces.",
+    "smooth_transitions": "Use specific property transitions (e.g., opacity, transform) avoiding universal transition: all."
+  }
+}

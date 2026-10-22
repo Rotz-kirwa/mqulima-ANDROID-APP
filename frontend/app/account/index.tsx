@@ -25,6 +25,7 @@ export default function Account() {
   if (!user) return <Page title="Account"><View /></Page>;
 
   const links = [
+    ...(user.role === "admin" ? [{ id: "admin", icon: "shield-check", label: "Admin workspace", route: "/admin" }] : []),
     { id: "orders", icon: "receipt", label: "Order History", count: orders.data?.length ?? 0, route: "/account/orders" },
     { id: "saved", icon: "heart", label: "Saved Items", count: saved.length, route: "/account/saved" },
     { id: "cart", icon: "shopping-cart", label: "My Cart", count: cartCount(cart), route: "/cart" },

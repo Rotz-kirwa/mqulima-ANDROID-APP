@@ -5,7 +5,7 @@ import { Image as ExpoImage, ImageProps } from "expo-image";
 // mqulima.com sends `Cross-Origin-Resource-Policy: same-origin`, which only browsers enforce.
 // Native (iOS/Android) loads the site URLs directly; the web preview goes through a public image proxy.
 const proxy = (uri: string) =>
-  Platform.OS === "web" && uri.startsWith("https://www.mqulima.com")
+  uri.startsWith("/api/") ? `${process.env.EXPO_PUBLIC_BACKEND_URL}${uri}` : Platform.OS === "web" && uri.startsWith("https://www.mqulima.com")
     ? `https://images.weserv.nl/?url=${encodeURIComponent(uri.replace("https://", ""))}&output=webp`
     : uri;
 

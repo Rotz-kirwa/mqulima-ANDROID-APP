@@ -78,7 +78,10 @@ class ResolvedIn(BaseModel):
 
 
 def _view(doc: dict, user: Optional[dict]) -> dict:
-    clean = {k: v for k, v in doc.items() if k not in ("_id", "liked_by", "saved_by")}
+    clean = {k: v for k, v in doc.items() if k not in ("_id", "liked_by", "saved_by", "moderation_reason")}
+    visible = [c for c in doc.get("comments", []) if not c.get("hidden")]
+    visible_ids = {c["id"] for c in visible}
+    clean["comments"] = [{k: v for k, v in c.items() if k not in ("hidden", "moderation_reason")} for c in visible if not c.get("parent_id") or c["parent_id"] in visible_ids]
     clean["liked"] = bool(user and user["id"] in doc.get("liked_by", []))
     clean["saved"] = bool(user and user["id"] in doc.get("saved_by", []))
     return clean
@@ -88,7 +91,7 @@ def _view(doc: dict, user: Optional[dict]) -> dict:
 async def list_threads(user: OptionalUser, mine: bool = False):
     if mine and not user:
         raise HTTPException(401, "Sign in to see your discussions")
-    filters = {"user_id": user["id"]} if mine else {}
+    filters = {"user_id": user["id"], "hidden": {"$ne": True}} if mine else {"hidden": {"$ne": True}}
     docs = await db.threads.find(filters, NO_ID).sort("created_at", -1).to_list(200)
     return [_view(doc, user) for doc in docs]
 
@@ -103,7 +106,7 @@ async def forum_feed(
     page: int = Query(default=1, ge=1),
     limit: int = Query(default=12, ge=1, le=50),
 ):
-    filters = {}
+    filters = {"hidden": {"$ne": True}}
     if scope != "all":
         if not user:
             raise HTTPException(401, "Sign in to see your discussions")
@@ -114,7 +117,7 @@ async def forum_feed(
         pattern = {"$regex": re.escape(q.strip()), "$options": "i"}
         filters["$or"] = [{field: pattern} for field in ("title", "text", "author", "county", "location")]
     if sort == "unanswered":
-        filters["comments.0"] = {"$exists": False}
+        filters["comments"] = {"$not": {"$elemMatch": {"hidden": {"$ne": True}, "$or": [{"parent_id": None}, {"parent_id": {"$exists": False}}]}}}
         filters["resolved"] = {"$ne": True}
     order = [("likes", -1), ("created_at", -1), ("id", 1)] if sort == "popular" else [("created_at", -1), ("id", 1)]
     total = await db.threads.count_documents(filters)
@@ -124,7 +127,7 @@ async def forum_feed(
 
 @router.get("/{tid}", response_model=ThreadOut)
 async def get_thread(tid: str, user: OptionalUser):
-    doc = await db.threads.find_one({"id": tid}, NO_ID)
+    doc = await db.threads.find_one({"id": tid, "hidden": {"$ne": True}}, NO_ID)
     if not doc:
         raise HTTPException(404, "Discussion not found")
     return _view(doc, user)
@@ -147,12 +150,12 @@ async def create_thread(body: ThreadIn, user: CurrentUser):
 
 @router.post("/{tid}/comments", status_code=201, response_model=CommentOut)
 async def add_comment(tid: str, body: CommentIn, user: CurrentUser):
-    doc = await db.threads.find_one({"id": tid}, NO_ID)
+    doc = await db.threads.find_one({"id": tid, "hidden": {"$ne": True}}, NO_ID)
     if not doc:
         raise HTTPException(404, "Discussion not found")
     if body.parent_id:
         parent = next((c for c in doc.get("comments", []) if c["id"] == body.parent_id), None)
-        if not parent:
+        if not parent or parent.get("hidden"):
             raise HTTPException(400, "Reply not found in this discussion")
         if parent.get("parent_id"):
             raise HTTPException(400, "Reply to the original comment instead")
@@ -170,7 +173,7 @@ async def toggle_like(tid: str, user: CurrentUser):
         "liked_by": {"$cond": [liked, {"$setDifference": ["$liked_by", [user["id"]]]}, {"$setUnion": [{"$ifNull": ["$liked_by", []]}, [user["id"]]]}]},
         "likes": {"$max": [0, {"$add": [{"$ifNull": ["$likes", 0]}, {"$cond": [liked, -1, 1]}]}]},
     }}]
-    doc = await db.threads.find_one_and_update({"id": tid}, update, projection=NO_ID, return_document=ReturnDocument.AFTER)
+    doc = await db.threads.find_one_and_update({"id": tid, "hidden": {"$ne": True}}, update, projection=NO_ID, return_document=ReturnDocument.AFTER)
     if not doc:
         raise HTTPException(404, "Discussion not found")
     return {"liked": user["id"] in doc["liked_by"], "likes": doc["likes"]}
@@ -179,7 +182,7 @@ async def toggle_like(tid: str, user: CurrentUser):
 @router.put("/{tid}/bookmark")
 async def bookmark(tid: str, body: SavedIn, user: CurrentUser):
     operation = "$addToSet" if body.saved else "$pull"
-    result = await db.threads.update_one({"id": tid}, {operation: {"saved_by": user["id"]}})
+    result = await db.threads.update_one({"id": tid, "hidden": {"$ne": True}}, {operation: {"saved_by": user["id"]}})
     if not result.matched_count:
         raise HTTPException(404, "Discussion not found")
     return {"saved": body.saved}
@@ -187,7 +190,7 @@ async def bookmark(tid: str, body: SavedIn, user: CurrentUser):
 
 @router.put("/{tid}/resolved")
 async def resolve(tid: str, body: ResolvedIn, user: CurrentUser):
-    doc = await db.threads.find_one({"id": tid}, NO_ID)
+    doc = await db.threads.find_one({"id": tid, "hidden": {"$ne": True}}, NO_ID)
     if not doc:
         raise HTTPException(404, "Discussion not found")
     if doc.get("user_id") != user["id"]:

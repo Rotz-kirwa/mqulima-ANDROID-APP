@@ -1,0 +1,250 @@
+{
+  "project_name": "Mqulima Operations Admin Blueprint",
+  "app_type": "mobile_web_app",
+  "target_platform": "Expo React Native Mobile App (iOS / Android primary, Mobile Web preview)",
+  "reference_site": "https://www.mqulima.com",
+  "theme_source": "/app/frontend/src/theme.ts",
+  "fonts_source": "/app/frontend/app/_layout.tsx",
+  "admin_blueprint_version": "1.0.0",
+
+  "typography": {
+    "font_families": {
+      "wordmark": "Lora-700",
+      "heading_bold": "Outfit-800",
+      "heading_semibold": "Outfit-700",
+      "heading_medium": "Outfit-600",
+      "body_regular": "Jakarta-400",
+      "body_medium": "Jakarta-500",
+      "body_semibold": "Jakarta-600",
+      "body_bold": "Jakarta-700",
+      "mono": "SpaceMono-Regular"
+    },
+    "font_sizes": {
+      "h1": { "fontSize": 28, "lineHeight": 34, "fontFamily": "Outfit-800" },
+      "h2": { "fontSize": 22, "lineHeight": 28, "fontFamily": "Outfit-700" },
+      "h3": { "fontSize": 18, "lineHeight": 24, "fontFamily": "Outfit-600" },
+      "body_large": { "fontSize": 16, "lineHeight": 22, "fontFamily": "Jakarta-500" },
+      "body": { "fontSize": 14, "lineHeight": 20, "fontFamily": "Jakarta-400" },
+      "caption": { "fontSize": 12, "lineHeight": 16, "fontFamily": "Jakarta-500" },
+      "label": { "fontSize": 11, "lineHeight": 14, "fontFamily": "Jakarta-700", "letterSpacing": 0.5, "textTransform": "uppercase" }
+    }
+  },
+
+  "colors": {
+    "surface": "#FAFBF9",
+    "onSurface": "#0F291E",
+    "surfaceSecondary": "#FFFFFF",
+    "onSurfaceSecondary": "#334155",
+    "surfaceTertiary": "#F1F5F9",
+    "onSurfaceTertiary": "#475569",
+    "surfaceInverse": "#0F291E",
+    "onSurfaceInverse": "#FFFFFF",
+    "muted": "#64748B",
+
+    "brand": "#1A5438",
+    "onBrand": "#FFFFFF",
+    "brandPrimary": "#16A34A",
+    "onBrandPrimary": "#FFFFFF",
+    "brandSecondary": "#85CC14",
+    "onBrandSecondary": "#0B2117",
+    "brandTertiary": "#E5F5D0",
+    "onBrandTertiary": "#35610D",
+
+    "status": {
+      "success": { "bg": "#DCFCE7", "text": "#15803D", "border": "#86EFAC" },
+      "warning": { "bg": "#FEF3C7", "text": "#B45309", "border": "#FDE68A" },
+      "danger": { "bg": "#FEE2E2", "text": "#B91C1C", "border": "#FCA5A5" },
+      "info": { "bg": "#DBEAFE", "text": "#1D4ED8", "border": "#93C5FD" },
+      "neutral": { "bg": "#F1F5F9", "text": "#475569", "border": "#CBD5E1" }
+    },
+
+    "forest": "#0F291E",
+    "forestDeep": "#0B2117",
+    "forestCard": "#16382B",
+    "border": "#E2E8F0",
+    "borderStrong": "#CBD5E1",
+    "divider": "#F1F5F9"
+  },
+
+  "visual_enhancers": {
+    "card_style": {
+      "backgroundColor": "#FFFFFF",
+      "borderRadius": 12,
+      "borderWidth": 1,
+      "borderColor": "#E2E8F0",
+      "padding": 16,
+      "shadowColor": "#0F291E",
+      "shadowOffset": { "width": 0, "height": 2 },
+      "shadowOpacity": 0.04,
+      "shadowRadius": 6,
+      "elevation": 2
+    },
+    "dense_list_item": {
+      "backgroundColor": "#FFFFFF",
+      "borderRadius": 8,
+      "borderWidth": 1,
+      "borderColor": "#E2E8F0",
+      "paddingVertical": 12,
+      "paddingHorizontal": 14,
+      "marginBottom": 8
+    },
+    "status_pill": {
+      "paddingVertical": 4,
+      "paddingHorizontal": 10,
+      "borderRadius": 999,
+      "fontSize": 12,
+      "fontFamily": "Jakarta-600"
+    }
+  },
+
+  "layouts_and_grids": {
+    "structure": "Mobile-first stack navigation with dedicated Admin Drawer/Tab navigation bar and Header with Quick Work Queue shortcuts.",
+    "top_bar": "Sticky Header with Back / Menu trigger, Admin Title, Module Switcher, Actionable Alerts Counter, and Profile Quick Pill.",
+    "dense_mobile_grid": "Single-column cards for mobile screens (<600px), 2-column key-metric grid for stats, bottom sheets for item details and quick-edit forms.",
+    "filter_bar": "Horizontal scrollable chip bar for status filtering (e.g. All, Pending, Approved, Flagged, Archived)."
+  },
+
+  "motion": {
+    "screen_transition": "slide_from_right",
+    "modal_transition": "slide_from_bottom",
+    "press_scale": { "activeOpacity": 0.7, "scale": 0.98 }
+  },
+
+  "accessibility": {
+    "contrast_standard": "WCAG AA / APCA compliant on #FAFBF9 and #0F291E backgrounds",
+    "min_touch_target": "44x44 dp for all pressable buttons and table row actions",
+    "test_id_attribute": "data-testid required on all interactive elements, input fields, tabs, switches, and action triggers"
+  },
+
+  "admin_credentials_and_security": {
+    "default_admin_account": {
+      "email": "admin@mqulima.com",
+      "role": "super_admin",
+      "initial_credentials_protocol": "Generated secure seed hash in backend/seed.py with force-change password flag on first login."
+    },
+    "authentication_storage": "Secure JWT Token stored in AsyncStorage / SecureStore under 'mqulima_admin_token'.",
+    "route_guard": "Higher-Order Component / Guard in app/admin/_layout.tsx checking admin role before rendering admin routes."
+  },
+
+  "executable_plan_and_modules": {
+    "module_1_dashboard": {
+      "name": "Operations Control Overview",
+      "route": "/admin",
+      "key_metrics": [
+        { "id": "orders_pending", "label": "Orders Processing", "source": "db.orders.count({status: 'Processing'})" },
+        { "id": "forum_flagged", "label": "Flagged Threads", "source": "db.threads.count({flagged: true})" },
+        { "id": "service_requests", "label": "Pending Service Requests", "source": "db.service_requests.count({status: 'Pending'})" },
+        { "id": "academy_waitlist", "label": "Academy Waitlist", "source": "db.academy_waitlist.count({})" }
+      ],
+      "actionable_work_queue": [
+        "Unassigned Service Requests list",
+        "Recent Orders requiring status dispatch",
+        "Reported Forum posts and comments needing moderation",
+        "New user signups needing verification"
+      ]
+    },
+    "module_2_products": {
+      "name": "Products & Variant Catalog Manager",
+      "route": "/admin/products",
+      "features": [
+        "Product List with search by name/category and status filter (Published/Archived)",
+        "Create / Edit Product Form (Name, Category, Base Price, Image URL, Description, Stock, Featured toggle)",
+        "Variant Manager (Label, Price adjustment, SKU, In-stock toggle)",
+        "Publish / Archive toggle without deleting historical orders"
+      ]
+    },
+    "module_3_orders": {
+      "name": "Order Management & Fulfillment",
+      "route": "/admin/orders",
+      "features": [
+        "Orders list with status filters (All, Processing, Dispatched, Delivered, Cancelled)",
+        "Order detail view with items, customer contact, delivery location, M-Pesa payment status",
+        "Status update action (Processing -> Dispatched -> Delivered)",
+        "Filter by County / Subcounty for regional logistics dispatching"
+      ]
+    },
+    "module_4_forum": {
+      "name": "Forum Moderation",
+      "route": "/admin/forum",
+      "features": [
+        "Discussion threads feed with search and tag filters (Questions, Crop Health, Markets, etc.)",
+        "Hide / Restore thread toggle",
+        "Inline reply list with individual comment hide / delete controls",
+        "Author user profile link and user warnings"
+      ]
+    },
+    "module_5_users": {
+      "name": "User Management & Moderation",
+      "route": "/admin/users",
+      "features": [
+        "Searchable users table (Name, Email, Phone, County, Role, Status)",
+        "Suspend / Unsuspend user account action",
+        "Role assignment (Farmer, Agronomist, Vendor, Admin)",
+        "User activity quick summary (Orders placed, threads created, service requests)"
+      ]
+    },
+    "module_6_news": {
+      "name": "News & Agronomy Articles Publishing",
+      "route": "/admin/news",
+      "features": [
+        "Article list grouped by category (Crop Guide, Market News, Advisory)",
+        "Create & Edit Article form (Title, Category, Excerpt, Content markdown, Banner image, Read time)",
+        "Publish date & featured article toggle"
+      ]
+    },
+    "module_7_services": {
+      "name": "Service Catalogue & Request Dispatch",
+      "route": "/admin/services",
+      "features": [
+        "Service Catalogue manager (Finance, Soil, Crop, Animal Health, Irrigation, Value Addition)",
+        "Service Requests queue (Customer name, Farm county, Service type, Urgency, Status)",
+        "Expert Assignment drawer (Assign vetted agronomist/vet/contractor to customer request)",
+        "Status tracker (Pending -> Assigned -> In Progress -> Completed)"
+      ]
+    },
+    "module_8_academy": {
+      "name": "Academy Courses & Waitlist Manager",
+      "route": "/admin/academy",
+      "features": [
+        "Course editor (Title, Level, Duration, Outcomes, Image)",
+        "Module & Lesson builder with preview content editor",
+        "Academy Launch Waitlist table with export/contact actions"
+      ]
+    },
+    "module_9_inbox": {
+      "name": "Contact Inbox & Enquiries",
+      "route": "/admin/inbox",
+      "features": [
+        "General enquiries feed from public contact page",
+        "Status filter (Unread, In Progress, Resolved)",
+        "Quick reply & WhatsApp/Phone direct trigger"
+      ]
+    },
+    "module_10_audit_and_settings": {
+      "name": "Audit Log & Admin Password Settings",
+      "route": "/admin/settings",
+      "features": [
+        "Activity Audit Log showing timestamps, admin email, action taken (e.g. 'Archived Product #102', 'Suspended User #54')",
+        "Admin Password change form with security validation",
+        "System health indicator"
+      ]
+    }
+  },
+
+  "instructions_to_main_agent": [
+    "1. Keep existing public UI app files untouched in app/(tabs)/, app/product/, app/services/, etc.",
+    "2. Implement protected admin section inside app/admin/_layout.tsx and sub-routes in app/admin/* using Expo Router.",
+    "3. Ensure admin authentication routes in backend/routes/auth.py handle admin role verification and admin seed initialization in backend/seed.py.",
+    "4. Use design tokens from /app/frontend/src/theme.ts (#FAFBF9 background, #0F291E text, #16A34A brand primary) for consistent brand identity.",
+    "5. Use dense mobile list components with bottom-sheet detail editors for optimal mobile web preview and touch experience.",
+    "6. Include data-testid attributes on all input components, buttons, tabs, filter chips, and action icons for automated testing.",
+    "7. Rely on true database metrics from MongoDB collections (products, orders, threads, users, articles, service_requests) - no fake static charts."
+  ],
+
+  "UNIVERSAL GUIDELINES FOR MAIN AGENT": [
+    "Do not alter public pages or break public navigation.",
+    "Maintain strict mobile web responsiveness with 44x44 minimum touch targets.",
+    "Always test interactive states and add data-testid attributes for E2E testing.",
+    "Ensure all async state changes provide toast notifications via src/components/Floating.tsx."
+  ]
+}

@@ -17,6 +17,7 @@ const ITEMS = [
   { id: "contact", label: "Contact", icon: "phone", route: "/contact" },
   { id: "legal", label: "Terms / Privacy", icon: "file-text", route: "/legal" },
   { id: "account", label: "Account", icon: "user", route: "/account" },
+  { id: "admin", label: "Admin portal", icon: "shield-check", route: "/admin" },
 ];
 
 export default function More() {
