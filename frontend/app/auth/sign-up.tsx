@@ -39,7 +39,14 @@ export default function SignUp() {
       toast("Account created — welcome to Mqulima!");
       router.replace("/account");
     } catch (ex: any) {
-      setE(ex?.status === 409 ? { email: ex.message } : { pw2: ex?.message ?? "Sign up failed. Please try again." });
+      const msg = ex?.message || "Sign up failed. Please try again.";
+      if (ex?.status === 409 || /email/i.test(msg)) {
+        setE({ email: msg });
+      } else if (/phone/i.test(msg)) {
+        setE({ phone: msg });
+      } else {
+        setE({ pw2: msg });
+      }
     } finally {
       setLoading(false);
     }

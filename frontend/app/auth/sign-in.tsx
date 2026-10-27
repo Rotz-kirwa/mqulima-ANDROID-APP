@@ -34,7 +34,8 @@ export default function SignIn() {
       toast(`Welcome back, ${r.user.name}!`);
       router.replace(r.user.role === "admin" ? (r.user.must_change_password ? "/admin/security" : "/admin") : "/account");
     } catch (err: any) {
-      setE({ pw: err?.message ?? "Sign in failed. Please try again." });
+      const msg = err?.message || "Invalid email or password. Please try again.";
+      setE({ pw: msg });
     } finally {
       setLoading(false);
     }

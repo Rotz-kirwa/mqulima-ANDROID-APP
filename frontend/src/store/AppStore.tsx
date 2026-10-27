@@ -53,8 +53,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         }
         try {
           const u = await api.me();
-          setUser(u);
-          await storage.setItem("mqulima_user", JSON.stringify(u));
+          if (u) {
+            setUser(u);
+            await storage.setItem("mqulima_user", JSON.stringify(u));
+          }
         } catch (e: any) {
           if (e?.status === 401) {
             await storage.secureRemove(TOKEN_KEY);
