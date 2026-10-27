@@ -39,7 +39,10 @@ export default function SignUp() {
       toast("Account created — welcome to Mqulima!");
       router.replace("/account");
     } catch (ex: any) {
-      const msg = ex?.message || "Sign up failed. Please try again.";
+      let msg = ex?.message || "Sign up could not be completed. Please try again.";
+      if (/Only HTML requests are supported/i.test(msg) || /Request failed \(500\)/i.test(msg)) {
+        msg = "The backend service is currently updating. Please try again in a few moments.";
+      }
       if (ex?.status === 409 || /email/i.test(msg)) {
         setE({ email: msg });
       } else if (/phone/i.test(msg)) {

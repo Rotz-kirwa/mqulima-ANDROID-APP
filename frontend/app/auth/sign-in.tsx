@@ -34,7 +34,10 @@ export default function SignIn() {
       toast(`Welcome back, ${r.user.name}!`);
       router.replace(r.user.role === "admin" ? (r.user.must_change_password ? "/admin/security" : "/admin") : "/account");
     } catch (err: any) {
-      const msg = err?.message || "Invalid email or password. Please try again.";
+      let msg = err?.message || "Invalid email or password. Please try again.";
+      if (/Only HTML requests are supported/i.test(msg) || /Request failed \(500\)/i.test(msg)) {
+        msg = "The backend service is currently updating. Please try again in a few moments.";
+      }
       setE({ pw: msg });
     } finally {
       setLoading(false);
