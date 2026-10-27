@@ -5,12 +5,14 @@ export type Thread = {
   handle: string;
   date: string;
   tag: string;
+  title?: string;
   text: string;
   image?: string;
   county: string;
   location: string;
   likes: number;
   comments: Comment[];
+  user_id?: string | null;
 };
 
 export const forumHero = {

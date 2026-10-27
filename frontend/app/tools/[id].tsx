@@ -11,47 +11,93 @@ import { Field, SelectField, SuccessState } from "@/src/components/Form";
 import { ListSkeleton } from "@/src/components/Skeleton";
 import { api } from "@/src/services/api";
 import { counties } from "@/src/data/home";
-import { cropSymptoms, marketFilters, tools, weather } from "@/src/data/tools";
+import { cropSymptoms, marketFilters, marketPrices, tools, weather } from "@/src/data/tools";
 import { fonts, makeStyles, useTheme } from "@/src/theme";
 
 function Weather() {
   const s = useStyles();
   const { colors } = useTheme();
-  const [county, setCounty] = useState("Nairobi");
+  const [county, setCounty] = useState("Uasin Gishu");
   const [unit, setUnit] = useState<"C" | "F">("C");
-  const t = (c: number) => (unit === "C" ? `${c}°` : `${Math.round(c * 1.8 + 32)}°`);
+  const t = (c: number) => (unit === "C" ? `${Math.round(c)}°` : `${Math.round(c * 1.8 + 32)}°`);
+
+  const q = useQuery({
+    queryKey: ["weather", county],
+    queryFn: () => api.getWeather(county),
+    staleTime: 1000 * 60 * 15,
+  });
+
+  const wxData = q.data;
+  const currentTemp = wxData?.current?.temperature_2m ?? weather.temp;
+  const conditionLabel = wxData?.conditionLabel ?? weather.condition;
+  const humidity = wxData?.current?.relative_humidity_2m ?? 65;
+  const wind = wxData?.current?.wind_speed_10m ?? 8;
+  const advisory = wxData?.advisory;
+
+  const weekForecast = wxData?.daily?.map((d: any) => ({
+    d: d.dayLabel,
+    hi: d.tempMax,
+    lo: d.tempMin,
+    condition: d.conditionLabel,
+  })) ?? weather.week;
+
   return (
     <View style={{ gap: 16 }}>
       <SelectField testID="weather-county-select" label="County" value={county} options={counties} onChange={setCounty} />
       <View style={s.wxCard} testID="weather-current">
         <Image source={{ uri: weather.image }} style={{ width: "100%", height: 140, borderRadius: 16 }} contentFit="cover" />
-        <Text style={s.wxLoc}>{county} County, Kenya</Text>
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-          <Text style={s.wxTemp}>{t(weather.temp)}{unit}</Text>
+          <Text style={s.wxLoc}>{county} County, Kenya</Text>
+          {advisory?.sprayWindow && (
+            <View style={[s.live, { backgroundColor: advisory.sprayWindow === "IDEAL" ? colors.forest : colors.orange }]}>
+              <Text style={s.liveText}>{advisory.sprayWindow === "IDEAL" ? "SPRAY WINDOW OPEN" : "SPRAY RESTRICTED"}</Text>
+            </View>
+          )}
+        </View>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+          <Text style={s.wxTemp}>{t(currentTemp)}{unit}</Text>
           <View style={{ flexDirection: "row", gap: 8 }}>
             {(["C", "F"] as const).map((u) => <Chip key={u} testID={`weather-unit-${u}`} label={`°${u}`} active={unit === u} onPress={() => setUnit(u)} />)}
           </View>
         </View>
-        <Text style={s.muted}>{weather.day} • {weather.condition} • {weather.rain}</Text>
+        <Text style={s.muted}>{conditionLabel} • Wind {wind} km/h • Humidity {humidity}%</Text>
+        {advisory?.sprayWindowText && (
+          <View style={{ backgroundColor: colors.surfaceSecondary, padding: 10, borderRadius: 12, marginTop: 4 }}>
+            <Text style={{ fontFamily: fonts.b500, fontSize: 12, color: colors.onSurfaceSecondary }}>{advisory.sprayWindowText}</Text>
+          </View>
+        )}
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
-        {weather.week.map((d) => (
-          <View key={d.d} style={s.day}>
+        {weekForecast.map((d: any, idx: number) => (
+          <View key={`${d.d}-${idx}`} style={s.day}>
             <Text style={s.muted}>{d.d}</Text>
             <Lucide name="cloud-sun" size={22} color={colors.orange} />
             <Text style={s.dayT}>{t(d.hi)} / {t(d.lo)}</Text>
           </View>
         ))}
       </ScrollView>
-      <Text style={s.h3}>Today&apos;s Highlights</Text>
+      <Text style={s.h3}>Agricultural Highlights</Text>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
-        {weather.highlights.map((h) => (
-          <View key={h.l} style={s.hl}>
-            <Text style={s.muted}>{h.l}</Text>
-            <Text style={s.hlV}>{h.v}</Text>
-            <Text style={s.hlS}>{h.s}</Text>
-          </View>
-        ))}
+        <View style={s.hl}>
+          <Text style={s.muted}>GDD Accumulation</Text>
+          <Text style={s.hlV}>{wxData?.gdd ?? 14.2}</Text>
+          <Text style={s.hlS}>Maize Growth Index</Text>
+        </View>
+        <View style={s.hl}>
+          <Text style={s.muted}>Soil Moisture</Text>
+          <Text style={s.hlV}>{wxData?.hourlySnapshot?.soilMoisturePct ?? 32}%</Text>
+          <Text style={s.hlS}>Root Zone (0-10cm)</Text>
+        </View>
+        <View style={s.hl}>
+          <Text style={s.muted}>Solar Radiation</Text>
+          <Text style={s.hlV}>{Math.round(wxData?.hourlySnapshot?.shortwaveRadiation ?? 680)} W/m²</Text>
+          <Text style={s.hlS}>Photosynthesis Peak</Text>
+        </View>
+        <View style={s.hl}>
+          <Text style={s.muted}>Evapotranspiration</Text>
+          <Text style={s.hlV}>{wxData?.daily?.[0]?.et0 ?? 3.8} mm/day</Text>
+          <Text style={s.hlS}>FAO ET0 Water Need</Text>
+        </View>
       </View>
     </View>
   );
@@ -60,31 +106,49 @@ function Weather() {
 function Markets() {
   const s = useStyles();
   const { colors } = useTheme();
-  const [f, setF] = useState("All Varieties");
-  const q = useQuery({ queryKey: ["markets"], queryFn: api.getMarketPrices });
-  const rows = (q.data ?? []).filter((r) => f === "All Varieties" || r.type === f);
+  const [filter, setFilter] = useState("All Varieties");
+  const filtered = filter === "All Varieties" ? marketPrices : marketPrices.filter((m) => m.type === filter);
+
   return (
-    <View style={{ gap: 12 }}>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-        <Text style={s.h3}>Commodity Index</Text>
-        <View style={s.live}><Text style={s.liveText}>KAMIS Live</Text></View>
-      </View>
+    <View style={{ gap: 14 }}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-        {marketFilters.map((m) => <Chip key={m} testID={`market-filter-${m.replace(/\W+/g, "-").toLowerCase()}`} label={m} active={f === m} onPress={() => setF(m)} />)}
+        {marketFilters.map((f) => (
+          <Pressable
+            key={f}
+            onPress={() => setFilter(f)}
+            style={{
+              paddingHorizontal: 14,
+              paddingVertical: 8,
+              borderRadius: 999,
+              borderWidth: 1,
+              borderColor: filter === f ? colors.brandPrimary : colors.border,
+              backgroundColor: filter === f ? colors.brandPrimary : colors.surfaceSecondary,
+            }}
+          >
+            <Text style={{ fontFamily: fonts.b700, fontSize: 13, color: filter === f ? colors.white : colors.onSurfaceSecondary }}>
+              {f}
+            </Text>
+          </Pressable>
+        ))}
       </ScrollView>
-      {q.isLoading ? <View style={{ marginHorizontal: -16 }}><ListSkeleton count={5} height={56} /></View> : rows.map((r, i) => (
-        <View key={`${r.name}-${r.market}`} style={s.mRow} testID={`market-row-${i}`}>
-          <Text style={{ fontSize: 24 }}>{r.emoji}</Text>
-          <View style={{ flex: 1 }}>
-            <Text style={s.mName}>{r.name} <Text style={s.muted}>({r.unit})</Text></Text>
-            <Text style={s.muted}>{r.market}</Text>
+
+      <View style={{ gap: 10 }}>
+        {filtered.map((item, i) => (
+          <View key={`${item.name}-${item.market}-${i}`} style={s.mRow}>
+            <Text style={{ fontSize: 24 }}>{item.emoji}</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={s.mName}>{item.name}</Text>
+              <Text style={s.muted}>{item.market} Hub · per {item.unit}</Text>
+            </View>
+            <View style={{ alignItems: "flex-end" }}>
+              <Text style={[s.mPrice, { color: colors.brandPrimary }]}>KES {item.price}</Text>
+              <Text style={{ fontSize: 12, fontFamily: fonts.b600, color: item.change >= 0 ? colors.brandPrimary : colors.error }}>
+                {item.change >= 0 ? `+${item.change}%` : `${item.change}%`}
+              </Text>
+            </View>
           </View>
-          <View style={{ alignItems: "flex-end" }}>
-            <Text style={s.mPrice}>KSh {r.price.toLocaleString("en-US")}</Text>
-            <Text style={{ fontFamily: fonts.b700, fontSize: 12, color: r.change >= 0 ? colors.brandPrimary : colors.error }}>{r.change >= 0 ? "+" : ""}{r.change}%</Text>
-          </View>
-        </View>
-      ))}
+        ))}
+      </View>
     </View>
   );
 }
@@ -92,29 +156,100 @@ function Markets() {
 function CropDoctor() {
   const s = useStyles();
   const { colors } = useTheme();
-  const [sel, setSel] = useState<string | null>(null);
+  const router = useRouter();
+  const [crop, setCrop] = useState("Maize");
+  const [sel, setSel] = useState<string | null>("s1");
+  const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
-  const [res, setRes] = useState<(typeof cropSymptoms)[number] | null>(null);
-  const run = () => {
+  const [res, setRes] = useState<any>(null);
+
+  const run = async () => {
     setLoading(true);
     setRes(null);
-    setTimeout(() => { setRes(cropSymptoms.find((c) => c.id === sel) ?? null); setLoading(false); }, 1200);
+    try {
+      const selectedSymptom = cropSymptoms.find((c) => c.id === sel);
+      const apiRes = await api.diagnoseCrop({
+        crop,
+        symptoms: { [selectedSymptom?.label || "General symptom"]: true },
+        farmerQuestion: notes || undefined,
+      });
+
+      if (apiRes.success && apiRes.diagnosis) {
+        setRes({
+          dx: apiRes.diagnosis.disease || apiRes.diagnosis.name || "Identified Crop Pathogen",
+          tx: apiRes.diagnosis.treatmentPlan || apiRes.diagnosis.recommendation || selectedSymptom?.tx,
+          confidence: apiRes.diagnosis.confidence || "High",
+          urgency: apiRes.diagnosis.urgency || "Moderate",
+          immediateAction: apiRes.diagnosis.immediateAction,
+          products: apiRes.diagnosis.recommendedProducts || [],
+        });
+      } else {
+        throw new Error("No diagnosis returned");
+      }
+    } catch {
+      // Offline / fallback to agronomic knowledge base
+      const local = cropSymptoms.find((c) => c.id === sel);
+      if (local) {
+        setRes({
+          dx: local.dx,
+          tx: local.tx,
+          confidence: "Field Agronomy Reference",
+          urgency: "Standard",
+          products: ["Top-dressing Fertilizer", "Broad-spectrum Fungicide"],
+        });
+      }
+    } finally {
+      setLoading(false);
+    }
   };
+
   return (
     <View style={{ gap: 12 }}>
-      <Text style={s.h3}>What symptoms do you see?</Text>
+      <SelectField
+        testID="crop-doctor-crop-select"
+        label="Target Crop"
+        value={crop}
+        options={["Maize", "Irish Potatoes", "Tomatoes", "Avocado", "Beans", "Cabbage & Kales", "Wheat", "Onions"]}
+        onChange={setCrop}
+      />
+      <Text style={s.h3}>What symptoms do you observe?</Text>
       {cropSymptoms.map((c) => (
         <Pressable key={c.id} testID={`symptom-${c.id}`} onPress={() => setSel(c.id)} style={[s.opt, sel === c.id && { borderColor: colors.brandPrimary, backgroundColor: colors.brandTertiary }]}>
           <Lucide name={sel === c.id ? "circle-check" : "circle"} size={20} color={sel === c.id ? colors.brandPrimary : colors.subtle} />
           <Text style={s.mName}>{c.label}</Text>
         </Pressable>
       ))}
-      <Btn testID="crop-doctor-diagnose-btn" full variant="green" label="Diagnose" icon="scan-search" loading={loading} onPress={sel ? run : undefined} style={!sel && { opacity: 0.5 }} />
+      <Field
+        testID="crop-doctor-notes-input"
+        label="Additional Observations (Optional)"
+        placeholder="e.g. Started after heavy rains in Eldoret, lower leaves curling"
+        value={notes}
+        onChangeText={setNotes}
+      />
+      <Btn testID="crop-doctor-diagnose-btn" full variant="green" label="Diagnose with Gemini Vision AI" icon="scan-search" loading={loading} onPress={sel ? run : undefined} style={!sel && { opacity: 0.5 }} />
       {res ? (
         <View style={s.result} testID="crop-doctor-result">
-          <Text style={s.liveText}>LIKELY DIAGNOSIS</Text>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <Text style={s.liveText}>AI AGRONOMY DIAGNOSIS</Text>
+            {res.confidence && <Text style={[s.liveText, { color: colors.white }]}>{res.confidence}</Text>}
+          </View>
           <Text style={[s.h3, { color: colors.white }]}>{res.dx}</Text>
+          {res.immediateAction && (
+            <View style={{ backgroundColor: "rgba(255,255,255,0.15)", padding: 8, borderRadius: 10 }}>
+              <Text style={{ fontFamily: fonts.b700, fontSize: 12, color: colors.brandSecondary }}>Action: {res.immediateAction}</Text>
+            </View>
+          )}
           <Body dark>{res.tx}</Body>
+          {Array.isArray(res.products) && res.products.length > 0 && (
+            <View style={{ gap: 6, marginTop: 4 }}>
+              <Text style={[s.liveText, { color: colors.brandSecondary }]}>RECOMMENDED CERTIFIED TREATMENTS</Text>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                {res.products.map((p: string, idx: number) => (
+                  <Chip key={idx} label={p} active onPress={() => router.push({ pathname: "/(tabs)/shop" })} />
+                ))}
+              </View>
+            </View>
+          )}
         </View>
       ) : null}
     </View>
