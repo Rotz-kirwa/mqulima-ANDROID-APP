@@ -1,6 +1,5 @@
+import { useState } from "react";
 import { useMutation, useQueryClient, InfiniteData } from "@tanstack/react-query";
-import { Platform, Share } from "react-native";
-import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
 import { api, ApiThread, ForumFeed } from "@/src/services/api";
 import { useApp } from "@/src/store/AppStore";
@@ -9,6 +8,7 @@ export function useThreadActions(t: ApiThread) {
   const qc = useQueryClient();
   const router = useRouter();
   const { user, toast } = useApp();
+  const [shareOpen, setShareOpen] = useState(false);
   const apply = (patch: Partial<ApiThread>) => {
     const update = (item: ApiThread) => item.id === t.id ? { ...item, ...patch } : item;
     qc.setQueriesData<ApiThread>({ queryKey: ["thread", t.id] }, old => old ? update(old) : old);
@@ -24,12 +24,6 @@ export function useThreadActions(t: ApiThread) {
     if (!user) { toast("Sign in to join the conversation"); router.push("/auth/sign-in"); return; }
     action();
   };
-  const share = async () => {
-    const link = `${process.env.EXPO_PUBLIC_BACKEND_URL?.replace(/\/$/, "")}/thread/${encodeURIComponent(t.id)}`;
-    try {
-      if (Platform.OS === "web") { await Clipboard.setStringAsync(link); toast("Discussion link copied"); }
-      else await Share.share({ message: `${t.title || t.text.slice(0, 100)}\n${link}`, ...(Platform.OS === "ios" ? { url: link } : {}) });
-    } catch { toast("Could not share this discussion. Please try again."); }
-  };
-  return { like, bookmark, resolve, withUser, share };
+  const share = () => setShareOpen(true);
+  return { like, bookmark, resolve, withUser, share, shareOpen, setShareOpen };
 }

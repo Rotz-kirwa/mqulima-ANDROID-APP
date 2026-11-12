@@ -24,13 +24,12 @@ export default function Account() {
   }, [ready, user, router]);
   if (!user) return <Page title="Account"><View /></Page>;
 
-  const links = [
-    ...(user.role === "admin" ? [{ id: "admin", icon: "shield-check", label: "Admin workspace", route: "/admin" }] : []),
-    { id: "orders", icon: "receipt", label: "Order History", count: orders.data?.length ?? 0, route: "/account/orders" },
-    { id: "saved", icon: "heart", label: "Saved Items", count: saved.length, route: "/account/saved" },
-    { id: "cart", icon: "shopping-cart", label: "My Cart", count: cartCount(cart), route: "/cart" },
-    { id: "posts", icon: "messages-square", label: "My Forum Posts", count: myThreads.data?.length ?? 0, route: "/(tabs)/forum" },
-    { id: "services", icon: "briefcase", label: "Request a Service", route: "/services" },
+  const links: { id: string; icon: string; label: string; count?: number; route: string; bg: string; fg: string }[] = [
+    { id: "orders", icon: "receipt", label: "Order History", count: orders.data?.length ?? 0, route: "/account/orders", bg: "#2563EB", fg: "#FFFFFF" },
+    { id: "saved", icon: "heart", label: "Saved Items", count: saved.length, route: "/account/saved", bg: "#E11D48", fg: "#FFFFFF" },
+    { id: "cart", icon: "shopping-cart", label: "My Cart", count: cartCount(cart), route: "/cart", bg: "#16A34A", fg: "#FFFFFF" },
+    { id: "posts", icon: "messages-square", label: "My Forum Posts", count: myThreads.data?.length ?? 0, route: "/(tabs)/forum", bg: "#7C3AED", fg: "#FFFFFF" },
+    { id: "services", icon: "briefcase", label: "Request a Service", route: "/services", bg: "#EA580C", fg: "#FFFFFF" },
   ];
   return (
     <Page title="My Account" testID="account-screen">
@@ -45,7 +44,7 @@ export default function Account() {
         </View>
         {links.map((l) => (
           <Pressable key={l.id} testID={`account-link-${l.id}`} onPress={() => router.push(l.route as any)} style={s.row}>
-            <View style={s.icon}><Lucide name={l.icon as any} size={18} color={colors.onBrandTertiary} /></View>
+            <View style={[s.icon, { backgroundColor: l.bg }]}><Lucide name={l.icon as any} size={18} color={l.fg} /></View>
             <Text style={s.label}>{l.label}</Text>
             <View style={{ flex: 1 }} />
             {l.count !== undefined ? <Text style={s.count}>{l.count}</Text> : null}

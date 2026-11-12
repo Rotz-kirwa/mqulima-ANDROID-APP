@@ -58,14 +58,14 @@ class TestAuth:
 
 # ---------- catalog: products ----------
 class TestProducts:
-    def test_products_default_pagination_total_189(self, http, api):
+    def test_products_default_pagination_total_300_plus(self, http, api):
         r = http.get(f"{api}/products", params={"category": "All", "q": "", "page": 1})
         assert r.status_code == 200
         data = r.json()
         assert set(["items", "total", "page", "pages"]).issubset(data.keys())
-        assert data["total"] == 189
+        assert data["total"] >= 300
         assert data["page"] == 1
-        assert data["pages"] == 8  # 189 / 24 ceil
+        assert data["pages"] == max(1, -(-data["total"] // 24))
         assert len(data["items"]) == 24
 
     def test_products_filter_by_category_seeds(self, http, api):

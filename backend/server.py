@@ -7,7 +7,7 @@ from starlette.middleware.cors import CORSMiddleware
 
 from db import client
 from seed import seed_if_empty
-from routes import ai, auth, catalog, forum, orders, admin, content, media
+from routes import ai, auth, catalog, forum, orders, admin, content, media, tools
 from starlette.concurrency import run_in_threadpool
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -38,17 +38,22 @@ async def health():
 
 
 api_router = APIRouter(prefix="/api")
+api_v1_router = APIRouter(prefix="/api/v1")
 
 
 @api_router.get("/")
+@api_v1_router.get("/")
 async def root():
     return {"message": "Mqulima API"}
 
 
-for r in (auth.router, catalog.router, forum.router, orders.router, ai.router, content.router, media.router, admin.router):
+for r in (auth.router, catalog.router, forum.router, orders.router, ai.router, content.router, media.router, admin.router, tools.router):
     api_router.include_router(r)
+    api_v1_router.include_router(r)
+
 
 app.include_router(api_router)
+app.include_router(api_v1_router)
 
 app.add_middleware(
     CORSMiddleware,

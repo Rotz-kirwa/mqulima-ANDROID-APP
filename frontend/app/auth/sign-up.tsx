@@ -43,10 +43,10 @@ export default function SignUp() {
       if (/Only HTML requests are supported/i.test(msg) || /Request failed \(500\)/i.test(msg)) {
         msg = "The backend service is currently updating. Please try again in a few moments.";
       }
-      if (ex?.status === 409 || /email/i.test(msg)) {
-        setE({ email: msg });
-      } else if (/phone/i.test(msg)) {
+      if (/phone/i.test(msg)) {
         setE({ phone: msg });
+      } else if (/email/i.test(msg) || ex?.status === 409) {
+        setE({ email: msg });
       } else {
         setE({ pw2: msg });
       }

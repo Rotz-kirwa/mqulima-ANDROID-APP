@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { storage } from "@/src/utils/storage";
 
-export type DiscussionDraft = { title: string; text: string; tag: string; county: string };
+export type DiscussionDraft = { title: string; text: string; tag: string; county: string; images?: string[] };
 export function useDiscussionDraft(userId?: string, county?: string) {
-  const [draft, setDraft] = useState<DiscussionDraft>({ title: "", text: "", tag: "Question", county: county || "" });
+  const [draft, setDraft] = useState<DiscussionDraft>({ title: "", text: "", tag: "Question", county: county || "", images: [] });
   const [loaded, setLoaded] = useState(false);
   const [saved, setSaved] = useState(false);
   const [published, setPublished] = useState(false);
@@ -13,7 +13,7 @@ export function useDiscussionDraft(userId?: string, county?: string) {
     let active = true;
     storage.getItem(key, "").then(raw => {
       if (!active) return;
-      try { if (raw) setDraft(JSON.parse(raw)); else setDraft({ title: "", text: "", tag: "Question", county: county || "" }); } catch {}
+      try { if (raw) setDraft(JSON.parse(raw)); else setDraft({ title: "", text: "", tag: "Question", county: county || "", images: [] }); } catch {}
       setLoaded(true);
     }).catch(() => { if (active) setLoaded(true); });
     return () => { active = false; };

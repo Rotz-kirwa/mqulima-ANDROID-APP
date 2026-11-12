@@ -126,7 +126,7 @@ const useStyles = makeStyles((c) => ({
   meta: { fontFamily: fonts.b600, fontSize: 12, color: c.muted },
   price: { fontFamily: fonts.h900, fontSize: 28, color: c.brand },
   label: { fontFamily: fonts.b700, fontSize: 13, color: c.onSurface },
-  variant: { minHeight: 44, paddingHorizontal: 16, borderRadius: 12, borderWidth: 1, borderColor: c.border, backgroundColor: c.white, justifyContent: "center" },
+  variant: { minHeight: 44, paddingHorizontal: 16, borderRadius: 0, borderWidth: 1, borderColor: c.border, backgroundColor: c.white, justifyContent: "center" },
   variantActive: { backgroundColor: c.forest, borderColor: c.forest },
   variantText: { fontFamily: fonts.b700, fontSize: 13, color: c.onSurface },
   stepper: { flexDirection: "row", alignItems: "center", alignSelf: "flex-start", borderWidth: 1, borderColor: c.border, borderRadius: 12, backgroundColor: c.white },

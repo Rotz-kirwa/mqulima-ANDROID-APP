@@ -8,7 +8,7 @@ from pymongo import ReturnDocument
 from auth import CurrentUser, OptionalUser, new_id, now_iso
 from db import NO_ID, db
 
-router = APIRouter(prefix="/threads", tags=["forum"])
+router = APIRouter(tags=["forum"])
 
 
 class ThreadIn(BaseModel):
@@ -87,7 +87,9 @@ def _view(doc: dict, user: Optional[dict]) -> dict:
     return clean
 
 
-@router.get("", response_model=list[ThreadOut])
+@router.get("/threads", response_model=list[ThreadOut])
+@router.get("/posts", response_model=list[ThreadOut])
+@router.get("/forum/posts", response_model=list[ThreadOut])
 async def list_threads(user: OptionalUser, mine: bool = False):
     if mine and not user:
         raise HTTPException(401, "Sign in to see your discussions")
@@ -96,7 +98,9 @@ async def list_threads(user: OptionalUser, mine: bool = False):
     return [_view(doc, user) for doc in docs]
 
 
-@router.get("/feed", response_model=FeedOut)
+@router.get("/threads/feed", response_model=FeedOut)
+@router.get("/forum/feed", response_model=FeedOut)
+@router.get("/posts/feed", response_model=FeedOut)
 async def forum_feed(
     user: OptionalUser,
     q: str = Query(default="", max_length=120),
@@ -111,7 +115,7 @@ async def forum_feed(
         if not user:
             raise HTTPException(401, "Sign in to see your discussions")
         filters["user_id" if scope == "mine" else "saved_by"] = user["id"]
-    if tag:
+    if tag and tag != "All":
         filters["tag"] = tag
     if q.strip():
         pattern = {"$regex": re.escape(q.strip()), "$options": "i"}
@@ -125,7 +129,9 @@ async def forum_feed(
     return {"items": [_view(doc, user) for doc in docs], "total": total, "next_page": page + 1 if page * limit < total else None}
 
 
-@router.get("/{tid}", response_model=ThreadOut)
+@router.get("/threads/{tid}", response_model=ThreadOut)
+@router.get("/posts/{tid}", response_model=ThreadOut)
+@router.get("/forum/posts/{tid}", response_model=ThreadOut)
 async def get_thread(tid: str, user: OptionalUser):
     doc = await db.threads.find_one({"id": tid, "hidden": {"$ne": True}}, NO_ID)
     if not doc:
@@ -133,7 +139,9 @@ async def get_thread(tid: str, user: OptionalUser):
     return _view(doc, user)
 
 
-@router.post("", status_code=201, response_model=ThreadOut)
+@router.post("/threads", status_code=201, response_model=ThreadOut)
+@router.post("/posts", status_code=201, response_model=ThreadOut)
+@router.post("/forum/posts", status_code=201, response_model=ThreadOut)
 async def create_thread(body: ThreadIn, user: CurrentUser):
     now = now_iso()
     doc = {
@@ -148,7 +156,9 @@ async def create_thread(body: ThreadIn, user: CurrentUser):
     return _view(doc, user)
 
 
-@router.post("/{tid}/comments", status_code=201, response_model=CommentOut)
+@router.post("/threads/{tid}/comments", status_code=201, response_model=CommentOut)
+@router.post("/posts/{tid}/comments", status_code=201, response_model=CommentOut)
+@router.post("/forum/posts/{tid}/comments", status_code=201, response_model=CommentOut)
 async def add_comment(tid: str, body: CommentIn, user: CurrentUser):
     doc = await db.threads.find_one({"id": tid, "hidden": {"$ne": True}}, NO_ID)
     if not doc:
@@ -165,7 +175,9 @@ async def add_comment(tid: str, body: CommentIn, user: CurrentUser):
     return comment
 
 
-@router.post("/{tid}/like")
+@router.post("/threads/{tid}/like")
+@router.post("/posts/{tid}/like")
+@router.post("/forum/posts/{tid}/like")
 async def toggle_like(tid: str, user: CurrentUser):
     # A single atomic update keeps counts consistent, even with concurrent taps/devices.
     liked = {"$in": [user["id"], {"$ifNull": ["$liked_by", []]}]}
@@ -179,7 +191,8 @@ async def toggle_like(tid: str, user: CurrentUser):
     return {"liked": user["id"] in doc["liked_by"], "likes": doc["likes"]}
 
 
-@router.put("/{tid}/bookmark")
+@router.put("/threads/{tid}/bookmark")
+@router.put("/forum/posts/{tid}/bookmark")
 async def bookmark(tid: str, body: SavedIn, user: CurrentUser):
     operation = "$addToSet" if body.saved else "$pull"
     result = await db.threads.update_one({"id": tid, "hidden": {"$ne": True}}, {operation: {"saved_by": user["id"]}})
@@ -188,7 +201,8 @@ async def bookmark(tid: str, body: SavedIn, user: CurrentUser):
     return {"saved": body.saved}
 
 
-@router.put("/{tid}/resolved")
+@router.put("/threads/{tid}/resolved")
+@router.put("/forum/posts/{tid}/resolved")
 async def resolve(tid: str, body: ResolvedIn, user: CurrentUser):
     doc = await db.threads.find_one({"id": tid, "hidden": {"$ne": True}}, NO_ID)
     if not doc:

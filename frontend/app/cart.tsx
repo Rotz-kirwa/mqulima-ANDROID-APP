@@ -71,7 +71,7 @@ const useStyles = makeStyles((c) => ({
   emptyIcon: { width: 80, height: 80, borderRadius: 40, backgroundColor: c.brandTertiary, alignItems: "center", justifyContent: "center" },
   emptyTitle: { fontFamily: fonts.h900, fontSize: 22, color: c.onSurface },
   row: { flexDirection: "row", gap: 12, backgroundColor: c.white, borderWidth: 1, borderColor: c.border, borderRadius: 20, padding: 12 },
-  img: { width: 84, height: 84, borderRadius: 12, backgroundColor: c.white },
+  img: { width: 84, height: 84, borderRadius: 0, backgroundColor: c.white },
   name: { fontFamily: fonts.h700, fontSize: 14, color: c.onSurface },
   variant: { fontFamily: fonts.b600, fontSize: 12, color: c.muted },
   price: { fontFamily: fonts.h900, fontSize: 16, color: c.brand },

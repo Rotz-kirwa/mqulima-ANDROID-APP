@@ -4,7 +4,7 @@ import { Lucide } from "@react-native-vector-icons/lucide";
 import { Image } from "@/src/components/Img";
 import { fonts, makeStyles, useTheme } from "@/src/theme";
 
-type BtnVariant = "lime" | "green" | "orange" | "ghostDark" | "outline";
+type BtnVariant = "lime" | "green" | "yellow" | "orange" | "ghostDark" | "outline";
 
 export function Btn({
   label, onPress, variant = "lime", icon = "arrow-right", testID, style, loading, full, small,
@@ -16,6 +16,7 @@ export function Btn({
   const map = {
     lime: { bg: colors.brandSecondary, fg: colors.onBrandSecondary, bd: colors.brandSecondary },
     green: { bg: colors.brandPrimary, fg: colors.white, bd: colors.brandPrimary },
+    yellow: { bg: "#FACC15", fg: colors.forestDeep, bd: "#EAB308" },
     orange: { bg: colors.orange, fg: colors.white, bd: colors.orange },
     ghostDark: { bg: colors.whiteA10, fg: colors.white, bd: colors.whiteA20 },
     outline: { bg: colors.surfaceSecondary, fg: colors.onSurface, bd: colors.border },
@@ -27,7 +28,7 @@ export function Btn({
       disabled={loading}
       style={({ pressed }) => [
         {
-          minHeight: small ? 40 : 48, paddingHorizontal: small ? 16 : 22, borderRadius: 999, flexDirection: "row",
+          minHeight: small ? 40 : 48, paddingHorizontal: small ? 16 : 22, borderRadius: 0, flexDirection: "row",
           alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: map.bg, borderWidth: 1, borderColor: map.bd,
           alignSelf: full ? "stretch" : "flex-start", transform: [{ scale: pressed ? 0.97 : 1 }], opacity: pressed ? 0.9 : 1,
         },
@@ -83,21 +84,106 @@ export function Body({ children, style, dark }: { children: React.ReactNode; sty
 
 export function Avatar({ uri, size = 40 }: { uri: string; size?: number }) {
   const { colors } = useTheme();
-  return <Image source={{ uri }} style={{ width: size, height: size, borderRadius: size / 2, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.brand }} transition={200} />;
+  return <Image circular source={{ uri }} style={{ width: size, height: size, borderRadius: size / 2, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.brand }} transition={200} />;
 }
 
-export function Chip({ label, active, onPress, testID }: { label: string; active: boolean; onPress: () => void; testID?: string }) {
+export function Chip({
+  label,
+  active,
+  onPress,
+  testID,
+  icon,
+  count,
+  size = "md",
+  style,
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+  testID?: string;
+  icon?: string | null;
+  count?: number;
+  size?: "sm" | "md" | "lg";
+  style?: StyleProp<ViewStyle>;
+}) {
   const { colors } = useTheme();
+  const isSm = size === "sm";
+  const isLg = size === "lg";
+  const h = isSm ? 32 : isLg ? 44 : 38;
+  const padH = isSm ? 12 : isLg ? 18 : 14;
+  const fontSz = isSm ? 11.5 : isLg ? 13 : 12.5;
+
   return (
     <Pressable
       testID={testID}
       onPress={onPress}
-      style={{
-        height: 36, flexShrink: 0, paddingHorizontal: 14, borderRadius: 999, justifyContent: "center", borderWidth: 1,
-        backgroundColor: active ? colors.forest : colors.surfaceSecondary, borderColor: active ? colors.forest : colors.border,
-      }}
+      style={({ pressed }) => [
+        {
+          height: h,
+          flexShrink: 0,
+          paddingHorizontal: padH,
+          borderRadius: 0,
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 6,
+          backgroundColor: active ? colors.forest : colors.white,
+          borderWidth: 1.5,
+          borderColor: active ? colors.forest : colors.border,
+          boxShadow: active ? "0px 2px 4px rgba(15, 41, 30, 0.22)" : "0px 1px 2px rgba(0, 0, 0, 0.04)",
+          elevation: active ? 3 : 1,
+          transform: [{ scale: pressed ? 0.96 : 1 }],
+        },
+        style,
+      ]}
     >
-      <Text style={{ fontFamily: fonts.b700, fontSize: 12, color: active ? colors.white : colors.onSurfaceSecondary }}>{label}</Text>
+      {icon ? (
+        <Lucide
+          name={icon as any}
+          size={isSm ? 13 : isLg ? 16 : 14}
+          color={active ? colors.brandSecondary : colors.muted}
+        />
+      ) : null}
+      <Text
+        style={{
+          fontFamily: active ? fonts.b700 : fonts.b600,
+          fontSize: fontSz,
+          color: active ? colors.white : colors.onSurfaceSecondary,
+        }}
+      >
+        {label}
+      </Text>
+      {count !== undefined ? (
+        <View
+          style={{
+            paddingHorizontal: 6,
+            paddingVertical: 1,
+            borderRadius: 999,
+            backgroundColor: active ? colors.brandSecondary : colors.surfaceTertiary,
+          }}
+        >
+          <Text
+            style={{
+              fontFamily: fonts.b700,
+              fontSize: 10,
+              color: active ? colors.onBrandSecondary : colors.muted,
+            }}
+          >
+            {count}
+          </Text>
+        </View>
+      ) : active ? (
+        <View
+          style={{
+            width: 5,
+            height: 5,
+            borderRadius: 3,
+            backgroundColor: colors.brandSecondary,
+            marginLeft: 1,
+          }}
+        />
+      ) : null}
     </Pressable>
   );
 }
+

@@ -4,12 +4,12 @@ export const toolsHero = {
   title: "Precision Farm",
   highlight: "Intelligence",
   title2: "& Tools",
-  text: "Real-time Open-Meteo telemetry, live KAMIS commodity market feeds, spray suitability radar, and instant AI plant disease diagnosis.",
+  text: "Real-time Open-Meteo & ground-station weather telemetry, live KAMIS commodity market feeds, spray suitability radar, and Mqulima AI guidance.",
   stats: [
     { v: "47", l: "Counties Monitored" },
     { v: "7-Day", l: "Microclimate Forecast" },
     { v: "Live", l: "KAMIS Market Feeds" },
-    { v: "< 5 sec", l: "AI Diagnostics" },
+    { v: "60+", l: "Commodities Tracked" },
   ],
 };
 
@@ -17,17 +17,14 @@ export const toolsIntro = {
   badge: "MQULIMA TOOLS",
   title: "Farming decisions are only as good as the",
   highlight: "information behind them",
-  text: "Mqulima Tools puts the pulse of the market, the sky above your farm, and the story behind every product literally in your hands. Plan smarter, farm sharper, and prove what you’ve built. Win",
+  text: "Mqulima Tools puts the pulse of the market and the sky above your farm literally in your hands. Plan smarter, farm sharper, and make every season count.",
 };
 
 export const tools = [
   { id: "weather", n: "#38", icon: "cloud-sun", title: "Weather Radar", text: "Know what the sky is planning before planning for your farm. Plan planting, spraying and harvesting around forecasts built for farmers.", cta: "Weather Forecast" },
   { id: "markets", n: "#39", icon: "chart-line", title: "Live Markets", text: "See real-time prices across markets before you sell or buy, so every transaction is made with full information, not guesswork.", cta: "View Markets" },
-  { id: "crop-doctor", n: "#40", icon: "scan-search", title: "AI Crop Doctor", text: "Instant AI plant disease diagnosis. Describe the symptoms you see and get a likely diagnosis and treatment plan.", cta: "Diagnose Crop" },
-  { id: "field-mapping", n: "#41", icon: "map", title: "Field mapping", text: "Map your farm precisely and manage it with confidence. Success starts with you knowing how big you need to jump.", cta: "Map Your Farm" },
-  { id: "weather-advisory", n: "#42", icon: "cloud-rain", title: "Weather Advisory", text: "Get practical, farmer-focused guidance on what today’s, next week’s and next year’s weather means for your specific agriculture decisions.", cta: "Consult Expert" },
-  { id: "trace", n: "#43", icon: "qr-code", title: "Mqulima Trace", text: "Give your produce a verifiable story. A story from your lovely farm to the esteemed consumer that builds trust and unlocks better markets.", cta: "Become Traceable" },
-  { id: "ai", n: "#44", icon: "bot", title: "Mqulima AI", text: "Get instant, intelligent answers to your agricultural questions, powered by AI built specifically for your agriculture.", cta: "Ask MqulimaAI" },
+  { id: "weather-advisory", n: "#40", icon: "cloud-rain", title: "Weather Advisory", text: "Get practical, farmer-focused guidance on what today’s, next week’s and next year’s weather means for your specific agriculture decisions.", cta: "Consult Expert" },
+  { id: "ai", n: "#41", icon: "bot", title: "Mqulima AI", text: "Get instant, intelligent answers to your agricultural questions, powered by AI built specifically for your agriculture.", cta: "Ask MqulimaAI" },
 ];
 
 export const weather = {
@@ -48,27 +45,31 @@ export const weather = {
   ],
 };
 
-export const marketFilters = ["All Varieties", "Fruits", "Horticulture", "Cash"];
-export const marketPrices = [
-  { emoji: "🥭", name: "Apple Mangoes", unit: "kg", market: "Mombasa", price: 100, change: 4, type: "Fruits" },
-  { emoji: "🥑", name: "Avocados (Fuerte)", unit: "kg", market: "Nairobi", price: 103, change: 4.1, type: "Fruits" },
-  { emoji: "🥬", name: "Cabbage", unit: "medium head", market: "Nairobi", price: 61, change: 2, type: "Horticulture" },
-  { emoji: "🥬", name: "Cabbage", unit: "medium head", market: "Nyandarua", price: 43, change: -2.6, type: "Horticulture" },
-  { emoji: "🍅", name: "Tomatoes", unit: "kg", market: "Nairobi", price: 85, change: 3.2, type: "Horticulture" },
-  { emoji: "🥔", name: "Potatoes", unit: "kg", market: "Nyandarua", price: 48, change: -1.4, type: "Horticulture" },
-  { emoji: "🧅", name: "Onions (Red)", unit: "kg", market: "Kisumu", price: 120, change: 1.1, type: "Horticulture" },
-  { emoji: "🍌", name: "Bananas (Cooking)", unit: "bunch", market: "Kisii", price: 650, change: 0.8, type: "Fruits" },
-  { emoji: "🌽", name: "Dry Maize", unit: "90kg bag", market: "Eldoret", price: 3800, change: -3.1, type: "Cash" },
-  { emoji: "🫘", name: "Beans (Rosecoco)", unit: "kg", market: "Nakuru", price: 145, change: 2.4, type: "Cash" },
-  { emoji: "☕", name: "Coffee (Cherry)", unit: "kg", market: "Nyeri", price: 95, change: 5.0, type: "Cash" },
-  { emoji: "🍵", name: "Tea (Green leaf)", unit: "kg", market: "Kericho", price: 24, change: 0.4, type: "Cash" },
+export const marketFilters = [
+  "All Varieties",
+  "Cereals & Grains",
+  "Pulses & Legumes",
+  "Horticulture",
+  "Fruits",
+  "Livestock & Dairy",
+  "Cash",
 ];
-
-export const cropSymptoms = [
-  { id: "yellow", label: "Yellowing leaves", dx: "Nitrogen deficiency", tx: "Top-dress with CAN or Urea at 50kg/acre and ensure adequate soil moisture." },
-  { id: "spots", label: "Brown leaf spots", dx: "Early blight / leaf spot (fungal)", tx: "Remove affected leaves and spray a copper-based or mancozeb fungicide every 7–10 days." },
-  { id: "wilt", label: "Sudden wilting", dx: "Bacterial wilt", tx: "Uproot and destroy affected plants, rotate with non-host crops and avoid waterlogging." },
-  { id: "holes", label: "Holes in leaves", dx: "Caterpillar / Fall armyworm damage", tx: "Scout early mornings and apply a recommended insecticide into the whorl." },
-  { id: "powder", label: "White powdery coating", dx: "Powdery mildew", tx: "Improve air circulation and apply a sulphur-based fungicide." },
-  { id: "curl", label: "Curling leaves", dx: "Aphids / whitefly or viral infection", tx: "Use yellow sticky traps, apply neem-based or systemic insecticide and control weeds." },
+export const marketPrices = [
+  { emoji: "🌽", name: "Dry Maize", unit: "90kg bag", market: "Eldoret (NCPB)", price: 3800, change: -3.1, type: "Cereals & Grains" },
+  { emoji: "🌾", name: "Wheat", unit: "90kg bag", market: "Narok (Central)", price: 4200, change: 1.2, type: "Cereals & Grains" },
+  { emoji: "🍚", name: "Pishori Rice", unit: "50kg bag", market: "Kirinyaga (Mwea)", price: 6600, change: 1.5, type: "Cereals & Grains" },
+  { emoji: "🫘", name: "Rosecoco Beans", unit: "90kg bag", market: "Nairobi (Wakulima)", price: 8600, change: 2.4, type: "Pulses & Legumes" },
+  { emoji: "🫘", name: "Green Grams (Ndengu)", unit: "90kg bag", market: "Kitui (Central)", price: 9100, change: -0.8, type: "Pulses & Legumes" },
+  { emoji: "🍅", name: "Fresh Tomatoes", unit: "64kg crate", market: "Nairobi (Marikiti)", price: 4950, change: 3.2, type: "Horticulture" },
+  { emoji: "🥔", name: "Shangi Potatoes", unit: "50kg bag", market: "Nyandarua (Ol Kalou)", price: 2450, change: -1.4, type: "Horticulture" },
+  { emoji: "🧅", name: "Red Onions", unit: "13kg net bag", market: "Kajiado (Isinya)", price: 1520, change: 1.1, type: "Horticulture" },
+  { emoji: "🥬", name: "Cabbage", unit: "medium head", market: "Nyandarua", price: 52, change: -2.6, type: "Horticulture" },
+  { emoji: "🥑", name: "Avocados (Fuerte)", unit: "kg", market: "Murang'a", price: 84, change: 4.1, type: "Fruits" },
+  { emoji: "🥭", name: "Apple Mangoes", unit: "kg", market: "Makueni (Wote)", price: 90, change: 4.0, type: "Fruits" },
+  { emoji: "🍌", name: "Cooking Bananas (Matoke)", unit: "bunch", market: "Kisii", price: 650, change: 0.8, type: "Fruits" },
+  { emoji: "🥛", name: "Fresh Raw Milk", unit: "1L", market: "Nyandarua", price: 55, change: 1.2, type: "Livestock & Dairy" },
+  { emoji: "🥩", name: "Prime Beef", unit: "kg", market: "Kajiado", price: 700, change: 0.7, type: "Livestock & Dairy" },
+  { emoji: "☕", name: "Coffee (Cherry)", unit: "kg", market: "Nyeri", price: 112, change: 5.0, type: "Cash" },
+  { emoji: "🍃", name: "Tea (Green Leaf)", unit: "kg", market: "Kericho", price: 32, change: 0.4, type: "Cash" },
+  { emoji: "🧪", name: "DAP Fertilizer", unit: "50kg bag", market: "Eldoret (NCPB)", price: 4050, change: -1.4, type: "Cash" },
 ];

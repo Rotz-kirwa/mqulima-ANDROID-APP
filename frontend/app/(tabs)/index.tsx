@@ -1,5 +1,5 @@
 import React from "react";
-import { FlatList, Pressable, ScrollView, Text, View, useWindowDimensions } from "react-native";
+import { Pressable, ScrollView, Text, View, useWindowDimensions } from "react-native";
 import { Image } from "@/src/components/Img";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -9,17 +9,20 @@ import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import { TopBar } from "@/src/components/TopBar";
 import { Btn, Body, Pill, SectionTitle, Avatar } from "@/src/components/ui";
 import { ArticleCard } from "@/src/components/Cards";
-import { Skeleton, ListSkeleton } from "@/src/components/Skeleton";
+import { ListSkeleton } from "@/src/components/Skeleton";
+import { FeaturedCollectionCarousel } from "@/src/components/FeaturedCollectionCarousel";
 import { Footer } from "@/src/components/Footer";
 import { useTabBottom } from "@/src/components/Page";
 import { api } from "@/src/services/api";
 import * as H from "@/src/data/home";
-import { fonts, makeStyles, useTheme } from "@/src/theme";
+import { useApp } from "@/src/store/AppStore";
+import { fonts, makeStyles, textShadow, useTheme } from "@/src/theme";
 
 export default function Home() {
   const s = useStyles();
   const { colors } = useTheme();
   const router = useRouter();
+  const { user } = useApp();
   const { width } = useWindowDimensions();
   const bottom = useTabBottom();
   const featured = useQuery({ queryKey: ["featured"], queryFn: api.getFeaturedProducts });
@@ -27,7 +30,6 @@ export default function Home() {
   const services = useQuery({ queryKey: ["serviceCategories"], queryFn: api.getServiceCategories });
   const courses = useQuery({ queryKey: ["courses"], queryFn: api.getCourses });
   const serviceCards = (services.data ?? []).slice(0, 6).map(c => ({ ...c, category: c.id, items: c.subs.map(item => item.title), icon: H.homeServiceCards.find(original => original.category === c.id)?.icon || "sprout" }));
-  const cardW = (width - 32 - 12) / 2;
 
   return (
     <View style={s.root} testID="home-screen">
@@ -47,8 +49,12 @@ export default function Home() {
             </Animated.Text>
             <Animated.Text entering={FadeInDown.delay(240).duration(500)} style={s.heroSub}>{H.hero.subtext}</Animated.Text>
             <Animated.View entering={FadeInDown.delay(360).duration(500)} style={{ flexDirection: "row", gap: 10, marginTop: 8 }}>
-              <Pressable testID="hero-join-us-btn" onPress={() => router.push("/auth/sign-up")} style={({ pressed }) => [s.heroBtn, { backgroundColor: colors.orange, transform: [{ scale: pressed ? 0.97 : 1 }] }]}>
-                <Text style={s.heroBtnText}>JOIN US</Text>
+              <Pressable
+                testID="hero-join-us-btn"
+                onPress={() => (user ? router.navigate("/(tabs)/shop") : router.push("/auth/sign-up"))}
+                style={({ pressed }) => [s.heroBtn, { backgroundColor: colors.orange, transform: [{ scale: pressed ? 0.97 : 1 }] }]}
+              >
+                <Text style={s.heroBtnText}>{user ? "SHOP NOW" : "JOIN US"}</Text>
                 <Lucide name="arrow-right" size={14} color={colors.white} />
               </Pressable>
               <Pressable testID="hero-explore-btn" onPress={() => router.push("/tools")} style={({ pressed }) => [s.heroBtn, { backgroundColor: colors.greenDark, borderWidth: 1, borderColor: "rgba(74,222,128,0.4)", transform: [{ scale: pressed ? 0.97 : 1 }] }]}>
@@ -95,42 +101,13 @@ export default function Home() {
           ))}
         </View>
 
-        {/* FEATURED COLLECTION */}
+        {/* FEATURED COLLECTION (Auto-Sliding 3s Showcase matching mqulima.com) */}
         <View style={[s.section, { backgroundColor: colors.surface, paddingHorizontal: 0 }]}>
-          <View style={{ paddingHorizontal: 16 }}>
-            <SectionTitle badge="FEATURED COLLECTION" title="Farm" highlight="Essentials" size={26} />
-          </View>
-          {featured.isLoading ? (
-            <View style={{ flexDirection: "row", gap: 12, paddingHorizontal: 16 }}>
-              <Skeleton style={{ width: cardW, height: cardW * 1.33 }} />
-              <Skeleton style={{ width: cardW, height: cardW * 1.33 }} />
-            </View>
-          ) : (
-            <FlatList
-              testID="featured-collection-list"
-              horizontal
-              data={featured.data}
-              keyExtractor={(p) => p.id}
-              showsHorizontalScrollIndicator={false}
-              snapToInterval={cardW + 12}
-              decelerationRate="fast"
-              contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
-              renderItem={({ item }) => (
-                <Pressable testID={`featured-${item.id}`} onPress={() => router.push(`/product/${item.id}`)} style={[s.featCard, { width: cardW, height: cardW * 1.33 }]}>
-                  <Image source={{ uri: item.image }} style={{ flex: 1, margin: 10, marginBottom: 36 }} contentFit="contain" transition={250} />
-                  <LinearGradient colors={["rgba(255,255,255,0)", colors.white, colors.white]} style={s.featLabel}>
-                    <Text style={s.featName} numberOfLines={2}>{item.name}</Text>
-                  </LinearGradient>
-                </Pressable>
-              )}
-            />
-          )}
-          <View style={{ paddingHorizontal: 16, alignItems: "center" }}>
-            <Pressable testID="explore-agroshop-btn" onPress={() => router.navigate("/(tabs)/shop")} style={({ pressed }) => [s.greenBtn, { opacity: pressed ? 0.9 : 1 }]}>
-              <Text style={s.greenBtnText}>EXPLORE AGROSHOP</Text>
-              <Lucide name="arrow-right" size={16} color={colors.white} />
-            </Pressable>
-          </View>
+          <FeaturedCollectionCarousel
+            products={featured.data}
+            isLoading={featured.isLoading}
+            showExploreButton
+          />
         </View>
 
         {/* SERVICES */}
@@ -249,7 +226,12 @@ export default function Home() {
             <Text style={s.joinTitle}>{H.joinCta.title}</Text>
             <Body dark style={{ fontSize: 13 }}>{H.joinCta.text}</Body>
             <View style={{ flexDirection: "row", gap: 10, marginTop: 8 }}>
-              <Btn testID="join-mqulima-btn" label="Join Mqulima" onPress={() => router.push("/auth/sign-up")} style={{ flex: 1 }} />
+              <Btn
+                testID="join-mqulima-btn"
+                label={user ? "Shop Now" : "Join Mqulima"}
+                onPress={() => (user ? router.navigate("/(tabs)/shop") : router.push("/auth/sign-up"))}
+                style={{ flex: 1 }}
+              />
               <Btn testID="join-explore-btn" variant="ghostDark" icon={null} label="Explore Ecosystem" onPress={() => router.push("/tools")} style={{ flex: 1, paddingHorizontal: 8 }} />
             </View>
           </View>
@@ -267,19 +249,19 @@ const StyleSheetAbs = { position: "absolute" as const, top: 0, left: 0, right: 0
 
 const useStyles = makeStyles((c) => ({
   root: { flex: 1, backgroundColor: c.surface },
-  hero: { height: 620, backgroundColor: c.heroBg, justifyContent: "center", overflow: "hidden" },
+  hero: { minHeight: 620, backgroundColor: c.heroBg, justifyContent: "flex-end", paddingTop: 72, paddingBottom: 76, overflow: "hidden" },
   heroInner: { paddingHorizontal: 20, gap: 20 },
   heroBadge: { flexDirection: "row", alignItems: "center", gap: 8, alignSelf: "flex-start", borderRadius: 999, borderWidth: 1, borderColor: c.whiteA20, backgroundColor: c.blackA30, paddingHorizontal: 14, paddingVertical: 6 },
   heroBadgeText: { color: c.mint, fontFamily: fonts.b800, fontSize: 10, letterSpacing: 2, textTransform: "uppercase" },
-  heroTitle: { color: c.white, fontFamily: fonts.h900, fontSize: 38, lineHeight: 41, textTransform: "uppercase", letterSpacing: -0.5, textShadowColor: "rgba(0,0,0,0.7)", textShadowRadius: 10, textShadowOffset: { width: 0, height: 2 } },
-  heroSub: { color: c.white, fontFamily: fonts.b500, fontSize: 16, lineHeight: 25, textShadowColor: "rgba(0,0,0,0.85)", textShadowRadius: 4, textShadowOffset: { width: 0, height: 2 } },
-  heroBtn: { flex: 1, minHeight: 50, borderRadius: 12, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingHorizontal: 10 },
+  heroTitle: { color: c.white, fontFamily: fonts.h900, fontSize: 38, lineHeight: 41, textTransform: "uppercase", letterSpacing: -0.5, ...textShadow("rgba(0,0,0,0.7)", 10, 2) },
+  heroSub: { color: c.white, fontFamily: fonts.b500, fontSize: 16, lineHeight: 25, ...textShadow("rgba(0,0,0,0.85)", 4, 2) },
+  heroBtn: { flex: 1, minHeight: 50, borderRadius: 0, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingHorizontal: 10 },
   heroBtnText: { color: c.white, fontFamily: fonts.b800, fontSize: 11, letterSpacing: 0.8 },
   section: { paddingHorizontal: 16, paddingVertical: 40, gap: 20 },
   quoteCard: { backgroundColor: c.white, borderRadius: 24, borderWidth: 1, borderColor: c.border, padding: 24, gap: 8 },
   quoteTitle: { fontFamily: fonts.h800, fontSize: 18, color: c.onSurface },
   quote: { fontFamily: fonts.b500, fontStyle: "italic", fontSize: 13, lineHeight: 21, color: c.onSurfaceSecondary },
-  imgCard: { aspectRatio: 4 / 3, borderRadius: 28, overflow: "hidden", borderWidth: 1, borderColor: c.border },
+  imgCard: { aspectRatio: 4 / 3, borderRadius: 0, overflow: "hidden", borderWidth: 1, borderColor: c.border },
   imgKicker: { color: c.brandSecondary, fontFamily: fonts.b700, fontSize: 12, letterSpacing: 2 },
   imgTitle: { color: c.white, fontFamily: fonts.h700, fontSize: 20, textTransform: "uppercase", marginTop: 4 },
   ecoCard: { backgroundColor: "rgba(22,56,43,0.7)", borderWidth: 1, borderColor: c.whiteA10, borderRadius: 24, padding: 24 },
@@ -290,9 +272,9 @@ const useStyles = makeStyles((c) => ({
   featCard: { backgroundColor: c.white, borderWidth: 1, borderColor: c.border, overflow: "hidden" },
   featLabel: { position: "absolute", left: 0, right: 0, bottom: 0, paddingTop: 24, paddingBottom: 10, paddingHorizontal: 12 },
   featName: { fontFamily: fonts.h800, fontSize: 13, color: c.onSurface, lineHeight: 16 },
-  greenBtn: { minHeight: 48, width: "100%", maxWidth: 320, borderRadius: 12, backgroundColor: c.brandPrimary, flexDirection: "row", gap: 10, alignItems: "center", justifyContent: "center" },
+  greenBtn: { minHeight: 48, width: "100%", maxWidth: 320, borderRadius: 0, backgroundColor: c.brandPrimary, flexDirection: "row", gap: 10, alignItems: "center", justifyContent: "center" },
   greenBtnText: { color: c.white, fontFamily: fonts.b800, fontSize: 13, letterSpacing: 1 },
-  svcCard: { backgroundColor: c.white, borderRadius: 28, borderWidth: 1, borderColor: c.border, overflow: "hidden" },
+  svcCard: { backgroundColor: c.white, borderRadius: 28, borderTopLeftRadius: 0, borderTopRightRadius: 0, borderWidth: 1, borderColor: c.border, overflow: "hidden" },
   svcIcon: { position: "absolute", top: 16, left: 16, padding: 10, borderRadius: 999, backgroundColor: c.brandPrimary },
   svcCount: { position: "absolute", top: 16, right: 16, backgroundColor: c.whiteA85, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 4 },
   svcCountText: { fontFamily: fonts.b700, fontSize: 12, color: "#1E293B" },

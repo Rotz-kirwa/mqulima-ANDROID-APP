@@ -10,10 +10,14 @@ type State = { cart: CartItem[]; saved: string[] };
 
 const initial: State = { cart: [], saved: [] };
 const KEY = "mqulima_state_v2";
+export const ONBOARDING_KEY = "mqulima_onboarding_completed_v7";
 
 type Ctx = State & {
   user: User | null;
   ready: boolean;
+  onboardingCompleted: boolean;
+  completeOnboarding: () => Promise<void>;
+  resetOnboarding: () => Promise<void>;
   signIn: (token: string, u: User) => Promise<void>;
   signOut: () => Promise<void>;
   addToCart: (item: Omit<CartItem, "key" | "qty">, qty?: number) => void;
@@ -31,11 +35,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<State>(initial);
   const [user, setUser] = useState<User | null>(null);
   const [ready, setReady] = useState(false);
+  const [onboardingCompleted, setOnboardingCompleted] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     (async () => {
+      const seenOnboarding = await storage.getItem<boolean>(ONBOARDING_KEY, false);
+      if (seenOnboarding === true) {
+        setOnboardingCompleted(true);
+      }
+
       const raw = await storage.getItem(KEY, "");
       if (raw) {
         try {
@@ -79,16 +89,31 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     timer.current = setTimeout(() => setToastMsg(null), 2400);
   }, []);
 
+  const completeOnboarding = useCallback(async () => {
+    setOnboardingCompleted(true);
+    await storage.setItem(ONBOARDING_KEY, true);
+  }, []);
+
+  const resetOnboarding = useCallback(async () => {
+    setOnboardingCompleted(false);
+    await storage.removeItem(ONBOARDING_KEY);
+  }, []);
+
   const value = useMemo<Ctx>(
     () => ({
       ...state,
       user,
       ready,
+      onboardingCompleted,
+      completeOnboarding,
+      resetOnboarding,
       toastMsg,
       toast,
       signIn: async (token, u) => {
         await storage.secureSet(TOKEN_KEY, token);
         await storage.setItem("mqulima_user", JSON.stringify(u));
+        await storage.setItem(ONBOARDING_KEY, true);
+        setOnboardingCompleted(true);
         setUser(u);
         queryClient.invalidateQueries();
       },
@@ -98,8 +123,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setUser(null);
         queryClient.removeQueries({ queryKey: ["orders"] });
         queryClient.removeQueries({ queryKey: ["my-threads"] });
-        queryClient.removeQueries({ queryKey: ["admin"] });
-        queryClient.removeQueries({ queryKey: ["admin-session"] });
         queryClient.invalidateQueries({ queryKey: ["forum-feed"] });
         queryClient.invalidateQueries({ queryKey: ["thread"] });
         queryClient.invalidateQueries({ queryKey: ["threads"] });
@@ -119,7 +142,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       clearCart: () => setState((s) => ({ ...s, cart: [] })),
       toggleSaved: (id) => setState((s) => ({ ...s, saved: s.saved.includes(id) ? s.saved.filter((x) => x !== id) : [...s.saved, id] })),
     }),
-    [state, user, ready, toastMsg, toast],
+    [state, user, ready, onboardingCompleted, completeOnboarding, resetOnboarding, toastMsg, toast],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

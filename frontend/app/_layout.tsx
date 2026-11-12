@@ -10,12 +10,41 @@ import { useEffect } from "react";
 
 import { ErrorBoundary } from "@/src/components/error-boundary";
 import { queryClient } from "@/src/query-client";
-import { AppProvider } from "@/src/store/AppStore";
+import { AppProvider, useApp } from "@/src/store/AppStore";
 import { FloatingButtons, Toast } from "@/src/components/Floating";
+import { OnboardingFlow } from "@/src/components/OnboardingFlow";
 import { colors } from "@/src/theme";
 
 LogBox.ignoreAllLogs(true);
 SplashScreen.preventAutoHideAsync().catch(() => {});
+
+function AppContent() {
+  const { ready, onboardingCompleted, completeOnboarding } = useApp();
+
+  if (!ready) {
+    return <View style={[styles.root, { backgroundColor: colors.surface }]} />;
+  }
+
+  if (!onboardingCompleted) {
+    return <OnboardingFlow onFinish={completeOnboarding} />;
+  }
+
+  return (
+    <>
+      <StatusBar style="dark" />
+      <View style={styles.root}>
+        <Stack screenOptions={{ headerShown: false, animation: "slide_from_right", contentStyle: { backgroundColor: colors.surface } }}>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="onboarding" options={{ animation: "fade" }} />
+          <Stack.Screen name="search" options={{ animation: "fade_from_bottom" }} />
+          <Stack.Screen name="ai" options={{ animation: "slide_from_bottom" }} />
+        </Stack>
+        <FloatingButtons />
+        <Toast />
+      </View>
+    </>
+  );
+}
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -43,16 +72,7 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <KeyboardProvider>
             <AppProvider>
-              <StatusBar style="dark" />
-              <View style={styles.root}>
-                <Stack screenOptions={{ headerShown: false, animation: "slide_from_right", contentStyle: { backgroundColor: colors.surface } }}>
-                  <Stack.Screen name="(tabs)" />
-                  <Stack.Screen name="search" options={{ animation: "fade_from_bottom" }} />
-                  <Stack.Screen name="ai" options={{ animation: "slide_from_bottom" }} />
-                </Stack>
-                <FloatingButtons />
-                <Toast />
-              </View>
+              <AppContent />
             </AppProvider>
           </KeyboardProvider>
         </QueryClientProvider>

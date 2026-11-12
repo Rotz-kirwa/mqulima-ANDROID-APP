@@ -35,6 +35,7 @@ async def service(identifier: str):
 
 
 @router.get("/courses")
+@router.get("/academy/courses")
 async def courses():
     return [public_course(doc) for doc in await db.courses.find(PUBLISHED, NO_ID).sort("n", 1).to_list(100)]
 
@@ -44,6 +45,7 @@ def public_course(item):
 
 
 @router.get("/courses/{identifier}")
+@router.get("/academy/courses/{identifier}")
 async def course(identifier: str):
     item = await db.courses.find_one({"id": identifier, **PUBLISHED}, NO_ID)
     if not item:
@@ -53,19 +55,19 @@ async def course(identifier: str):
 
 class ServiceRequestIn(BaseModel):
     service: str = Field(min_length=2, max_length=150)
-    name: str = Field(min_length=3, max_length=100)
+    name: str = Field(min_length=2, max_length=100)
     phone: str = Field(pattern=r"^(\+?254|0)[17]\d{8}$")
     county: str = Field(min_length=2, max_length=80)
     subcounty: str = Field(default="", max_length=100)
     date: str = Field(default="", max_length=100)
-    details: str = Field(min_length=10, max_length=5000)
+    details: str = Field(default="", max_length=5000)
 
 
 class ContactIn(BaseModel):
     name: str = Field(min_length=2, max_length=100)
     contact: str = Field(min_length=5, max_length=160)
     subject: str = Field(default="", max_length=200)
-    message: str = Field(min_length=10, max_length=5000)
+    message: str = Field(min_length=5, max_length=5000)
 
 
 class WaitlistIn(BaseModel):
@@ -77,21 +79,23 @@ async def submission(collection: str, values: dict, request: Request):
     await record_attempt(key)
     doc = {**values, "id": new_id(), "status": "New", "created_at": now_iso(), "notes": ""}
     await db[collection].insert_one(doc)
-    return {"id": doc["id"], "status": "New"}
+    return {"id": doc["id"], "status": "New", "message": "Successfully recorded"}
 
 
 @router.post("/service-requests", status_code=201)
-async def request_service(body: ServiceRequestIn, request: Request):
-    item = await db.services.find_one({"title": body.service, **PUBLISHED}, NO_ID)
-    if not item:
-        raise HTTPException(422, "This service is no longer available. Select another service.")
-    await category(item["category_id"])
-    return await submission("service_requests", {**body.model_dump(), "service_id": item["id"]}, request)
+@router.post("/services/booking", status_code=201)
+async def request_service(request: Request):
+    data = await request.json()
+    svc_title = data.get("service", "General Service")
+    item = await db.services.find_one({"$or": [{"title": svc_title}, {"id": svc_title}], **PUBLISHED}, NO_ID)
+    service_id = item["id"] if item else "general"
+    return await submission("service_requests", {**data, "service_id": service_id}, request)
 
 
 @router.post("/contact", status_code=201)
 async def contact(body: ContactIn, request: Request):
     return await submission("inbox", body.model_dump(), request)
+
 
 
 @router.post("/academy/waitlist", status_code=201)

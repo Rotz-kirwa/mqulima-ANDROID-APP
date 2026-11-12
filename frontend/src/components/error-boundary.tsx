@@ -107,7 +107,7 @@ const useStyles = makeStyles((colors) => ({
   button: {
     marginTop: 8,
     backgroundColor: colors.brandPrimary,
-    borderRadius: 12,
+    borderRadius: 0,
     paddingHorizontal: 24,
     paddingVertical: 14,
     minWidth: 180,

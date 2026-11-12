@@ -87,7 +87,7 @@ const useStyles = makeStyles(c => ({
   stateIcon: { padding: 18, borderRadius: 24, backgroundColor: c.brandTertiary },
   stateTitle: { fontFamily: fonts.h700, fontSize: 21, color: c.onSurface, flexShrink: 1 },
   stateText: { fontFamily: fonts.b400, fontSize: 13, lineHeight: 21, color: c.muted },
-  stateAction: { minHeight: 46, borderRadius: 24, paddingHorizontal: 20, backgroundColor: c.brand, flexDirection: "row", alignItems: "center", gap: 10, marginTop: 6 },
+  stateAction: { minHeight: 46, borderRadius: 0, paddingHorizontal: 20, backgroundColor: c.brand, flexDirection: "row", alignItems: "center", gap: 10, marginTop: 6 },
   stateActionText: { fontFamily: fonts.b700, color: c.onBrand, fontSize: 13 },
   pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
   modalRoot: { flex: 1, justifyContent: "flex-end" },

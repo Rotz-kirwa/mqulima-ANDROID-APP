@@ -32,7 +32,18 @@ def now_iso() -> str:
 
 
 def public_user(doc: dict) -> dict:
-    return {"id": doc["id"], "name": doc["name"], "email": doc["email"], "phone": doc.get("phone", ""), "county": doc.get("county", ""), "role": doc.get("role", "customer"), "status": doc.get("status", "active"), "must_change_password": doc.get("must_change_password", False)}
+    return {
+        "id": doc["id"],
+        "name": doc["name"],
+        "email": doc["email"],
+        "phone": doc.get("phone", ""),
+        "county": doc.get("county", ""),
+        "delivery_location": doc.get("delivery_location", doc.get("county", "")),
+        "farming_type": doc.get("farming_type", "Crops"),
+        "role": doc.get("role", "customer"),
+        "status": doc.get("status", "active"),
+        "must_change_password": doc.get("must_change_password", False),
+    }
 
 
 def make_token(user_id: str, version: int = 0, admin: bool = False) -> str:

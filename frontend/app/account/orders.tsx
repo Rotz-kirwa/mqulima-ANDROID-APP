@@ -47,8 +47,17 @@ export default function Orders() {
                 <Text style={s.title}>{item.id}</Text>
                 <Text style={s.status}>{item.status}</Text>
               </View>
-              <Text style={s.meta}>{new Date(item.date).toLocaleString()} • {item.location}, {item.county}</Text>
-              {item.items.map((i) => <Text key={i.key} style={s.line} numberOfLines={1}>{i.qty} × {i.name}{i.variant ? ` (${i.variant})` : ""}</Text>)}
+              <Text style={s.meta}>
+                {new Date(item.date).toLocaleString()}
+                {[item.location, item.county].filter(Boolean).length
+                  ? ` • ${[item.location, item.county].filter(Boolean).join(", ")}`
+                  : ""}
+              </Text>
+              {item.items.map((i, idx) => (
+                <Text key={i.key || `${i.productId || i.name}-${idx}`} style={s.line} numberOfLines={1}>
+                  {(i.qty ?? (i as any).quantity ?? 1)} × {i.name}{i.variant ? ` (${i.variant})` : ""}
+                </Text>
+              ))}
               {item.delivery ? <Text style={s.meta}>Delivery {ksh(item.delivery)}</Text> : <Text style={s.meta}>Free delivery</Text>}
               <Text style={s.total}>{ksh(item.total)}</Text>
             </View>

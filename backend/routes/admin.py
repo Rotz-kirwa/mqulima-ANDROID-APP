@@ -15,6 +15,7 @@ RESOURCES = {
     "orders": ("orders", ["id", "name", "phone", "county"], None),
     "forum": ("threads", ["title", "text", "author", "county"], None),
     "users": ("users", ["name", "email", "phone", "county"], None),
+    "customers": ("users", ["name", "email", "phone", "county", "farming_type"], None),
     "articles": ("articles", ["title", "category"], ArticleIn),
     "service-categories": ("service_categories", ["title"], ServiceCategoryIn),
     "services": ("services", ["title", "category_id"], ServiceIn),
@@ -22,6 +23,7 @@ RESOURCES = {
     "courses": ("courses", ["title", "level"], CourseIn),
     "waitlist": ("waitlist", ["email"], None),
     "inbox": ("inbox", ["name", "contact", "subject", "message"], None),
+    "sms-logs": ("sms_logs", ["recipient", "trigger_type", "status"], None),
     "audit": ("audit", ["label", "actor", "action", "resource"], None),
 }
 
@@ -34,7 +36,7 @@ def config(resource: str):
 
 def clean(resource: str, item: dict):
     doc = {k: v for k, v in item.items() if k not in ("_id", "password_hash", "token_version", "liked_by", "saved_by", "is_initial_admin")}
-    if resource == "users":
+    if resource in ("users", "customers"):
         return {**public_user(doc), "created_at": doc.get("created_at", "")}
     if RESOURCES[resource][2]:
         doc.setdefault("status", "published")

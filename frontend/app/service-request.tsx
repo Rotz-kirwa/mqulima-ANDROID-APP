@@ -29,17 +29,30 @@ export default function ServiceRequest() {
 
   const submit = async () => {
     const err: Record<string, string> = {};
+    const cleanPhone = f.phone.replace(/[\s\-()]/g, "");
     if (!f.service) err.service = "Select a service";
     if (f.name.trim().length < 3) err.name = "Enter your full names";
-    if (!PHONE_RE.test(f.phone.replace(/\s/g, ""))) err.phone = "Enter a valid phone number e.g. 0712345678";
+    if (!PHONE_RE.test(cleanPhone)) err.phone = "Enter a valid phone number e.g. 0712345678";
     if (!f.county) err.county = "Select your county";
     if (f.details.trim().length < 10) err.details = "Describe your need (at least 10 characters)";
     setE(err);
     if (Object.keys(err).length) return;
     setLoading(true);
-    try { await api.submitServiceRequest({ ...f, phone: f.phone.replace(/\s/g, "") }); setDone(true); }
-    catch (error: any) { setE({ details: error.message || "Could not send request. Please try again." }); }
-    finally { setLoading(false); }
+    try {
+      await api.submitServiceRequest({
+        ...f,
+        phone: cleanPhone,
+        subservice_name: f.service,
+        category: params.category ?? "",
+        channel: "website",
+        ...(user?.email ? { email: user.email } : {}),
+      });
+      setDone(true);
+    } catch (error: any) {
+      setE({ details: error.message || "Could not send request. Please try again." });
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (done) {

@@ -3,7 +3,7 @@
 
 import { catalogProducts } from "./catalog";
 
-const P = "https://www.mqulima.com/images";
+const P = `${(process.env.EXPO_PUBLIC_BACKEND_URL || "https://www.mqulima.com").replace(/\/$/, "")}/images`;
 const ph = (n: string) => `${P}/placeholders/${n}.webp`;
 
 export type Variant = { label: string; price: number };
@@ -36,23 +36,122 @@ export const productCategories = [
 
 export type ProductCategory = (typeof productCategories)[number];
 
+export type SubcategoryItem = {
+  id: string;
+  label: string;
+  hint?: string;
+  keywords: string[];
+};
+
+export type CategoryStructure = {
+  id: ProductCategory;
+  label: string;
+  icon: string;
+  subcategories: SubcategoryItem[];
+};
+
+export const PRODUCT_TAXONOMY: CategoryStructure[] = [
+  {
+    id: "All",
+    label: "All Categories",
+    icon: "sparkles",
+    subcategories: [
+      { id: "all", label: "All Items", keywords: [] },
+    ],
+  },
+  {
+    id: "Inputs & Agrochemicals",
+    label: "Inputs & Agrochemicals",
+    icon: "flask-conical",
+    subcategories: [
+      { id: "all", label: "All Agrochemicals", keywords: [] },
+      { id: "insecticides", label: "Insecticides & Pest Control", hint: "Duduthrin, Rocket, Belt Expert, Escort, Thunder, Actara", keywords: ["duduthrin", "rocket", "belt", "escort", "alien", "confidor", "sherpa", "thunder", "actara", "insect"] },
+      { id: "fungicides", label: "Fungicides & Blight Control", hint: "Ridomil, Tridex, Copper Oxychloride, Mancozeb, Topsin, Dithane", keywords: ["ridomil", "tridex", "copper", "mancozeb", "topsin", "dithane", "sulphur", "zetanil", "fungi"] },
+      { id: "herbicides", label: "Herbicides & Weed Control", hint: "Glyphosate, Katerina, Weedal", keywords: ["glyphosate", "katerina", "weedal", "herbicide", "weed"] },
+      { id: "protection", label: "Adjuvants & Crop Protection", hint: "Aquawet, Nimbecidine, Milestone, Hispeid", keywords: ["aquawet", "nimbecidine", "milestone", "hispeid", "neem"] },
+    ],
+  },
+  {
+    id: "Seeds",
+    label: "Seeds",
+    icon: "sprout",
+    subcategories: [
+      { id: "all", label: "All Seeds", keywords: [] },
+      { id: "maize", label: "Hybrid Maize Seeds", hint: "H614D, DK 8031, Pannar 691", keywords: ["maize", "h614d", "dk 8031", "pannar"] },
+      { id: "vegetables", label: "Vegetable Seeds", hint: "Sukuma, Cabbage, Tomato, Onion, Carrot, Watermelon, Capsicum, Spinach", keywords: ["sukuma", "cabbage", "tomato", "onion", "carrot", "watermelon", "capsicum", "french bean", "spinach", "kale", "collard"] },
+      { id: "legumes", label: "Legumes & Cereals", hint: "Rosecoco Beans, Sorghum Gadam", keywords: ["bean", "sorghum", "rosecoco", "gadam"] },
+      { id: "pasture", label: "Pasture & Fodder Grass", hint: "Napier Grass Splits", keywords: ["napier", "grass", "fodder", "cane"] },
+    ],
+  },
+  {
+    id: "Fertilizers",
+    label: "Fertilizers",
+    icon: "leaf",
+    subcategories: [
+      { id: "all", label: "All Fertilizers", keywords: [] },
+      { id: "planting", label: "Planting Fertilizers", hint: "DAP 18:46:0, NPK 23:23:0, Mavuno Planting, NPK 17:17:17", keywords: ["dap", "npk 23", "planting", "npk 17", "18:46:0", "compound"] },
+      { id: "topdress", label: "Top Dressing Fertilizers", hint: "CAN 26%N, Urea 46%N, Mavuno Top Dress", keywords: ["can", "urea", "top dress", "26%n", "46%n"] },
+      { id: "foliar", label: "Foliar & Soluble Feeds", hint: "Easygro, Polyfeed 19:19:19, Booster Foliar, Diamond, Cytomone", keywords: ["easygro", "polyfeed", "booster", "foliar", "biosol", "cytomone", "unigrow", "soluble", "npk 20:20:20"] },
+      { id: "soil", label: "Soil Amendments & Organic", hint: "Agricultural Lime, Vermi Compost, Magnesium Sulphate, Seaweed", keywords: ["lime", "compost", "magnesium", "algreen", "vermi", "seaweed", "organic"] },
+    ],
+  },
+  {
+    id: "Animal Feeds",
+    label: "Animal Feeds",
+    icon: "wheat",
+    subcategories: [
+      { id: "all", label: "All Feeds", keywords: [] },
+      { id: "dairy", label: "Dairy & Cattle Feeds", hint: "Dairy Meal, Dairy Mash, Calf Starter, Molasses", keywords: ["dairy", "calf", "molasses", "cattle", "cow"] },
+      { id: "poultry", label: "Poultry Feeds", hint: "Chick Mash, Growers Mash, Kienyeji, Broiler Starter, Layers", keywords: ["chick", "grower", "kienyeji", "broiler", "layer", "chicken", "poultry"] },
+      { id: "pigs_rabbits", label: "Pigs & Small Animals", hint: "Pig Growers Meal, Rabbit Pellets", keywords: ["pig", "rabbit"] },
+      { id: "minerals", label: "Minerals & Salt Licks", hint: "Macclick Super, Maisha Maziwa Minerals", keywords: ["macclick", "mineral", "maziwa", "lick", "salt"] },
+    ],
+  },
+  {
+    id: "Animal Health",
+    label: "Animal Health",
+    icon: "heart-pulse",
+    subcategories: [
+      { id: "all", label: "All Animal Health", keywords: [] },
+      { id: "dewormers", label: "Dewormers & Acaricides", hint: "Ivermectin, Albendazole, Tickgard, Dabendozole, Ex-Kupe", keywords: ["ivermectin", "albendazole", "tickgard", "dabendozole", "kupe", "deworm", "tick"] },
+      { id: "antibiotics", label: "Antibiotics & Injections", hint: "Oxytetracycline 20% LA, Multivitamin Injection", keywords: ["oxytetracycline", "injection", "antibiotic", "multivitamin"] },
+      { id: "vaccines", label: "Vaccines & Supplements", hint: "Newcastle Vaccine, Gumboro, Aminovit", keywords: ["newcastle", "gumboro", "aminovit", "vaccine"] },
+      { id: "hygiene", label: "Dairy Hygiene & Udder Care", hint: "Teat Dip, Milking Jelly, Norbrook Milking Salve", keywords: ["teat", "milking", "salve", "cooper", "jelly"] },
+    ],
+  },
+  {
+    id: "Farm Equipment",
+    label: "Farm Equipment",
+    icon: "tractor",
+    subcategories: [
+      { id: "all", label: "All Farm Equipment", keywords: [] },
+      { id: "sprayers", label: "Knapsack Sprayers", hint: "Solar Knapsack, Manual Knapsack, Motorized", keywords: ["sprayer", "knapsack"] },
+      { id: "irrigation", label: "Irrigation & Greenhouse", hint: "Drip Irrigation Kits, Shade Netting", keywords: ["drip", "irrigation", "shade net"] },
+      { id: "tools", label: "Hand Tools & Hardware", hint: "Wheelbarrows, Forked Jembe, Pruning Shears, Tool Kits", keywords: ["wheelbarrow", "jembe", "shears", "tool", "panga", "rake"] },
+      { id: "equipment", label: "Livestock & Dairy Equipment", hint: "Poultry Drinkers, Feeders, Milk Cans, Incubators, Chaff Cutters", keywords: ["drinker", "feeder", "milk can", "thermometer", "ph meter", "incubator", "chaff cutter"] },
+    ],
+  },
+];
+
+
 export const ksh = (n: number) => `KSh ${(n || 0).toLocaleString("en-US")}`;
 
 const DESC_DEFAULT = "Certified genuine agricultural input for farm use. Verified by agronomists.";
 
 const BASE_PRODUCTS: Product[] = [
   // =========================================================================
-  // 1. FEATURED HERO PRODUCTS & PROMOTIONS (12 products)
+  // 1. FEATURED HERO PRODUCTS & PROMOTIONS (20 Curated Farm Essentials from mqulima.com)
   // =========================================================================
   {
     id: "farm-tools-set",
-    name: "Farm Tools Complete Kit",
+    name: "Farm Tools",
     category: "Farm Equipment",
     price: 1200,
     image: ph("farm_tools"),
     stock: 25,
     featured: true,
     rating: 4.8,
+    brand: "Certified Farm Tools",
     description: "Durable forged steel hand tools for everyday farm cultivation — jembe, panga, rake, and pruners from certified manufacturers.",
     variants: [{ label: "Jembe Standard", price: 1200 }, { label: "Panga 18-inch", price: 650 }, { label: "Garden Rake", price: 900 }],
   },
@@ -60,13 +159,14 @@ const BASE_PRODUCTS: Product[] = [
     id: "20l-heavy-duty-knapsack-sprayer",
     name: "20L Heavy Duty Knapsack Sprayer",
     category: "Farm Equipment",
-    price: 3500,
+    price: 4800,
     image: `${P}/products/knapsack_sprayer_20l.webp`,
     stock: 45,
     featured: true,
     rating: 4.9,
+    brand: "AgroPro Equipment",
     description: "Heavy-duty 20-litre manual knapsack sprayer with adjustable solid brass lance, padded shoulder harness, and internal pressure chamber for consistent droplet coverage.",
-    variants: [{ label: "20 Litre", price: 3500 }, { label: "16 Litre", price: 2800 }],
+    variants: [{ label: "20 Litre", price: 4800 }, { label: "16 Litre", price: 3500 }],
   },
   {
     id: "smoothsale-high-protein-dairy-mash",
@@ -77,103 +177,230 @@ const BASE_PRODUCTS: Product[] = [
     stock: 60,
     featured: true,
     rating: 4.8,
+    brand: "Verified Feeds",
     description: "Nutrient-balanced high-protein dairy mash formulated to boost daily milk yield, sustain lactation persistence, and maintain prime cow body condition.",
-    variants: [{ label: "35KG", price: 2900 }, { label: "70KG", price: 5600 }],
+    variants: [{ label: "50KG", price: 2900 }, { label: "70KG", price: 3950 }],
   },
   {
     id: "high-yield-layer-chicken-feed",
     name: "High-Yield Layer Chicken Feed",
     category: "Animal Feeds",
-    price: 3400,
+    price: 3250,
     image: `${P}/products/chicken_feed.webp`,
     stock: 50,
     featured: true,
-    rating: 4.7,
+    rating: 4.8,
+    brand: "Unga Feeds",
     description: "Complete balanced layers mash enriched with digestible calcium, methionine, and essential amino acids for strong egg shells and uniform lay percentages.",
-    variants: [{ label: "50KG", price: 3400 }, { label: "10KG", price: 780 }],
+    variants: [{ label: "50KG", price: 3250 }, { label: "20KG", price: 1450 }, { label: "10KG", price: 780 }],
   },
   {
     id: "high-protein-dairy-meal",
-    name: "High-Protein Dairy Meal 18%",
+    name: "High-Protein Dairy Meal",
     category: "Animal Feeds",
-    price: 3100,
+    price: 2950,
     image: `${P}/products/high_yield_dairy_meal.webp`,
     stock: 35,
     featured: true,
-    rating: 4.6,
+    rating: 4.8,
+    brand: "Pembe Feeds",
     description: "Premium commercial dairy meal with bypass protein, phosphorus, and trace minerals designed for high-producing cows yielding over 20 litres daily.",
-    variants: [{ label: "50KG", price: 3100 }, { label: "70KG", price: 4200 }],
+    variants: [{ label: "50KG", price: 2950 }, { label: "70KG", price: 4100 }],
   },
   {
     id: "smoothsale-motorized-backpack-knapsack-sprayer",
-    name: "SmoothSale 25L Motorized Mist Blower Sprayer",
+    name: "SmoothSale Motorized Backpack Knapsack Sprayer",
     category: "Farm Equipment",
     price: 14500,
     image: `${P}/products/motorized_knapsack.webp`,
     stock: 15,
     featured: true,
     rating: 4.9,
-    description: "2-stroke petrol-powered 25L motorized backpack mister blower for rapid pest and blight control in orchards, coffee plantations, and large crop fields.",
+    brand: "AgroPro Equipment",
+    description: "2-stroke petrol-powered 25L motorized backpack mist blower sprayer for rapid pest and blight control in orchards, coffee plantations, and large crop fields.",
+    variants: [{ label: "25 Litre Motorized", price: 14500 }, { label: "20 Litre High-Pressure", price: 12800 }],
   },
   {
     id: "smoothsale-npk-17-17-17-fertilizer",
-    name: "SmoothSale NPK 17:17:17 Granular Fertilizer",
+    name: "SmoothSale NPK 17:17:17 Fertilizer",
     category: "Fertilizers",
     price: 4200,
     image: `${P}/products/yara_npk_17_17_17.webp`,
     stock: 80,
     featured: true,
-    rating: 4.8,
+    rating: 4.9,
+    brand: "Yara East Africa",
     description: "Balanced compound granular fertilizer containing equal proportions of nitrogen, phosphorus, and potassium for basal planting and vigorous vegetative growth.",
     variants: [{ label: "50KG", price: 4200 }, { label: "25KG", price: 2200 }, { label: "10KG", price: 950 }],
   },
   {
     id: "premium-npk-20-20-20-fertilizer",
-    name: "Premium NPK 20:20:20 Foliar Fertilizer",
+    name: "Premium NPK 20:20:20 Fertilizer",
     category: "Fertilizers",
-    price: 850,
+    price: 3200,
     image: `${P}/products/npk_20_20_20.webp`,
     stock: 70,
     featured: true,
-    rating: 4.7,
+    rating: 4.8,
+    brand: "Murphy Chemicals",
     description: "100% water-soluble crystalline foliar and fertigation fertilizer with chelated trace elements (TE) for rapid nutrient uptake and correction of deficiencies.",
-    variants: [{ label: "1KG", price: 850 }, { label: "5KG", price: 3900 }],
+    variants: [{ label: "5KG", price: 3200 }, { label: "1KG", price: 850 }],
   },
   {
     id: "seaweed-organic-growth-booster",
-    name: "Seaweed Organic Growth Booster Biostimulant",
+    name: "Seaweed Organic Growth Booster",
     category: "Fertilizers",
-    price: 1100,
+    price: 2100,
     image: `${P}/products/seaweed_growth_booster.webp`,
     stock: 40,
     featured: true,
     rating: 4.9,
+    brand: "Organic Solutions",
     description: "Cold-pressed pure organic Ascophyllum nodosum seaweed extract biostimulant that accelerates root development, enhances flowering, and mitigates drought stress.",
-    variants: [{ label: "1L", price: 1100 }, { label: "500ML", price: 650 }, { label: "5L", price: 4800 }],
+    variants: [{ label: "1L", price: 2100 }, { label: "500ML", price: 1150 }, { label: "5L", price: 8500 }],
+  },
+  {
+    id: "smoothsale-belt-480sc-fungicide",
+    name: "SmoothSale Belt 480SC Fungicide",
+    category: "Inputs & Agrochemicals",
+    price: 1800,
+    image: `${P}/products/belt_480sc.webp`,
+    stock: 55,
+    featured: true,
+    rating: 4.8,
+    brand: "Bayer CropScience",
+    description: "Systemic crop protection suspension concentrate offering fast knockdown and long-lasting residual protection for vegetables, maize, and horticultural crops.",
+    variants: [{ label: "50ML", price: 1800 }, { label: "100ML", price: 3400 }, { label: "10ML", price: 450 }],
+  },
+  {
+    id: "lambda-cyhalothrin-10ec-insecticide",
+    name: "Lambda-Cyhalothrin 10EC Insecticide",
+    category: "Inputs & Agrochemicals",
+    price: 1450,
+    image: `${P}/products/lambda-cyhalothrin.webp`,
+    stock: 65,
+    featured: true,
+    rating: 4.8,
+    brand: "Syngenta / Osho",
+    description: "High-activity pyrethroid insecticide for rapid knockdown and residual control of caterpillars, aphids, thrips, whiteflies, and beetles in vegetables and cereals.",
+    variants: [{ label: "1L", price: 1450 }, { label: "500ML", price: 780 }, { label: "250ML", price: 420 }],
   },
   {
     id: "duduthrin-175ec",
-    name: "DUDUTHRIN 1.75EC Pyrethroid Insecticide",
+    name: "Duduthrin Broad-Spectrum Insecticide",
     category: "Inputs & Agrochemicals",
-    price: 250,
-    image: ph("agrochemical"),
+    price: 1200,
+    image: `${P}/products/duduthrin.webp`,
     stock: 90,
     featured: true,
-    rating: 4.6,
+    rating: 4.8,
+    brand: "Twiga Chemical Industries",
     description: "Broad-spectrum contact and stomach pyrethroid insecticide containing lambda-cyhalothrin for controlling caterpillars, aphids, thrips, and beetles.",
-    variants: [{ label: "100ML", price: 250 }, { label: "250ML", price: 450 }, { label: "1L", price: 1500 }],
+    variants: [{ label: "1L", price: 1200 }, { label: "250ML", price: 450 }, { label: "100ML", price: 250 }],
+  },
+  {
+    id: "poultry-feeder-and-drinker-set",
+    name: "Poultry Feeder & Drinker Set",
+    category: "Farm Equipment",
+    price: 950,
+    image: `${P}/products/poultry_feeder_drinker.webp`,
+    stock: 60,
+    featured: true,
+    rating: 4.8,
+    brand: "Kenchic Poultry Gear",
+    description: "Heavy-duty UV-stabilized plastic poultry feeder and automatic bell drinker set designed to prevent feed spillage and water contamination in brooders and deep-litter houses.",
+    variants: [{ label: "6KG Feeder + 6L Drinker", price: 950 }, { label: "3KG Feeder + 3L Drinker", price: 550 }, { label: "9KG Feeder + 10L Drinker", price: 1450 }],
+  },
+  {
+    id: "poultry-feeding-trough",
+    name: "Poultry Feeding Trough",
+    category: "Farm Equipment",
+    price: 850,
+    image: `${P}/products/poultry_feeding_trough.webp`,
+    stock: 48,
+    featured: true,
+    rating: 4.7,
+    brand: "AgroEquip Kenya",
+    description: "Rust-resistant galvanized steel poultry linear feeding trough with anti-perch spinning reel for clean, waste-free feeding of layers, broilers, and kienyeji flocks.",
+    variants: [{ label: "1 Metre Trough", price: 850 }, { label: "75cm Trough", price: 650 }],
   },
   {
     id: "h614d-hybrid-maize-seed",
-    name: "H614D Kenya Seed Hybrid Maize",
+    name: "Kenya Seed H614D Hybrid Maize Seed (2kg)",
     category: "Seeds",
-    price: 550,
-    image: ph("seeds"),
+    price: 620,
+    image: `${P}/products/kenya_seed_h614d_maize.webp`,
     stock: 120,
     featured: true,
     rating: 4.9,
-    description: "Certified Kenya Seed Company highland hybrid maize seed known for excellent double cobbing, strong disease resistance, and high grain yield per acre.",
-    variants: [{ label: "2KG", price: 550 }, { label: "10KG", price: 2600 }, { label: "25KG", price: 6200 }],
+    brand: "Kenya Seed Company",
+    description: "Certified Kenya Seed Company highland hybrid maize seed (2kg) known for excellent double cobbing, strong disease resistance, and high grain yield per acre.",
+    variants: [{ label: "2KG", price: 620 }, { label: "10KG", price: 2950 }, { label: "25KG", price: 7200 }],
+  },
+  {
+    id: "easeed-rosecoco-glp-2-certified-bean-seeds-2kg",
+    name: "EASEED Rosecoco (GLP 2) Certified Bean Seeds (2kg)",
+    category: "Seeds",
+    price: 680,
+    image: `${P}/products/easeed_rosecoco_beans.webp`,
+    stock: 85,
+    featured: true,
+    rating: 4.8,
+    brand: "East African Seed (EASEED)",
+    description: "Certified GLP-2 Rosecoco bush bean seeds (2kg) with fast maturity (75-85 days), high market demand, sweet cooking quality, and strong disease tolerance.",
+    variants: [{ label: "2KG", price: 680 }, { label: "10KG", price: 3250 }],
+  },
+  {
+    id: "seed-co-sc-duma-43-hybrid-maize-seed-2kg",
+    name: "Seed Co SC Duma 43 Hybrid Maize Seed (2kg)",
+    category: "Seeds",
+    price: 650,
+    image: `${P}/products/seed_co_sc_duma_43.webp`,
+    stock: 110,
+    featured: true,
+    rating: 4.9,
+    brand: "Seed Co Kenya",
+    description: "Early-maturing drought-tolerant SC Duma 43 hybrid maize seed (2kg) engineered for medium-to-low altitude agro-ecological zones with rapid dry-down.",
+    variants: [{ label: "2KG", price: 650 }, { label: "10KG", price: 3100 }],
+  },
+  {
+    id: "greenlife-red-coach-f1-hybrid-onion-seeds",
+    name: "Greenlife Red Coach F1 Hybrid Onion Seeds",
+    category: "Seeds",
+    price: 1850,
+    image: `${P}/products/greenlife_red_coach_f1_onion.webp`,
+    stock: 42,
+    featured: true,
+    rating: 4.9,
+    brand: "Greenlife Crop Protection",
+    description: "High-yielding Red Coach F1 hybrid bulb onion seeds producing uniform, deep-red pungent globes with early maturity (90 days) and 6-month shelf life.",
+    variants: [{ label: "50GMS Tin", price: 1850 }, { label: "100GMS Tin", price: 3500 }, { label: "250GMS Tin", price: 8200 }],
+  },
+  {
+    id: "baraka-fertilizer-50kg",
+    name: "Baraka Fertilizer 50kg (Potato & Onion)",
+    category: "Fertilizers",
+    price: 3850,
+    image: `${P}/products/baraka_fertilizer_50kg.webp`,
+    stock: 65,
+    featured: true,
+    rating: 4.8,
+    brand: "Toyota Tsusho / Baraka",
+    description: "Custom-blended Baraka Potato & Onion 50kg compound fertilizer enriched with sulphur, calcium, and boron for maximum tuber and bulb size.",
+    variants: [{ label: "50KG Bag", price: 3850 }, { label: "25KG Bag", price: 2050 }],
+  },
+  {
+    id: "ckl-maclik-super-dairy-mineral-supplement-5kg",
+    name: "CKL Maclik Super Dairy Mineral Supplement (5kg)",
+    category: "Animal Feeds",
+    price: 1350,
+    image: `${P}/products/maclik_super.webp`,
+    stock: 75,
+    featured: true,
+    rating: 4.9,
+    brand: "Cooper K-Brands (CKL)",
+    description: "High-phosphorus Maclik Super dairy mineral powder (5kg) formulated for lactating cows to boost daily milk yield, prevent milk fever, and improve conception rates.",
+    variants: [{ label: "5KG Bucket", price: 1350 }, { label: "2KG Pack", price: 580 }, { label: "10KG Bag", price: 2550 }],
   },
   {
     id: "albendazole-10-drench",
@@ -182,7 +409,7 @@ const BASE_PRODUCTS: Product[] = [
     price: 300,
     image: ph("livestock"),
     stock: 75,
-    featured: true,
+    featured: false,
     rating: 4.7,
     description: "Broad-spectrum anthelmintic oral drench for eradication of roundworms, lungworms, tapeworms, and adult liver flukes in cattle, sheep, and goats.",
     variants: [{ label: "100ML", price: 300 }, { label: "500ML", price: 1100 }, { label: "1L", price: 1900 }],
@@ -355,12 +582,11 @@ const BASE_PRODUCTS: Product[] = [
   { id: "drip-tape-16mm-roll", name: "16mm Drip Tape 1000m Roll with 20cm Emitters", category: "Farm Equipment", price: 7800, image: ph("farm_tools"), stock: 35, rating: 4.8, description: "High-grade UV-resistant drip irrigation line with seamless turbulent flow inline drippers." },
 ];
 
-export const products: Product[] = [
-  ...BASE_PRODUCTS,
-  ...catalogProducts.filter(
-    (cp) =>
-      !BASE_PRODUCTS.some(
-        (bp) => bp.id === cp.id || bp.name.trim().toLowerCase() === cp.name.trim().toLowerCase()
-      )
-  ),
-];
+import products328Data from "./products_328.json";
+
+const P328 = products328Data as Product[];
+const p328Ids = new Set(P328.map((p) => p.id));
+const extra = BASE_PRODUCTS.filter((p) => !p328Ids.has(p.id));
+
+export const products: Product[] = [...P328, ...extra];
+

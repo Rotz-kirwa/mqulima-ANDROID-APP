@@ -69,7 +69,7 @@ export function ArticleCard({ a, index = 0 }: { a: Article; index?: number }) {
 }
 
 const useStyles = makeStyles((c) => ({
-  card: { flex: 1, backgroundColor: c.surfaceSecondary, borderWidth: 1, borderColor: c.border, borderRadius: 16, overflow: "hidden" },
+  card: { flex: 1, backgroundColor: c.surfaceSecondary, borderWidth: 1, borderColor: c.border, borderRadius: 16, borderTopLeftRadius: 0, borderTopRightRadius: 0, overflow: "hidden" },
   imgWrap: { backgroundColor: c.white, height: 150, padding: 10 },
   img: { width: "100%", height: "100%" },
   heart: { position: "absolute", top: 8, right: 8, width: 32, height: 32, borderRadius: 16, backgroundColor: c.white, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: c.border },
@@ -77,7 +77,7 @@ const useStyles = makeStyles((c) => ({
   name: { fontFamily: fonts.h800, fontSize: 14, color: c.onSurface, lineHeight: 18, minHeight: 36 },
   stock: { fontFamily: fonts.b600, fontSize: 11, color: c.brandPrimary },
   price: { fontFamily: fonts.h900, fontSize: 16, color: c.onSurface },
-  article: { backgroundColor: c.surfaceSecondary, borderWidth: 1, borderColor: c.border, borderRadius: 28, overflow: "hidden" },
+  article: { backgroundColor: c.surfaceSecondary, borderWidth: 1, borderColor: c.border, borderRadius: 28, borderTopLeftRadius: 0, borderTopRightRadius: 0, overflow: "hidden" },
   catPill: { position: "absolute", left: 16, top: 16, backgroundColor: c.forest, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 4 },
   catPillText: { color: c.white, fontFamily: fonts.b700, fontSize: 10, letterSpacing: 0.6, textTransform: "uppercase" },
   read: { fontFamily: fonts.b700, fontSize: 10, color: c.subtle, textTransform: "uppercase", letterSpacing: 0.6 },

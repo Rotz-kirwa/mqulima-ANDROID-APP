@@ -23,6 +23,7 @@ export function FloatingButtons() {
   const bottom = useBottomOffset();
   const pathname = usePathname();
   const router = useRouter();
+  const { onboardingCompleted } = useApp();
   const ring = useSharedValue(1);
   useEffect(() => {
     ring.value = withRepeat(withTiming(1.5, { duration: 1200 }), -1, false);
@@ -31,10 +32,10 @@ export function FloatingButtons() {
   const hideAi = pathname === "/ai";
   const hideAll = pathname.startsWith("/checkout") || pathname === "/cart" || pathname.startsWith("/product") || pathname.startsWith("/service/");
   // Chat-style screens have their own bottom input bar; floating buttons would cover it.
-  if (pathname.startsWith("/admin") || pathname === "/academy" || pathname.startsWith("/course/") || pathname === "/news" || pathname.startsWith("/article/") || pathname === "/ai" || pathname === "/forum" || pathname === "/create-post" || pathname.startsWith("/thread")) return null;
+  if (!onboardingCompleted || pathname === "/onboarding" || pathname === "/academy" || pathname.startsWith("/course/") || pathname === "/news" || pathname.startsWith("/article/") || pathname === "/ai" || pathname === "/forum" || pathname === "/create-post" || pathname.startsWith("/thread")) return null;
   return (
     <>
-      <View pointerEvents="box-none" style={{ position: "absolute", right: 16, bottom: hideAll ? bottom + 72 : bottom, alignItems: "center", justifyContent: "center" }}>
+      <View style={{ position: "absolute", right: 16, bottom: hideAll ? bottom + 72 : bottom, alignItems: "center", justifyContent: "center", pointerEvents: "box-none" }}>
         <Animated.View style={[{ position: "absolute", width: 52, height: 52, borderRadius: 26, backgroundColor: "rgba(37,211,102,0.5)" }, ringStyle]} />
         <Pressable
           testID="whatsapp-fab"
@@ -42,7 +43,7 @@ export function FloatingButtons() {
           onPress={() => Linking.openURL(contactInfo.whatsapp)}
           style={({ pressed }) => ({
             width: 52, height: 52, borderRadius: 26, backgroundColor: colors.whatsapp, alignItems: "center", justifyContent: "center",
-            transform: [{ scale: pressed ? 0.92 : 1 }], shadowColor: colors.whatsapp, shadowOpacity: 0.5, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
+            transform: [{ scale: pressed ? 0.92 : 1 }], boxShadow: "0px 6px 12px rgba(37, 211, 102, 0.50)", elevation: 6,
           })}
         >
           <FontAwesome6 name="whatsapp" iconStyle="brand" size={26} color={colors.white} />
@@ -62,7 +63,7 @@ export function Toast() {
   const insets = useSafeAreaInsets();
   if (!toastMsg) return null;
   return (
-    <Animated.View entering={FadeInDown} exiting={FadeOutDown} pointerEvents="none" style={{ position: "absolute", left: 16, right: 16, top: insets.top + 70, alignItems: "center" }}>
+    <Animated.View entering={FadeInDown} exiting={FadeOutDown} style={{ position: "absolute", left: 16, right: 16, top: insets.top + 70, alignItems: "center", pointerEvents: "none" }}>
       <View testID="toast" style={{ backgroundColor: colors.forest, paddingHorizontal: 18, paddingVertical: 12, borderRadius: 999, borderWidth: 1, borderColor: colors.limeA30 }}>
         <Text style={{ color: colors.white, fontFamily: fonts.b700, fontSize: 13 }}>{toastMsg}</Text>
       </View>

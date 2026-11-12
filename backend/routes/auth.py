@@ -1,37 +1,53 @@
+import asyncio
+from typing import Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, EmailStr, Field
 
 from auth import CurrentUser, make_token, new_id, now_iso, password_hash, public_user, users
 from db import db
 from operations import audit, check_limit, record_attempt
+from sms import send_welcome_sms
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 class RegisterIn(BaseModel):
-    name: str = Field(min_length=3, max_length=80)
+    name: Optional[str] = None
+    firstName: Optional[str] = None
+    lastName: Optional[str] = None
     email: EmailStr
-    phone: str = Field(default="", max_length=20)
+    phone: Optional[str] = Field(default="", max_length=30)
+    phoneNumber: Optional[str] = Field(default="", max_length=30)
     county: str = Field(default="", max_length=60)
+    deliveryLocation: Optional[str] = ""
+    farmingType: Optional[str] = "Crops"
     password: str = Field(min_length=6, max_length=128)
 
 
 class LoginIn(BaseModel):
-    email: EmailStr
+    email: Optional[str] = None
+    identifier: Optional[str] = None
     password: str
 
 
 @router.post("/register", status_code=201)
 async def register(body: RegisterIn):
     email = body.email.lower().strip()
+    full_name = (body.name or f"{body.firstName or ''} {body.lastName or ''}").strip()
+    if not full_name:
+        full_name = "Farmer"
+    phone_number = (body.phoneNumber or body.phone or "").strip()
+
     if await users.find_one({"email": email}):
         raise HTTPException(status_code=409, detail="An account with this email already exists")
     doc = {
         "id": new_id(),
-        "name": body.name.strip(),
+        "name": full_name,
         "email": email,
-        "phone": body.phone.strip(),
+        "phone": phone_number,
         "county": body.county.strip(),
+        "delivery_location": (body.deliveryLocation or body.county).strip(),
+        "farming_type": (body.farmingType or "Crops").strip(),
         "password_hash": password_hash.hash(body.password),
         "created_at": now_iso(),
         "role": "customer", "status": "active", "token_version": 0,
@@ -42,20 +58,42 @@ async def register(body: RegisterIn):
         if "duplicate" in str(exc).lower():
             raise HTTPException(status_code=409, detail="An account with this email already exists")
         raise
-    return {"access_token": make_token(doc["id"]), "token_type": "bearer", "user": public_user(doc)}
+
+    # Audit the registration in admin log
+    try:
+        await audit(
+            {"name": full_name, "email": email, "id": doc["id"], "role": "customer"},
+            "user_registered",
+            "users",
+            doc["id"],
+            f"New farmer registered: {full_name} ({body.county})"
+        )
+    except Exception:
+        pass
+
+    # Fire official Mqulima welcome SMS via TextSMS Kenya
+    if phone_number:
+        asyncio.create_task(send_welcome_sms(full_name, phone_number, body.password))
+
+    tok = make_token(doc["id"])
+    return {"access_token": tok, "token": tok, "token_type": "bearer", "user": public_user(doc)}
 
 
 @router.post("/login")
 async def login(body: LoginIn):
-    key = await check_limit("login", body.email.lower().strip())
-    user = await users.find_one({"email": body.email.lower().strip()})
+    target = (body.identifier or body.email or "").lower().strip()
+    if not target:
+        raise HTTPException(status_code=400, detail="Email or phone number is required")
+    key = await check_limit("login", target)
+    user = await users.find_one({"$or": [{"email": target}, {"phone": target}]})
     if not user or not password_hash.verify(body.password, user["password_hash"]):
         await record_attempt(key)
         raise HTTPException(status_code=401, detail="Incorrect email or password")
     if user.get("status", "active") != "active":
         raise HTTPException(401, "This account is suspended. Contact Mqulima support.")
     await db.login_limits.delete_one({"key": key})
-    return {"access_token": make_token(user["id"], user.get("token_version", 0), user.get("role") == "admin"), "token_type": "bearer", "user": public_user(user)}
+    tok = make_token(user["id"], user.get("token_version", 0), user.get("role") == "admin")
+    return {"access_token": tok, "token": tok, "token_type": "bearer", "user": public_user(user)}
 
 
 @router.get("/me")

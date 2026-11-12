@@ -14,16 +14,111 @@ def _rx(q: str):
     return {"$regex": re.escape(q.strip()), "$options": "i"}
 
 
+SUBCAT_KEYWORDS: dict[str, list[str]] = {
+    "maize": ["maize", "h614d", "dk 8031", "pannar"],
+    "vegetables": ["sukuma", "cabbage", "tomato", "onion", "carrot", "watermelon", "capsicum", "french bean", "spinach", "kale"],
+    "legumes": ["bean", "sorghum", "legume", "rosecoco"],
+    "pasture": ["napier", "grass", "fodder", "pasture"],
+    "planting": ["dap", "npk 23", "planting", "npk 17", "18:46:0"],
+    "topdress": ["can", "urea", "top dress", "26%n", "46%n"],
+    "foliar": ["easygro", "polyfeed", "booster", "foliar", "biosol", "cytomone", "unigrow", "soluble"],
+    "soil": ["lime", "compost", "magnesium", "algreen", "vermi", "organic"],
+    "insecticides": ["duduthrin", "rocket", "belt", "escort", "alien", "confidor", "sherpa", "thunder", "actara"],
+    "fungicides": ["ridomil", "tridex", "copper", "mancozeb", "topsin", "dithane", "sulphur", "zetanil"],
+    "herbicides": ["glyphosate", "katerina", "weedal"],
+    "protection": ["aquawet", "nimbecidine", "milestone", "hispeid"],
+    "dairy": ["dairy", "calf", "molasses"],
+    "poultry": ["chick", "grower", "kienyeji", "broiler", "layer"],
+    "pigs_rabbits": ["pig", "rabbit"],
+    "minerals": ["macclick", "mineral", "maziwa"],
+    "dewormers": ["ivermectin", "albendazole", "tickgard", "dabendozole", "kupe"],
+    "antibiotics": ["oxytetracycline"],
+    "vaccines": ["newcastle", "gumboro", "aminovit", "vitamin"],
+    "hygiene": ["teat", "milking", "salve", "cooper"],
+    "sprayers": ["sprayer", "knapsack"],
+    "irrigation": ["drip", "irrigation", "shade net"],
+    "tools": ["wheelbarrow", "jembe", "shears", "tool"],
+    "equipment": ["drinker", "feeder", "milk can", "thermometer", "ph meter", "incubator", "chaff cutter"],
+}
+
+
+def _search_query_filter(q: str) -> Optional[dict]:
+    clean = q.strip()
+    if not clean:
+        return None
+    tokens = [re.escape(t.strip()) for t in clean.split() if t.strip()]
+    if not tokens:
+        return None
+    and_clauses = []
+    for t in tokens:
+        token_rx = f"({t}|{t}s)" if not t.endswith("s") else f"({t}|{t[:-1]})"
+        rx = {"$regex": token_rx, "$options": "i"}
+        and_clauses.append({
+            "$or": [
+                {"name": rx},
+                {"description": rx},
+                {"brand": rx},
+                {"category": rx},
+                {"variants.label": rx},
+            ]
+        })
+    if len(and_clauses) == 1:
+        return and_clauses[0]
+    return {"$and": and_clauses}
+
+
 @router.get("/products")
-async def list_products(category: str = "All", q: str = "", page: int = Query(1, ge=1)):
+async def list_products(
+    category: str = "All",
+    sub_category: Optional[str] = None,
+    q: str = "",
+    page: int = Query(1, ge=1),
+    limit: int = Query(24, ge=1, le=500),
+    id: Optional[str] = None,
+):
+    from pathlib import Path
+    frontend_json = Path("/home/user/NYOTA-Clients/mqulima-ANDROID-APP/frontend/src/data/products_328.json")
+    if await db.products.count_documents({}) < 300 or not frontend_json.exists():
+        from seed import sync_products_328
+        await sync_products_328()
+
+    if id:
+        doc = await db.products.find_one({"id": id, **PUBLIC}, NO_ID)
+        if not doc:
+            raise HTTPException(status_code=404, detail="Product not found")
+        return {"success": True, "product": doc, **doc}
+
     f: dict = dict(PUBLIC)
     if category != "All":
         f["category"] = category
-    if q.strip():
-        f["name"] = _rx(q)
+
+    q_filter = _search_query_filter(q)
+
+    if sub_category and sub_category in SUBCAT_KEYWORDS:
+        kw = SUBCAT_KEYWORDS[sub_category]
+        sub_rx = "|".join(re.escape(k) for k in kw)
+        sub_filter = {"name": {"$regex": sub_rx, "$options": "i"}}
+        if q_filter:
+            f["$and"] = [sub_filter, q_filter]
+        else:
+            f.update(sub_filter)
+    elif q_filter:
+        if "$and" in q_filter:
+            f["$and"] = q_filter["$and"]
+        else:
+            f.update(q_filter)
+
+
     total = await db.products.count_documents(f)
-    items = await db.products.find(f, NO_ID).skip((page - 1) * PAGE_SIZE).limit(PAGE_SIZE).to_list(PAGE_SIZE)
-    return {"items": items, "total": total, "page": page, "pages": max(1, -(-total // PAGE_SIZE))}
+    items = await db.products.find(f, NO_ID).skip((page - 1) * limit).limit(limit).to_list(limit)
+    return {
+        "success": True,
+        "items": items,
+        "products": items,
+        "total": total,
+        "page": page,
+        "pages": max(1, -(-total // limit)),
+    }
 
 
 @router.get("/products/featured")
@@ -50,17 +145,22 @@ async def get_product(pid: str):
 
 
 @router.get("/articles")
-async def list_articles(group: str = "All"):
-    f = dict(PUBLIC) if group == "All" else {"group": group, **PUBLIC}
-    return await db.articles.find(f, NO_ID).sort([("featured", -1), ("created_at", -1)]).to_list(200)
+@router.get("/news")
+async def list_articles(group: str = "All", category: Optional[str] = None):
+    target = category or group
+    f = dict(PUBLIC) if (not target or target == "All") else {"$or": [{"group": target}, {"category": target}], **PUBLIC}
+    items = await db.articles.find(f, NO_ID).sort([("featured", -1), ("created_at", -1)]).to_list(200)
+    return items
 
 
 @router.get("/articles/{aid}")
+@router.get("/news/{aid}")
 async def get_article(aid: str):
     doc = await db.articles.find_one_and_update({"id": aid, **PUBLIC}, {"$inc": {"reads": 1}}, projection=NO_ID, return_document=True)
     if not doc:
         raise HTTPException(status_code=404, detail="Article not found")
     return doc
+
 
 
 @router.get("/search")

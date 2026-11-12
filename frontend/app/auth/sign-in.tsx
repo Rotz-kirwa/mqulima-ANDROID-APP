@@ -32,7 +32,7 @@ export default function SignIn() {
       const r = await api.login(email.trim(), pw);
       await signIn(r.access_token, r.user);
       toast(`Welcome back, ${r.user.name}!`);
-      router.replace(r.user.role === "admin" ? (r.user.must_change_password ? "/admin/security" : "/admin") : "/account");
+      router.replace("/account");
     } catch (err: any) {
       let msg = err?.message || "Invalid email or password. Please try again.";
       if (/Only HTML requests are supported/i.test(msg) || /Request failed \(500\)/i.test(msg)) {

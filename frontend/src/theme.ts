@@ -1,6 +1,6 @@
 // Design tokens extracted from https://www.mqulima.com CSS. Light theme only.
 import { useMemo } from "react";
-import { Appearance, StyleSheet, useColorScheme } from "react-native";
+import { Appearance, Platform, StyleSheet, TextStyle, useColorScheme } from "react-native";
 
 export type ColorScheme = "light" | "dark";
 
@@ -101,5 +101,17 @@ export function makeStyles<T extends StyleSheet.NamedStyles<T> | StyleSheet.Name
   return function useStyles(): T {
     const { colors } = useTheme();
     return useMemo(() => StyleSheet.create(factory(colors)), [colors]);
+  };
+}
+
+/** Cross-platform text shadow helper avoiding RN Web deprecation warnings on textShadow*. */
+export function textShadow(color: string, radius: number, offsetY = 2, offsetX = 0): TextStyle {
+  if (Platform.OS === "web") {
+    return { textShadow: `${offsetX}px ${offsetY}px ${radius}px ${color}` } as TextStyle;
+  }
+  return {
+    textShadowColor: color,
+    textShadowRadius: radius,
+    textShadowOffset: { width: offsetX, height: offsetY },
   };
 }

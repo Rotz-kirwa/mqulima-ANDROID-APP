@@ -45,7 +45,17 @@ export default function ServiceDetail() {
     );
   }
   const { sub, category, price } = d;
-  const request = () => router.push({ pathname: "/service-request", params: { service: sub.title, category: category.title } });
+  const request = () => {
+    if (sub.id === "learn_value_addition") {
+      router.push("/academy");
+      return;
+    }
+    if (sub.id === "buy_machinery") {
+      router.push("/(tabs)/shop");
+      return;
+    }
+    router.push({ pathname: "/service-request", params: { service: sub.title, category: category.title } });
+  };
   const related = category.subs.filter((x) => x.id !== sub.id);
 
   return (

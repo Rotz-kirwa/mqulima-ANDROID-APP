@@ -4,8 +4,9 @@ from typing import List, Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from auth import CurrentUser, now_iso
+from auth import OptionalUser, now_iso
 from db import NO_ID, db
+from sms import send_sms
 
 router = APIRouter(prefix="/orders", tags=["orders"])
 FREE_DELIVERY_FROM = 5000
@@ -23,12 +24,13 @@ class OrderIn(BaseModel):
     name: str = Field(min_length=3, max_length=80)
     phone: str = Field(min_length=10, max_length=20)
     county: str = Field(min_length=2, max_length=60)
-    subcounty: str = Field(min_length=1, max_length=80)
+    subcounty: str = Field(default="", max_length=80)
     location: str = Field(min_length=1, max_length=120)
+    paymentMethod: Optional[str] = None
 
 
 @router.post("", status_code=201)
-async def create_order(body: OrderIn, user: CurrentUser):
+async def create_order(body: OrderIn, user: OptionalUser):
     ids = list({i.productId for i in body.items})
     products = {p["id"]: p for p in await db.products.find({"id": {"$in": ids}, "status": {"$nin": ["draft", "archived"]}}, NO_ID).to_list(len(ids))}
     items = []
@@ -45,9 +47,17 @@ async def create_order(body: OrderIn, user: CurrentUser):
         items.append({"key": f"{p['id']}::{i.variant or ''}", "productId": p["id"], "name": p["name"], "image": p["image"], "variant": i.variant, "price": price, "qty": i.qty})
     subtotal = sum(x["price"] * x["qty"] for x in items)
     delivery = 0 if subtotal >= FREE_DELIVERY_FROM else DELIVERY_FEE
+
+    # Determine user_id
+    user_id = user["id"] if user else None
+    if not user_id:
+        existing_user = await db.users.find_one({"$or": [{"phone": body.phone.strip()}, {"email": body.phone.strip()}]})
+        if existing_user:
+            user_id = existing_user["id"]
+
     order = {
         "id": f"MQ-{uuid.uuid4().hex[:10].upper()}",
-        "user_id": user["id"],
+        "user_id": user_id,
         "date": now_iso(),
         "items": items,
         "subtotal": subtotal,
@@ -59,7 +69,7 @@ async def create_order(body: OrderIn, user: CurrentUser):
         "subcounty": body.subcounty.strip(),
         "location": body.location.strip(),
         "status": "Processing",
-        "payment": "M-Pesa on confirmation",
+        "payment": body.paymentMethod or "M-Pesa on confirmation",
         "payment_status": "Pending",
         "stock_reserved": True,
     }
@@ -76,10 +86,27 @@ async def create_order(body: OrderIn, user: CurrentUser):
         for pid, quantity in reserved:
             await db.products.update_one({"id": pid}, {"$inc": {"stock": quantity}})
         raise
+
+    # Trigger background order confirmation SMS
+    try:
+        sms_msg = f"Habari {body.name}, order {order['id']} of KSh {order['total']:,} has been received and is being processed. Mqulima Team."
+        import asyncio
+        asyncio.create_task(send_sms(recipient=body.phone.strip(), message=sms_msg, trigger_type="order_placed"))
+    except Exception:
+        pass
+
     order.pop("_id", None)
-    return order
+    return {"success": True, "order": order, **order}
 
 
 @router.get("")
-async def my_orders(user: CurrentUser):
-    return await db.orders.find({"user_id": user["id"]}, {"_id": 0, "notes": 0}).sort("date", -1).to_list(200)
+async def my_orders(user: OptionalUser, phone: Optional[str] = None):
+    q: dict = {}
+    if user:
+        q = {"$or": [{"user_id": user["id"]}, {"phone": user.get("phone", "")}]}
+    elif phone:
+        q = {"phone": phone.strip()}
+    else:
+        return []
+    return await db.orders.find(q, {"_id": 0, "notes": 0}).sort("date", -1).to_list(200)
+

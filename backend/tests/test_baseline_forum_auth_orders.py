@@ -111,12 +111,12 @@ def test_auth_me_protected_and_valid(http: requests.Session, api_url: str, basel
     assert ok.json()["email"] == baseline_user["email"].lower()
 
 
-def test_catalog_total_189(http: requests.Session, api_url: str):
-    # Catalog module: verify seeded product count baseline remains 189.
+def test_catalog_total_300_plus(http: requests.Session, api_url: str):
+    # Catalog module: verify seeded product count baseline is 300+ items.
     r = http.get(f"{api_url}/products", params={"category": "All", "q": "", "page": 1})
     assert r.status_code == 200
     data = r.json()
-    assert data["total"] == 189
+    assert data["total"] >= 300
     assert len(data["items"]) > 0
 
 

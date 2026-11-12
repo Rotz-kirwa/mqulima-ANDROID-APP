@@ -15,8 +15,8 @@ export function newsDate(value: string) {
 }
 
 export function ReadArticleButton({ onPress, testID, title, primary = false, label = "Read article" }: { onPress: () => void; testID: string; title: string; primary?: boolean; label?: string }) {
-  const s = useStyles(); const { colors } = useTheme();
-  return <Pressable testID={testID} accessibilityRole="button" accessibilityLabel={`${label}: ${title}`} onPress={onPress} style={({ pressed }) => [s.readButton, primary && s.primaryButton, pressed && s.pressed]}><Text style={[s.readLabel, primary && s.primaryLabel]}>{label}</Text><View style={[s.arrowBox, primary && s.primaryArrow]}><Lucide name="arrow-up-right" size={20} color={primary ? colors.onBrand : colors.brand} /></View></Pressable>;
+  const s = useStyles();
+  return <Pressable testID={testID} accessibilityRole="button" accessibilityLabel={`${label}: ${title}`} onPress={onPress} style={({ pressed }) => [s.readButton, primary && s.primaryButton, pressed && s.pressed]}><Text style={[s.readLabel, primary && s.primaryLabel]}>{label}</Text><View style={[s.arrowBox, primary && s.primaryArrow]}><Lucide name="arrow-up-right" size={18} color="#0B2117" /></View></Pressable>;
 }
 
 export function NewsImage({ article, featured = false, testID }: { article: Article; featured?: boolean; testID: string }) {
@@ -83,12 +83,12 @@ const useStyles = makeStyles(c => ({
   featureMeta: { flexDirection: "row", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 4 },
   featureMetaText: { fontFamily: fonts.b500, fontSize: 11, lineHeight: 17, color: c.muted },
   metaDot: { width: 3, height: 3, borderRadius: 0, backgroundColor: c.borderStrong },
-  readButton: { minHeight: 48, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderRadius: 0, gap: 12 },
-  primaryButton: { backgroundColor: c.brand, paddingLeft: 16 },
-  readLabel: { fontFamily: fonts.b700, fontSize: 12, color: c.brand },
-  primaryLabel: { color: c.onBrand },
-  arrowBox: { width: 36, minHeight: 44, alignItems: "center", justifyContent: "center" },
-  primaryArrow: { width: 48, minHeight: 48, borderLeftWidth: 1, borderLeftColor: c.whiteA20 },
+  readButton: { minHeight: 40, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderRadius: 0, gap: 10, backgroundColor: "#FACC15", borderWidth: 1, borderColor: "#EAB308", paddingLeft: 14 },
+  primaryButton: { backgroundColor: "#FACC15", borderWidth: 1, borderColor: "#EAB308", paddingLeft: 16 },
+  readLabel: { fontFamily: fonts.b800, fontSize: 12, color: "#0B2117", textTransform: "uppercase" },
+  primaryLabel: { color: "#0B2117" },
+  arrowBox: { width: 36, minHeight: 40, alignItems: "center", justifyContent: "center" },
+  primaryArrow: { width: 44, minHeight: 44, borderLeftWidth: 1, borderLeftColor: "rgba(11,33,23,0.18)" },
   story: { borderRadius: 0, backgroundColor: c.surfaceSecondary, borderWidth: 1, borderColor: c.border, paddingHorizontal: 16, paddingTop: 16 },
   storyBody: { flexDirection: "row", alignItems: "flex-start", gap: 14, paddingBottom: 16 },
   storyText: { flex: 1, minWidth: 0, gap: 8 },
