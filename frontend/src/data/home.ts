@@ -39,7 +39,7 @@ export const ecosystem = [
     text: "Source trusted agricultural products from verified suppliers and have them delivered to your doorstep.",
     cta: "View shop",
     route: "/(tabs)/shop",
-    image: "https://images.unsplash.com/photo-1592982537447-7440770cbfc9?q=80&w=800&auto=format&fit=crop",
+    image: "https://i.pinimg.com/736x/a0/41/eb/a041ebe79211b6d39b720c73363e3ed0.jpg",
   },
   {
     n: "02",
@@ -49,7 +49,7 @@ export const ecosystem = [
     text: "Stay ahead with practical farming guides, market intelligence, expert articles, and timely updates.",
     cta: "View Updates",
     route: "/(tabs)/news",
-    image: "https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?q=80&w=800&auto=format&fit=crop",
+    image: "https://i.pinimg.com/1200x/ca/b3/18/cab318dcb2aa78393cde56dc5986ee7f.jpg",
   },
   {
     n: "03",
@@ -59,7 +59,7 @@ export const ecosystem = [
     text: "Access trusted professional services when and where you need them — from veterinary care to installation.",
     cta: "Book a Service",
     route: "/services",
-    image: "https://images.unsplash.com/photo-1589923188900-85dae523342b?q=80&w=800&auto=format&fit=crop",
+    image: "https://i.pinimg.com/736x/ae/c3/70/aec370df22cf57093f1fd1b3cb0a0d70.jpg",
   },
   {
     n: "04",
@@ -69,7 +69,7 @@ export const ecosystem = [
     text: "Connect with thousands of farmers, experts, and agribusinesses to learn, share, and solve together.",
     cta: "Connect",
     route: "/(tabs)/forum",
-    image: "https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?q=80&w=800&auto=format&fit=crop",
+    image: "https://i.pinimg.com/1200x/1d/10/10/1d1010828eb8f6611ce931a2e0a8323c.jpg",
   },
   {
     n: "05",

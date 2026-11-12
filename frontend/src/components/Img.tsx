@@ -15,7 +15,7 @@ const proxy = (uri: string) => {
   if (uri.startsWith("/")) {
     return `${CDN_OR_BACKEND}${uri}`;
   }
-  if (Platform.OS === "web" && (uri.startsWith("https://www.mqulima.com") || uri.startsWith("https://mqulima.com"))) {
+  if (Platform.OS === "web" && (uri.startsWith("https://www.mqulima.com") || uri.startsWith("https://mqulima.com") || uri.includes("pinimg.com"))) {
     return `https://images.weserv.nl/?url=${encodeURIComponent(uri.replace(/^https?:\/\//, ""))}&output=webp`;
   }
   return uri;
