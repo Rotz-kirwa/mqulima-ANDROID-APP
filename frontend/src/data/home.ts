@@ -31,11 +31,68 @@ export const ecosystemIntro = {
 };
 
 export const ecosystem = [
-  { n: "01", emoji: "🛒", title: "Agroshop", text: "Source trusted agricultural products from verified suppliers and have them delivered to your doorstep.", cta: "View shop", route: "/(tabs)/shop" },
-  { n: "02", emoji: "📈", title: "Insights", text: "Stay ahead with practical farming guides, market intelligence, expert articles, and timely updates.", cta: "View Updates", route: "/(tabs)/news" },
-  { n: "03", emoji: "🛠️", title: "Services", text: "Access trusted professional services when and where you need them — from veterinary care to installation.", cta: "Book a Service", route: "/services" },
-  { n: "04", emoji: "🤝", title: "Community", text: "Connect with thousands of farmers, experts, and agribusinesses to learn, share, and solve together.", cta: "Connect", route: "/(tabs)/forum" },
-  { n: "05", emoji: "🎓", title: "Academy", text: "Master modern practical agriculture through structured learning and expert real-world guidance.", cta: "Visit Academy", route: "/academy" },
+  {
+    n: "01",
+    emoji: "🛒",
+    title: "AGROSHOP",
+    bulletColor: "#22C55E",
+    text: "Source trusted agricultural products from verified suppliers and have them delivered to your doorstep.",
+    cta: "View shop",
+    route: "/(tabs)/shop",
+    image: "https://images.unsplash.com/photo-1592982537447-7440770cbfc9?q=80&w=800&auto=format&fit=crop",
+  },
+  {
+    n: "02",
+    emoji: "📈",
+    title: "INSIGHTS",
+    bulletColor: "#EF4444",
+    text: "Stay ahead with practical farming guides, market intelligence, expert articles, and timely updates.",
+    cta: "View Updates",
+    route: "/(tabs)/news",
+    image: "https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?q=80&w=800&auto=format&fit=crop",
+  },
+  {
+    n: "03",
+    emoji: "🛠️",
+    title: "SERVICES",
+    bulletColor: "#3B82F6",
+    text: "Access trusted professional services when and where you need them — from veterinary care to installation.",
+    cta: "Book a Service",
+    route: "/services",
+    image: "https://images.unsplash.com/photo-1589923188900-85dae523342b?q=80&w=800&auto=format&fit=crop",
+  },
+  {
+    n: "04",
+    emoji: "🤝",
+    title: "COMMUNITY",
+    bulletColor: "#F59E0B",
+    text: "Connect with thousands of farmers, experts, and agribusinesses to learn, share, and solve together.",
+    cta: "Connect",
+    route: "/(tabs)/forum",
+    image: "https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?q=80&w=800&auto=format&fit=crop",
+  },
+  {
+    n: "05",
+    emoji: "🎓",
+    title: "ACADEMY",
+    bulletColor: "#A855F7",
+    text: "Master modern practical agriculture through structured learning and expert real-world guidance.",
+    cta: "Visit Academy",
+    route: "/academy",
+    image: "https://images.unsplash.com/photo-1574943320219-553eb213f72d?q=80&w=800&auto=format&fit=crop",
+  },
+];
+
+export const ecosystemTicker = [
+  { label: "Verified farm inputs", color: "#22C55E" },
+  { label: "Real-time market prices", color: "#EF4444" },
+  { label: "Agronomy & vet care", color: "#3B82F6" },
+  { label: "Farmer community", color: "#F59E0B" },
+  { label: "Practical farming courses", color: "#A855F7" },
+  { label: "Doorstep delivery across 47 counties", color: "#22C55E" },
+  { label: "Soil testing & treatment", color: "#3B82F6" },
+  { label: "Statements & order tracking", color: "#F59E0B" },
+  { label: "AI Crop Doctor triage", color: "#22C55E" },
 ];
 
 export const servicesIntro = {
