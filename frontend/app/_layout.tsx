@@ -1,25 +1,80 @@
-import { QueryClientProvider } from "@tanstack/react-query";
-import { Stack } from "expo-router";
-import { LogBox, StyleSheet, View } from "react-native";
+import { onlineManager } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import NetInfo from "@react-native-community/netinfo";
+import { Stack, usePathname, useRouter } from "expo-router";
+import { LogBox, StyleSheet, Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { StatusBar } from "expo-status-bar";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Lucide } from "@react-native-vector-icons/lucide";
 
 import { ErrorBoundary } from "@/src/components/error-boundary";
-import { queryClient } from "@/src/query-client";
+import { asyncStoragePersister, QUERY_CACHE_MAX_AGE_MS, queryClient } from "@/src/query-client";
 import { AppProvider, useApp } from "@/src/store/AppStore";
 import { FloatingButtons, Toast } from "@/src/components/Floating";
 import { OnboardingFlow } from "@/src/components/OnboardingFlow";
-import { colors } from "@/src/theme";
+import { storage } from "@/src/utils/storage";
+import { colors, fonts } from "@/src/theme";
 
 LogBox.ignoreAllLogs(true);
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
+onlineManager.setEventListener((setOnline) => {
+  return NetInfo.addEventListener((state) => {
+    setOnline(Boolean(state.isConnected && state.isInternetReachable !== false));
+  });
+});
+
+function OfflineBanner() {
+  const [offline, setOffline] = useState(false);
+
+  useEffect(() => {
+    const unsub = NetInfo.addEventListener((state) => {
+      setOffline(state.isConnected === false || state.isInternetReachable === false);
+    });
+    return () => unsub();
+  }, []);
+
+  if (!offline) return null;
+  return (
+    <View testID="offline-status-banner" style={styles.offlineBanner}>
+      <Lucide name="wifi-off" size={14} color="#92400E" />
+      <Text style={styles.offlineText}>Offline mode — showing saved catalog, market & weather data</Text>
+    </View>
+  );
+}
+
 function AppContent() {
   const { ready, onboardingCompleted, completeOnboarding } = useApp();
+  const pathname = usePathname();
+  const router = useRouter();
+  const hasRestored = useRef(false);
+
+  useEffect(() => {
+    if (ready && onboardingCompleted && !hasRestored.current) {
+      hasRestored.current = true;
+      storage.getItem<string>("mqulima_last_app_route", "").then((saved) => {
+        if (
+          saved &&
+          saved !== "/" &&
+          saved !== "/(tabs)" &&
+          saved !== "/(tabs)/index" &&
+          !saved.includes("onboarding")
+        ) {
+          router.replace(saved as any);
+        }
+      });
+    }
+  }, [ready, onboardingCompleted]);
+
+  useEffect(() => {
+    if (pathname && !pathname.includes("onboarding")) {
+      storage.setItem("mqulima_last_app_route", pathname);
+    }
+  }, [pathname]);
 
   if (!ready) {
     return <View style={[styles.root, { backgroundColor: colors.surface }]} />;
@@ -33,6 +88,7 @@ function AppContent() {
     <>
       <StatusBar style="dark" />
       <View style={styles.root}>
+        <OfflineBanner />
         <Stack screenOptions={{ headerShown: false, animation: "slide_from_right", contentStyle: { backgroundColor: colors.surface } }}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="onboarding" options={{ animation: "fade" }} />
@@ -69,16 +125,37 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={styles.root}>
       <ErrorBoundary>
-        <QueryClientProvider client={queryClient}>
+        <PersistQueryClientProvider
+          client={queryClient}
+          persistOptions={{ persister: asyncStoragePersister, maxAge: QUERY_CACHE_MAX_AGE_MS, buster: "v1" }}
+        >
           <KeyboardProvider>
             <AppProvider>
               <AppContent />
             </AppProvider>
           </KeyboardProvider>
-        </QueryClientProvider>
+        </PersistQueryClientProvider>
       </ErrorBoundary>
     </GestureHandlerRootView>
   );
 }
 
-const styles = StyleSheet.create({ root: { flex: 1 } });
+const styles = StyleSheet.create({
+  root: { flex: 1 },
+  offlineBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    backgroundColor: "#FEF3C7",
+    borderBottomWidth: 1,
+    borderBottomColor: "#FDE68A",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  offlineText: {
+    fontFamily: fonts.b600,
+    fontSize: 11.5,
+    color: "#92400E",
+  },
+});
