@@ -25,6 +25,7 @@ export const tools = [
   { id: "markets", n: "#39", icon: "chart-line", title: "Live Markets", text: "See real-time prices across markets before you sell or buy, so every transaction is made with full information, not guesswork.", cta: "View Markets" },
   { id: "weather-advisory", n: "#40", icon: "cloud-rain", title: "Weather Advisory", text: "Get practical, farmer-focused guidance on what today’s, next week’s and next year’s weather means for your specific agriculture decisions.", cta: "Consult Expert" },
   { id: "ai", n: "#41", icon: "bot", title: "Mqulima AI", text: "Get instant, intelligent answers to your agricultural questions, powered by AI built specifically for your agriculture.", cta: "Ask MqulimaAI" },
+  { id: "crop-doctor", n: "#42", icon: "scan-search", title: "AI Crop Doctor", text: "Snap or upload a compressed leaf photo for fast Vision diagnosis, organic & PCPB-safe remedies, and agronomist triage.", cta: "Diagnose Crop" },
 ];
 
 export const weather = {

@@ -9,6 +9,7 @@ from operations import audit, check_limit, record_attempt
 from sms import send_welcome_sms
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+account_router = APIRouter(tags=["account"])
 
 
 class RegisterIn(BaseModel):
@@ -121,3 +122,39 @@ async def change_password(body: PasswordIn, user: CurrentUser):
     await audit(user, "password_changed", "users", user["id"], user["name"])
     user["must_change_password"] = False
     return {"access_token": make_token(user["id"], version + 1, user.get("role") == "admin"), "user": public_user(user)}
+
+
+async def _anonymize_and_delete_account(user: dict) -> dict:
+    uid = user["id"]
+    redacted_email = f"deleted-{uid}@redacted.mqulima.local"
+    await users.update_one(
+        {"id": uid},
+        {
+            "$set": {
+                "name": "Deleted User",
+                "email": redacted_email,
+                "phone": "",
+                "delivery_location": "",
+                "status": "deleted",
+                "deleted_at": now_iso(),
+            },
+            "$inc": {"token_version": 1},
+        },
+    )
+    try:
+        await audit(user, "account_deleted", "users", uid, "User requested in-app account deletion")
+    except Exception:
+        pass
+    return {"success": True, "deleted": True, "message": "Your account has been permanently deactivated and personal data removed."}
+
+
+@router.delete("/me")
+async def delete_my_account(user: CurrentUser):
+    """Play Console compliant self-service account deletion."""
+    return await _anonymize_and_delete_account(user)
+
+
+@account_router.delete("/account")
+async def delete_account_alias(user: CurrentUser):
+    """Alias for mobile app DELETE /api/v1/account self-service deletion."""
+    return await _anonymize_and_delete_account(user)

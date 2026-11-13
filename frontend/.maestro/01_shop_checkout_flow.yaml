@@ -1,0 +1,21 @@
+appId: com.mqulima.app
+name: "AgroShop to Paystack Checkout Flow"
+---
+- launchApp
+- assertVisible:
+    id: "shop-search-input"
+- tapOn:
+    id: "checkout-place-order-btn"
+    optional: true
+- openLink: "mqulima://checkout"
+- assertVisible:
+    id: "checkout-screen"
+- tapOn:
+    id: "payment-method-mpesa"
+- tapOn:
+    id: "payment-method-visa"
+- assertVisible:
+    id: "checkout-name-input"
+- assertVisible:
+    id: "checkout-phone-input"
+

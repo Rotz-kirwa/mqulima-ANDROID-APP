@@ -5,7 +5,8 @@ import requests
 from pathlib import Path
 
 # Load EXPO_PUBLIC_BACKEND_URL from frontend/.env (public URL used by the client)
-_env_path = Path("/app/frontend/.env")
+_repo_env = Path(__file__).resolve().parents[2] / "frontend" / ".env"
+_env_path = _repo_env if _repo_env.exists() else Path("/app/frontend/.env")
 BASE_URL = os.environ.get("EXPO_PUBLIC_BACKEND_URL", "").rstrip("/")
 if not BASE_URL and _env_path.exists():
     for line in _env_path.read_text().splitlines():

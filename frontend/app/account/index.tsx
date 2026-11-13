@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Lucide } from "@react-native-vector-icons/lucide";
@@ -15,7 +15,9 @@ export default function Account() {
   const { colors } = useTheme();
   const router = useRouter();
   const bottom = useStackBottom();
-  const { user, signOut, saved, cart, ready } = useApp();
+  const { user, signOut, saved, cart, ready, toast } = useApp();
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const orders = useQuery({ queryKey: ["orders"], queryFn: api.getOrders, enabled: !!user });
   const myThreads = useQuery({ queryKey: ["my-threads"], queryFn: api.getMyThreads, enabled: !!user });
 
@@ -52,6 +54,52 @@ export default function Account() {
           </Pressable>
         ))}
         <Btn testID="account-sign-out-btn" full variant="outline" icon="log-out" label="Sign Out" onPress={async () => { await signOut(); router.replace("/"); }} style={{ marginTop: 8 }} />
+
+        {!confirmDelete ? (
+          <Pressable
+            testID="account-delete-btn"
+            onPress={() => setConfirmDelete(true)}
+            style={s.deleteTrigger}
+          >
+            <Lucide name="trash-2" size={14} color={colors.error} />
+            <Text style={[s.deleteText, { color: colors.error }]}>Delete My Account</Text>
+          </Pressable>
+        ) : (
+          <View testID="account-delete-confirm-box" style={s.deleteBox}>
+            <Text style={s.deleteTitle}>Permanently Delete Account?</Text>
+            <Text style={s.deleteDesc}>
+              This removes your personal profile and signs you out immediately. Order receipts remain anonymized for regulatory records.
+            </Text>
+            <View style={{ flexDirection: "row", gap: 10 }}>
+              <Btn
+                small
+                variant="outline"
+                label="Cancel"
+                onPress={() => setConfirmDelete(false)}
+                style={{ flex: 1 }}
+              />
+              <Btn
+                testID="account-delete-confirm-btn"
+                small
+                variant="green"
+                label={deleting ? "Deleting..." : "Confirm Delete"}
+                loading={deleting}
+                onPress={async () => {
+                  setDeleting(true);
+                  try {
+                    await api.deleteAccount().catch(() => null);
+                    await signOut();
+                    toast("Account removed cleanly.");
+                    router.replace("/");
+                  } finally {
+                    setDeleting(false);
+                  }
+                }}
+                style={{ flex: 1, backgroundColor: colors.error }}
+              />
+            </View>
+          </View>
+        )}
       </ScrollView>
     </Page>
   );
@@ -65,4 +113,9 @@ const useStyles = makeStyles((c) => ({
   icon: { width: 40, height: 40, borderRadius: 20, backgroundColor: c.brandTertiary, alignItems: "center", justifyContent: "center" },
   label: { fontFamily: fonts.h700, fontSize: 15, color: c.onSurface },
   count: { fontFamily: fonts.b800, fontSize: 12, color: c.onBrandTertiary, backgroundColor: c.brandTertiary, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2, overflow: "hidden" },
+  deleteTrigger: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 12, marginTop: 4 },
+  deleteText: { fontFamily: fonts.b700, fontSize: 13 },
+  deleteBox: { backgroundColor: "#FEF2F2", borderWidth: 1, borderColor: "#FECACA", borderRadius: 18, padding: 14, gap: 8, marginTop: 4 },
+  deleteTitle: { fontFamily: fonts.h800, fontSize: 14.5, color: "#991B1B" },
+  deleteDesc: { fontFamily: fonts.b500, fontSize: 12, lineHeight: 17, color: "#7F1D1D" },
 }));

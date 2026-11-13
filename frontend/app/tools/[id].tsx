@@ -10,6 +10,7 @@ import { SelectField } from "@/src/components/Form";
 import { ListSkeleton } from "@/src/components/Skeleton";
 import { api } from "@/src/services/api";
 import { WeatherSymbolBanner, getForecastIconProps } from "@/src/components/tools/WeatherSymbolBanner";
+import { CropDoctorTool } from "@/src/components/tools/CropDoctorTool";
 import { counties } from "@/src/data/home";
 import { marketFilters, marketPrices, tools, weather } from "@/src/data/tools";
 import { fonts, makeStyles, useTheme } from "@/src/theme";
@@ -379,7 +380,7 @@ export default function ToolScreen() {
   const queryClient = useQueryClient();
   const tool = tools.find((t) => t.id === id);
   const [refreshing, setRefreshing] = useState(false);
-  const body = { weather: <Weather />, markets: <Markets />, "weather-advisory": <Advisory /> }[id ?? ""];
+  const body = { weather: <Weather />, markets: <Markets />, "weather-advisory": <Advisory />, "crop-doctor": <CropDoctorTool /> }[id ?? ""];
 
   const handlePullRefresh = async () => {
     setRefreshing(true);

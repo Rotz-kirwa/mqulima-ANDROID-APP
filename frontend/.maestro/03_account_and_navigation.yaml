@@ -1,0 +1,14 @@
+appId: com.mqulima.app
+name: "Account Management & Play Store Deletion Trigger"
+---
+- launchApp
+- openLink: "mqulima://account"
+- assertVisible:
+    id: "account-screen"
+- assertVisible:
+    id: "account-link-orders"
+- assertVisible:
+    id: "account-sign-out-btn"
+- assertVisible:
+    id: "account-delete-btn"
+

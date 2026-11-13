@@ -1,12 +1,37 @@
-import os
-from pathlib import Path
-from dotenv import load_dotenv
+"""Async MongoDB connection pool and startup index lifecycle."""
+import logging
 from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo import ASCENDING, DESCENDING
 
-ROOT_DIR = Path(__file__).parent
-load_dotenv(ROOT_DIR / ".env")
+from config import get_settings
 
-client = AsyncIOMotorClient(os.environ["MONGO_URL"])
-db = client[os.environ["DB_NAME"]]
+logger = logging.getLogger(__name__)
+settings = get_settings()
+
+client = AsyncIOMotorClient(
+    settings.MONGO_URL,
+    maxPoolSize=settings.MONGO_MAX_POOL_SIZE,
+    minPoolSize=settings.MONGO_MIN_POOL_SIZE,
+    serverSelectionTimeoutMS=settings.MONGO_SERVER_SELECTION_TIMEOUT_MS,
+    connectTimeoutMS=settings.MONGO_CONNECT_TIMEOUT_MS,
+    socketTimeoutMS=settings.MONGO_SOCKET_TIMEOUT_MS,
+    retryWrites=True,
+)
+db = client[settings.DB_NAME]
 
 NO_ID = {"_id": 0}
+
+
+async def ensure_indexes() -> None:
+    """Create production compound and TTL indexes idempotently during startup."""
+    try:
+        await db.users.create_index([("id", ASCENDING)], unique=True, background=True)
+        await db.users.create_index([("email", ASCENDING)], unique=True, background=True)
+        await db.orders.create_index([("user_id", ASCENDING), ("created_at", DESCENDING)], background=True)
+        await db.threads.create_index([("created_at", DESCENDING), ("tag", ASCENDING)], background=True)
+        await db.products.create_index([("category", ASCENDING), ("status", ASCENDING)], background=True)
+        await db.ai_messages.create_index([("session_id", ASCENDING), ("created_at", DESCENDING)], background=True)
+        await db.login_limits.create_index([("expires_at", ASCENDING)], expireAfterSeconds=0, background=True)
+        logger.info("MongoDB production indexes verified.")
+    except Exception as exc:
+        logger.warning("Skipping MongoDB index creation (database unavailable during boot): %s", exc)

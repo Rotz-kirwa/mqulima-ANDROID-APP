@@ -85,6 +85,7 @@ pyasn1_modules==0.4.2
 pycodestyle==2.15.0
 pycparser==3.11
 pydantic==2.14.1
+pydantic-settings==2.16.2
 pydantic_core==2.50.1
 pyflakes==4.0.3
 Pygments==2.21.0
@@ -96,6 +97,7 @@ pytest-xdist==3.8.0
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.4
 python-jose==3.5.0
+python-json-logger==4.2.0
 python-multipart==0.0.32
 pytokens==0.4.1
 PyYAML==6.0.3

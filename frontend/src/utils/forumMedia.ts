@@ -1,8 +1,9 @@
 import { Platform } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { api } from "@/src/services/api";
+import { compressImageAsset } from "@/src/utils/mediaCompress";
 
-const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+const MAX_IMAGE_BYTES = 12 * 1024 * 1024;
 
 export type PickedForumImagesResult = {
   canceled: boolean;
@@ -11,8 +12,8 @@ export type PickedForumImagesResult = {
 };
 
 /**
- * Prompts the user for library permission (on native), launches the image picker,
- * validates file sizes, and uploads each selected photo to the forum media endpoint.
+ * Prompts the user for library permission (on native), picks photos,
+ * compresses payloads on-device via expo-image-manipulator, and uploads to forum media.
  */
 export async function pickAndUploadForumImages(
   maxSelection = 1
@@ -45,18 +46,23 @@ export async function pickAndUploadForumImages(
       return {
         canceled: false,
         imageUrls: uploaded,
-        error: "Each image must be smaller than 8 MB.",
+        error: "Each image must be smaller than 12 MB.",
       };
     }
 
+    const compressed = await compressImageAsset(asset.uri, {
+      profile: "forum",
+      width: asset.width,
+      height: asset.height,
+    });
+
     const res = await api.uploadForumImage({
-      uri: asset.uri,
-      name: asset.fileName || "farm-photo.jpg",
-      mimeType: asset.mimeType || "image/jpeg",
+      uri: compressed.uri,
+      name: (asset.fileName || "farm-photo").replace(/\.[^.]+$/, "") + ".jpg",
+      mimeType: compressed.mimeType,
     });
     uploaded.push(res.imageUrl);
   }
 
   return { canceled: false, imageUrls: uploaded };
 }
-

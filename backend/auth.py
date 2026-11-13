@@ -1,8 +1,7 @@
-import os
+import logging
 import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Annotated, Optional
-from dotenv import load_dotenv
 
 import jwt
 from fastapi import Depends, HTTPException, status
@@ -10,13 +9,18 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt.exceptions import InvalidTokenError
 from pwdlib import PasswordHash
 
+from config import get_settings
 from db import db
 
-load_dotenv()
+logger = logging.getLogger(__name__)
+settings = get_settings()
 
-JWT_SECRET = os.environ["JWT_SECRET"]
+JWT_SECRET = settings.JWT_SECRET
+if settings.APP_ENV.strip().lower() != "production" and len(JWT_SECRET.strip()) < 32:
+    logger.warning("JWT_SECRET is shorter than 32 characters; rotate before production deployment.")
+
 JWT_ALGORITHM = "HS256"
-JWT_EXPIRE_DAYS = int(os.getenv("JWT_EXPIRE_DAYS", "30"))
+JWT_EXPIRE_DAYS = settings.JWT_EXPIRE_DAYS
 
 password_hash = PasswordHash.recommended()
 bearer = HTTPBearer(auto_error=False)

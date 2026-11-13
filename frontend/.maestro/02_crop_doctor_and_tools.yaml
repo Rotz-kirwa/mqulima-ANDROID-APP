@@ -1,0 +1,26 @@
+appId: com.mqulima.app
+name: "AI Crop Doctor & Precision Farm Tools"
+---
+- launchApp
+- openLink: "mqulima://tools/crop-doctor"
+- assertVisible:
+    id: "tool-screen-crop-doctor"
+- tapOn:
+    id: "crop-doctor-crop-maize"
+- tapOn:
+    id: "crop-doctor-symptom-yellowing"
+- assertVisible:
+    id: "crop-doctor-camera-btn"
+- tapOn:
+    id: "crop-doctor-analyze-btn"
+- extendedWaitUntil:
+    visible:
+      id: "crop-doctor-result"
+    timeout: 15000
+- openLink: "mqulima://tools/weather"
+- assertVisible:
+    id: "tool-screen-weather"
+- openLink: "mqulima://tools/markets"
+- assertVisible:
+    id: "markets-search-input"
+

@@ -65,7 +65,16 @@ export class ApiError extends Error {
   }
 }
 
-export async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+const TRANSIENT_STATUSES = new Set([408, 429, 502, 503, 504]);
+const sleepMs = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+export type RequestOptions = RequestInit & {
+  timeoutMs?: number;
+  retries?: number;
+  idempotent?: boolean;
+};
+
+export async function request<T>(path: string, init: RequestOptions = {}): Promise<T> {
   const token = await storage.secureGet(TOKEN_KEY, "");
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -76,13 +85,60 @@ export async function request<T>(path: string, init: RequestInit = {}): Promise<
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${BASE}${path}`, { ...init, headers });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    const detail = Array.isArray(body.detail) ? body.detail[0]?.msg : (body.error || body.message || body.detail);
-    throw new ApiError(res.status, detail ?? `Request failed (${res.status})`);
+  const method = (init.method || "GET").toUpperCase();
+  const hasIdempotencyKey = Boolean(headers["Idempotency-Key"] || headers["idempotency-key"]);
+  const canRetry = method === "GET" || method === "HEAD" || hasIdempotencyKey || Boolean(init.idempotent);
+  const maxRetries = canRetry ? (init.retries ?? 2) : 0;
+  const timeoutMs = init.timeoutMs ?? (path.startsWith("/ai/") ? 45000 : 15000);
+
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    if (init.signal) {
+      init.signal.addEventListener("abort", () => controller.abort(), { once: true });
+    }
+
+    try {
+      const res = await fetch(`${BASE}${path}`, { ...init, headers, signal: controller.signal });
+      clearTimeout(timer);
+
+      if (res.ok) {
+        return res.json();
+      }
+
+      const body = await res.json().catch(() => ({}));
+      const detail = Array.isArray(body.detail) ? body.detail[0]?.msg : (body.error || body.message || body.detail);
+      const err = new ApiError(res.status, detail ?? `Request failed (${res.status})`);
+
+      if (canRetry && TRANSIENT_STATUSES.has(res.status) && attempt < maxRetries) {
+        const retryAfterSec = Number(res.headers.get("retry-after"));
+        const backoff = Number.isFinite(retryAfterSec) && retryAfterSec > 0
+          ? Math.min(8000, retryAfterSec * 1000)
+          : Math.min(8000, 500 * Math.pow(2, attempt)) + Math.floor(Math.random() * 250);
+        await sleepMs(backoff);
+        continue;
+      }
+      throw err;
+    } catch (err: any) {
+      clearTimeout(timer);
+      if (err instanceof ApiError) {
+        throw err;
+      }
+      const isTimeout = err?.name === "AbortError";
+      lastErr = new ApiError(
+        isTimeout ? 408 : 0,
+        isTimeout ? "Request timed out on slow network. Please retry." : (err?.message || "Network unavailable")
+      );
+      if (canRetry && attempt < maxRetries) {
+        const backoff = Math.min(8000, 500 * Math.pow(2, attempt)) + Math.floor(Math.random() * 250);
+        await sleepMs(backoff);
+        continue;
+      }
+      throw lastErr;
+    }
   }
-  return res.json();
+  throw lastErr;
 }
 
 const delay = <T,>(data: T, ms = 300): Promise<T> => new Promise((r) => setTimeout(() => r(data), ms));
@@ -582,6 +638,21 @@ export const api = {
       await storage.removeItem("mqulima_user");
     } catch (e) {
       console.warn("[Auth] Error during logout:", e);
+    }
+  },
+
+  deleteAccount: async () => {
+    try {
+      return await request<{ success: boolean; deleted: boolean; message?: string }>("/account", {
+        method: "DELETE",
+      });
+    } catch (err: any) {
+      if (err?.status === 404) {
+        return await request<{ success: boolean; deleted: boolean; message?: string }>("/auth/me", {
+          method: "DELETE",
+        });
+      }
+      throw err;
     }
   },
 
@@ -1235,6 +1306,7 @@ export const api = {
     request<{ success: boolean; diagnosis: any }>("/ai/crop-doctor", {
       method: "POST",
       body: JSON.stringify(data),
+      timeoutMs: 45000,
     }),
 
   // ---- 12. Mqulima AI Streaming Advisor ----
