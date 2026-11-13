@@ -107,39 +107,41 @@ export default function Home() {
                 >
                   <Image source={{ uri: e.image }} style={StyleSheetAbs} contentFit="cover" transition={300} />
                   <LinearGradient
-                    colors={["rgba(0,0,0,0.50)", "rgba(0,0,0,0.08)", "rgba(0,0,0,0.72)"]}
-                    locations={[0, 0.32, 1.0]}
+                    colors={["rgba(0,0,0,0.55)", "rgba(0,0,0,0.02)", "rgba(0,0,0,0.85)"]}
+                    locations={[0, 0.38, 1.0]}
                     style={StyleSheetAbs}
                   />
                   <View style={s.ecoCardInner}>
-                    <View>
-                      <View style={s.ecoHeaderRow}>
-                        <View style={s.ecoTitleGroup}>
-                          <View style={[s.ecoSquareBullet, { backgroundColor: e.bulletColor }]} />
-                          <Text style={s.ecoCardTitle} numberOfLines={1}>
-                            {e.title}
-                          </Text>
-                        </View>
-                        <View style={s.ecoBadgeN}>
-                          <Text style={s.ecoCardN}>{e.n}</Text>
-                        </View>
+                    {/* Header at the top */}
+                    <View style={s.ecoHeaderRow}>
+                      <View style={s.ecoTitleGroup}>
+                        <View style={[s.ecoSquareBullet, { backgroundColor: e.bulletColor }]} />
+                        <Text style={s.ecoCardTitle} numberOfLines={1}>
+                          {e.title}
+                        </Text>
                       </View>
+                      <View style={s.ecoBadgeN}>
+                        <Text style={s.ecoCardN}>{e.n}</Text>
+                      </View>
+                    </View>
 
+                    {/* Wordings lowered down to bottom */}
+                    <View style={s.ecoBottomGroup}>
                       <View style={s.ecoDescBox}>
                         <Text style={s.ecoCardDesc}>
                           {e.text}
                         </Text>
                       </View>
-                    </View>
 
-                    <Pressable
-                      testID={`ecosystem-cta-${e.n}`}
-                      onPress={() => router.push(e.route as any)}
-                      style={({ pressed }) => [s.ecoCtaPill, { borderColor: e.bulletColor, opacity: pressed ? 0.8 : 1 }]}
-                    >
-                      <Text style={s.ecoCtaText}>{e.cta}</Text>
-                      <Lucide name="arrow-right" size={12} color={e.bulletColor} />
-                    </Pressable>
+                      <Pressable
+                        testID={`ecosystem-cta-${e.n}`}
+                        onPress={() => router.push(e.route as any)}
+                        style={({ pressed }) => [s.ecoCtaPill, { borderColor: e.bulletColor, opacity: pressed ? 0.8 : 1 }]}
+                      >
+                        <Text style={s.ecoCtaText}>{e.cta}</Text>
+                        <Lucide name="arrow-right" size={12} color={e.bulletColor} />
+                      </Pressable>
+                    </View>
                   </View>
                 </Pressable>
               ))}
@@ -159,39 +161,41 @@ export default function Home() {
                 >
                   <Image source={{ uri: e.image }} style={StyleSheetAbs} contentFit="cover" transition={300} />
                   <LinearGradient
-                    colors={["rgba(0,0,0,0.50)", "rgba(0,0,0,0.08)", "rgba(0,0,0,0.72)"]}
-                    locations={[0, 0.32, 1.0]}
+                    colors={["rgba(0,0,0,0.55)", "rgba(0,0,0,0.02)", "rgba(0,0,0,0.85)"]}
+                    locations={[0, 0.38, 1.0]}
                     style={StyleSheetAbs}
                   />
                   <View style={s.ecoCardInner}>
-                    <View>
-                      <View style={s.ecoHeaderRow}>
-                        <View style={s.ecoTitleGroup}>
-                          <View style={[s.ecoSquareBullet, { backgroundColor: e.bulletColor }]} />
-                          <Text style={s.ecoCardTitle} numberOfLines={1}>
-                            {e.title}
-                          </Text>
-                        </View>
-                        <View style={s.ecoBadgeN}>
-                          <Text style={s.ecoCardN}>{e.n}</Text>
-                        </View>
+                    {/* Header at the top */}
+                    <View style={s.ecoHeaderRow}>
+                      <View style={s.ecoTitleGroup}>
+                        <View style={[s.ecoSquareBullet, { backgroundColor: e.bulletColor }]} />
+                        <Text style={s.ecoCardTitle} numberOfLines={1}>
+                          {e.title}
+                        </Text>
                       </View>
+                      <View style={s.ecoBadgeN}>
+                        <Text style={s.ecoCardN}>{e.n}</Text>
+                      </View>
+                    </View>
 
+                    {/* Wordings lowered down to bottom */}
+                    <View style={s.ecoBottomGroup}>
                       <View style={s.ecoDescBox}>
                         <Text style={s.ecoCardDesc}>
                           {e.text}
                         </Text>
                       </View>
-                    </View>
 
-                    <Pressable
-                      testID={`ecosystem-cta-${e.n}`}
-                      onPress={() => router.push(e.route as any)}
-                      style={({ pressed }) => [s.ecoCtaPill, { borderColor: e.bulletColor, opacity: pressed ? 0.8 : 1 }]}
-                    >
-                      <Text style={s.ecoCtaText}>{e.cta}</Text>
-                      <Lucide name="arrow-right" size={12} color={e.bulletColor} />
-                    </Pressable>
+                      <Pressable
+                        testID={`ecosystem-cta-${e.n}`}
+                        onPress={() => router.push(e.route as any)}
+                        style={({ pressed }) => [s.ecoCtaPill, { borderColor: e.bulletColor, opacity: pressed ? 0.8 : 1 }]}
+                      >
+                        <Text style={s.ecoCtaText}>{e.cta}</Text>
+                        <Lucide name="arrow-right" size={12} color={e.bulletColor} />
+                      </Pressable>
+                    </View>
                   </View>
                 </Pressable>
               ))}
@@ -210,37 +214,39 @@ export default function Home() {
               >
                 <Image source={{ uri: e.image }} style={StyleSheetAbs} contentFit="cover" transition={300} />
                 <LinearGradient
-                  colors={["rgba(0,0,0,0.50)", "rgba(0,0,0,0.08)", "rgba(0,0,0,0.75)"]}
-                  locations={[0, 0.32, 1.0]}
+                  colors={["rgba(0,0,0,0.55)", "rgba(0,0,0,0.02)", "rgba(0,0,0,0.85)"]}
+                  locations={[0, 0.38, 1.0]}
                   style={StyleSheetAbs}
                 />
                 <View style={s.ecoCardFullInner}>
-                  <View style={{ flex: 1 }}>
-                    <View style={s.ecoHeaderRow}>
-                      <View style={s.ecoTitleGroup}>
-                        <View style={[s.ecoSquareBullet, { backgroundColor: e.bulletColor }]} />
-                        <Text style={s.ecoCardTitle}>{e.title}</Text>
-                      </View>
-                      <View style={s.ecoBadgeN}>
-                        <Text style={s.ecoCardN}>{e.n}</Text>
-                      </View>
+                  {/* Header at the top */}
+                  <View style={s.ecoHeaderRow}>
+                    <View style={s.ecoTitleGroup}>
+                      <View style={[s.ecoSquareBullet, { backgroundColor: e.bulletColor }]} />
+                      <Text style={s.ecoCardTitle}>{e.title}</Text>
                     </View>
+                    <View style={s.ecoBadgeN}>
+                      <Text style={s.ecoCardN}>{e.n}</Text>
+                    </View>
+                  </View>
 
+                  {/* Wordings lowered down to bottom */}
+                  <View style={s.ecoBottomGroup}>
                     <View style={s.ecoDescBox}>
                       <Text style={s.ecoCardDesc}>
                         {e.text}
                       </Text>
                     </View>
-                  </View>
 
-                  <Pressable
-                    testID={`ecosystem-cta-${e.n}`}
-                    onPress={() => router.push(e.route as any)}
-                    style={({ pressed }) => [s.ecoCtaPill, { borderColor: e.bulletColor, marginTop: 10, opacity: pressed ? 0.8 : 1 }]}
-                  >
-                    <Text style={s.ecoCtaText}>{e.cta}</Text>
-                    <Lucide name="arrow-right" size={12} color={e.bulletColor} />
-                  </Pressable>
+                    <Pressable
+                      testID={`ecosystem-cta-${e.n}`}
+                      onPress={() => router.push(e.route as any)}
+                      style={({ pressed }) => [s.ecoCtaPill, { borderColor: e.bulletColor, opacity: pressed ? 0.8 : 1 }]}
+                    >
+                      <Text style={s.ecoCtaText}>{e.cta}</Text>
+                      <Lucide name="arrow-right" size={12} color={e.bulletColor} />
+                    </Pressable>
+                  </View>
                 </View>
               </Pressable>
             ))}
@@ -435,7 +441,7 @@ const useStyles = makeStyles((c) => ({
   ecoGridRow: { flexDirection: "row", gap: 12 },
   ecoCardNew: {
     flex: 1,
-    minHeight: 245,
+    minHeight: 265,
     borderRadius: 18,
     overflow: "hidden",
     borderWidth: 1,
@@ -490,14 +496,17 @@ const useStyles = makeStyles((c) => ({
     fontSize: 10.5,
     letterSpacing: 1,
   },
+  ecoBottomGroup: {
+    gap: 8,
+    marginTop: "auto",
+  },
   ecoDescBox: {
-    backgroundColor: "rgba(0, 0, 0, 0.65)",
+    backgroundColor: "rgba(0, 0, 0, 0.68)",
     borderRadius: 10,
     paddingHorizontal: 8,
     paddingVertical: 7,
-    marginTop: 8,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.12)",
+    borderColor: "rgba(255, 255, 255, 0.14)",
   },
   ecoCardDesc: {
     color: c.white,
@@ -512,7 +521,6 @@ const useStyles = makeStyles((c) => ({
     alignItems: "center",
     gap: 6,
     alignSelf: "flex-start",
-    marginTop: 8,
     paddingVertical: 6,
     paddingHorizontal: 11,
     borderRadius: 999,
@@ -527,7 +535,7 @@ const useStyles = makeStyles((c) => ({
   },
   ecoCardFull: {
     width: "100%",
-    minHeight: 160,
+    minHeight: 180,
     borderRadius: 18,
     overflow: "hidden",
     borderWidth: 1,
