@@ -2,7 +2,7 @@ import { onlineManager } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import NetInfo from "@react-native-community/netinfo";
 import { Stack, usePathname, useRouter } from "expo-router";
-import { LogBox, StyleSheet, Text, View } from "react-native";
+import { LogBox, Platform, StyleSheet, Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { StatusBar } from "expo-status-bar";
@@ -51,12 +51,33 @@ function AppContent() {
   const { ready, onboardingCompleted, completeOnboarding } = useApp();
   const pathname = usePathname();
   const router = useRouter();
-  const hasRestored = useRef(false);
+  const restored = useRef(false);
+  const isNavigating = useRef(false);
 
+  // 1. Initial route restoration on cold start / refresh
   useEffect(() => {
-    if (ready && onboardingCompleted && !hasRestored.current) {
-      hasRestored.current = true;
-      storage.getItem<string>("mqulima_last_app_route", "").then((saved) => {
+    if (!ready || !onboardingCompleted || restored.current) return;
+
+    (async () => {
+      try {
+        // On web, if the browser refreshed on a specific page, respect window.location
+        if (Platform.OS === "web" && typeof window !== "undefined") {
+          const webPath = window.location.pathname;
+          if (
+            webPath &&
+            webPath !== "/" &&
+            webPath !== "/(tabs)" &&
+            webPath !== "/(tabs)/index" &&
+            !webPath.includes("onboarding")
+          ) {
+            await storage.setItem("mqulima_last_app_route", webPath);
+            restored.current = true;
+            return;
+          }
+        }
+
+        // On native cold launch or when web is at root, restore saved subpath
+        const saved = await storage.getItem<string>("mqulima_last_app_route", "");
         if (
           saved &&
           saved !== "/" &&
@@ -64,31 +85,38 @@ function AppContent() {
           saved !== "/(tabs)/index" &&
           !saved.includes("onboarding")
         ) {
+          isNavigating.current = true;
           router.replace(saved as any);
         }
-      });
-    }
+      } catch {} finally {
+        setTimeout(() => {
+          restored.current = true;
+          isNavigating.current = false;
+        }, 500);
+      }
+    })();
   }, [ready, onboardingCompleted]);
 
+  // 2. Persist active route only AFTER startup restoration is fully complete
   useEffect(() => {
-    if (pathname && !pathname.includes("onboarding")) {
-      storage.setItem("mqulima_last_app_route", pathname);
+    if (!ready || !onboardingCompleted || !restored.current || isNavigating.current) return;
+    if (!pathname || pathname.includes("onboarding")) return;
+
+    // Do NOT overwrite saved route with root "/" unless the user explicitly navigated to Home
+    if (pathname === "/" || pathname === "/(tabs)" || pathname === "/(tabs)/index") {
+      storage.setItem("mqulima_last_app_route", "/");
+      return;
     }
-  }, [pathname]);
 
-  if (!ready) {
-    return <View style={[styles.root, { backgroundColor: colors.surface }]} />;
-  }
-
-  if (!onboardingCompleted) {
-    return <OnboardingFlow onFinish={completeOnboarding} />;
-  }
+    storage.setItem("mqulima_last_app_route", pathname);
+  }, [pathname, ready, onboardingCompleted]);
 
   return (
     <>
       <StatusBar style="dark" />
       <View style={styles.root}>
         <OfflineBanner />
+        {/* Unconditionally mount Stack so Expo Router never unmounts / resets navigation state */}
         <Stack screenOptions={{ headerShown: false, animation: "slide_from_right", contentStyle: { backgroundColor: colors.surface } }}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="onboarding" options={{ animation: "fade" }} />
@@ -97,6 +125,18 @@ function AppContent() {
         </Stack>
         <FloatingButtons />
         <Toast />
+
+        {/* Render Onboarding as an overlay on top of Stack */}
+        {ready && !onboardingCompleted && (
+          <View style={StyleSheet.absoluteFill}>
+            <OnboardingFlow onFinish={completeOnboarding} />
+          </View>
+        )}
+
+        {/* While loading initial state, show a clean splash surface cover without unmounting Stack */}
+        {!ready && (
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.surface }]} />
+        )}
       </View>
     </>
   );

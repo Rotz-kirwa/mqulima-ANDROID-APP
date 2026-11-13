@@ -34,7 +34,7 @@ export const ecosystem = [
   {
     n: "01",
     emoji: "🛒",
-    title: "AGROSHOP",
+    title: "AgroShop",
     bulletColor: "#22C55E",
     text: "Source trusted agricultural products from verified suppliers and have them delivered to your doorstep.",
     cta: "View shop",
@@ -44,7 +44,7 @@ export const ecosystem = [
   {
     n: "02",
     emoji: "📈",
-    title: "INSIGHTS",
+    title: "Insights",
     bulletColor: "#EF4444",
     text: "Stay ahead with practical farming guides, market intelligence, expert articles, and timely updates.",
     cta: "View Updates",
@@ -54,7 +54,7 @@ export const ecosystem = [
   {
     n: "03",
     emoji: "🛠️",
-    title: "SERVICES",
+    title: "Services",
     bulletColor: "#3B82F6",
     text: "Access trusted professional services when and where you need them — from veterinary care to installation.",
     cta: "Book a Service",
@@ -64,7 +64,7 @@ export const ecosystem = [
   {
     n: "04",
     emoji: "🤝",
-    title: "COMMUNITY",
+    title: "Community",
     bulletColor: "#F59E0B",
     text: "Connect with thousands of farmers, experts, and agribusinesses to learn, share, and solve together.",
     cta: "Connect",
@@ -74,7 +74,7 @@ export const ecosystem = [
   {
     n: "05",
     emoji: "🎓",
-    title: "ACADEMY",
+    title: "Academy",
     bulletColor: "#A855F7",
     text: "Master modern practical agriculture through structured learning and expert real-world guidance.",
     cta: "Visit Academy",
