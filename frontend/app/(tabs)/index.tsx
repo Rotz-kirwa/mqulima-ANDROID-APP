@@ -107,32 +107,38 @@ export default function Home() {
                 >
                   <Image source={{ uri: e.image }} style={StyleSheetAbs} contentFit="cover" transition={300} />
                   <LinearGradient
-                    colors={["rgba(6,20,13,0.55)", "rgba(6,20,13,0.92)"]}
+                    colors={["rgba(0,0,0,0.50)", "rgba(0,0,0,0.08)", "rgba(0,0,0,0.72)"]}
+                    locations={[0, 0.32, 1.0]}
                     style={StyleSheetAbs}
                   />
                   <View style={s.ecoCardInner}>
                     <View>
                       <View style={s.ecoHeaderRow}>
-                        <View style={{ flexDirection: "row", alignItems: "center", gap: 7, flex: 1, paddingRight: 4 }}>
+                        <View style={s.ecoTitleGroup}>
                           <View style={[s.ecoSquareBullet, { backgroundColor: e.bulletColor }]} />
                           <Text style={s.ecoCardTitle} numberOfLines={1}>
                             {e.title}
                           </Text>
                         </View>
-                        <Text style={s.ecoCardN}>{e.n}</Text>
+                        <View style={s.ecoBadgeN}>
+                          <Text style={s.ecoCardN}>{e.n}</Text>
+                        </View>
                       </View>
-                      <Text style={s.ecoCardDesc} numberOfLines={4}>
-                        {e.text}
-                      </Text>
+
+                      <View style={s.ecoDescBox}>
+                        <Text style={s.ecoCardDesc}>
+                          {e.text}
+                        </Text>
+                      </View>
                     </View>
 
                     <Pressable
                       testID={`ecosystem-cta-${e.n}`}
                       onPress={() => router.push(e.route as any)}
-                      style={({ pressed }) => [s.ecoCtaPill, { opacity: pressed ? 0.8 : 1 }]}
+                      style={({ pressed }) => [s.ecoCtaPill, { borderColor: e.bulletColor, opacity: pressed ? 0.8 : 1 }]}
                     >
-                      <Text style={[s.ecoCtaText, { color: e.bulletColor }]}>{e.cta}</Text>
-                      <Lucide name="arrow-right" size={13} color={e.bulletColor} />
+                      <Text style={s.ecoCtaText}>{e.cta}</Text>
+                      <Lucide name="arrow-right" size={12} color={e.bulletColor} />
                     </Pressable>
                   </View>
                 </Pressable>
@@ -153,32 +159,38 @@ export default function Home() {
                 >
                   <Image source={{ uri: e.image }} style={StyleSheetAbs} contentFit="cover" transition={300} />
                   <LinearGradient
-                    colors={["rgba(6,20,13,0.55)", "rgba(6,20,13,0.92)"]}
+                    colors={["rgba(0,0,0,0.50)", "rgba(0,0,0,0.08)", "rgba(0,0,0,0.72)"]}
+                    locations={[0, 0.32, 1.0]}
                     style={StyleSheetAbs}
                   />
                   <View style={s.ecoCardInner}>
                     <View>
                       <View style={s.ecoHeaderRow}>
-                        <View style={{ flexDirection: "row", alignItems: "center", gap: 7, flex: 1, paddingRight: 4 }}>
+                        <View style={s.ecoTitleGroup}>
                           <View style={[s.ecoSquareBullet, { backgroundColor: e.bulletColor }]} />
                           <Text style={s.ecoCardTitle} numberOfLines={1}>
                             {e.title}
                           </Text>
                         </View>
-                        <Text style={s.ecoCardN}>{e.n}</Text>
+                        <View style={s.ecoBadgeN}>
+                          <Text style={s.ecoCardN}>{e.n}</Text>
+                        </View>
                       </View>
-                      <Text style={s.ecoCardDesc} numberOfLines={4}>
-                        {e.text}
-                      </Text>
+
+                      <View style={s.ecoDescBox}>
+                        <Text style={s.ecoCardDesc}>
+                          {e.text}
+                        </Text>
+                      </View>
                     </View>
 
                     <Pressable
                       testID={`ecosystem-cta-${e.n}`}
                       onPress={() => router.push(e.route as any)}
-                      style={({ pressed }) => [s.ecoCtaPill, { opacity: pressed ? 0.8 : 1 }]}
+                      style={({ pressed }) => [s.ecoCtaPill, { borderColor: e.bulletColor, opacity: pressed ? 0.8 : 1 }]}
                     >
-                      <Text style={[s.ecoCtaText, { color: e.bulletColor }]}>{e.cta}</Text>
-                      <Lucide name="arrow-right" size={13} color={e.bulletColor} />
+                      <Text style={s.ecoCtaText}>{e.cta}</Text>
+                      <Lucide name="arrow-right" size={12} color={e.bulletColor} />
                     </Pressable>
                   </View>
                 </Pressable>
@@ -198,30 +210,36 @@ export default function Home() {
               >
                 <Image source={{ uri: e.image }} style={StyleSheetAbs} contentFit="cover" transition={300} />
                 <LinearGradient
-                  colors={["rgba(6,20,13,0.55)", "rgba(6,20,13,0.92)"]}
+                  colors={["rgba(0,0,0,0.50)", "rgba(0,0,0,0.08)", "rgba(0,0,0,0.75)"]}
+                  locations={[0, 0.32, 1.0]}
                   style={StyleSheetAbs}
                 />
                 <View style={s.ecoCardFullInner}>
                   <View style={{ flex: 1 }}>
                     <View style={s.ecoHeaderRow}>
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
+                      <View style={s.ecoTitleGroup}>
                         <View style={[s.ecoSquareBullet, { backgroundColor: e.bulletColor }]} />
                         <Text style={s.ecoCardTitle}>{e.title}</Text>
                       </View>
-                      <Text style={s.ecoCardN}>{e.n}</Text>
+                      <View style={s.ecoBadgeN}>
+                        <Text style={s.ecoCardN}>{e.n}</Text>
+                      </View>
                     </View>
-                    <Text style={[s.ecoCardDesc, { marginTop: 6 }]} numberOfLines={3}>
-                      {e.text}
-                    </Text>
+
+                    <View style={s.ecoDescBox}>
+                      <Text style={s.ecoCardDesc}>
+                        {e.text}
+                      </Text>
+                    </View>
                   </View>
 
                   <Pressable
                     testID={`ecosystem-cta-${e.n}`}
                     onPress={() => router.push(e.route as any)}
-                    style={({ pressed }) => [s.ecoCtaPill, { marginTop: 12, opacity: pressed ? 0.8 : 1 }]}
+                    style={({ pressed }) => [s.ecoCtaPill, { borderColor: e.bulletColor, marginTop: 10, opacity: pressed ? 0.8 : 1 }]}
                   >
-                    <Text style={[s.ecoCtaText, { color: e.bulletColor }]}>{e.cta}</Text>
-                    <Lucide name="arrow-right" size={13} color={e.bulletColor} />
+                    <Text style={s.ecoCtaText}>{e.cta}</Text>
+                    <Lucide name="arrow-right" size={12} color={e.bulletColor} />
                   </Pressable>
                 </View>
               </Pressable>
@@ -417,16 +435,16 @@ const useStyles = makeStyles((c) => ({
   ecoGridRow: { flexDirection: "row", gap: 12 },
   ecoCardNew: {
     flex: 1,
-    minHeight: 210,
+    minHeight: 245,
     borderRadius: 18,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
-    backgroundColor: "#11261B",
+    borderColor: "rgba(255,255,255,0.16)",
+    backgroundColor: "#0B1D14",
   },
   ecoCardInner: {
     flex: 1,
-    padding: 14,
+    padding: 12,
     justifyContent: "space-between",
   },
   ecoHeaderRow: {
@@ -434,60 +452,91 @@ const useStyles = makeStyles((c) => ({
     alignItems: "center",
     justifyContent: "space-between",
   },
+  ecoTitleGroup: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "rgba(0, 0, 0, 0.65)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.15)",
+    flexShrink: 1,
+  },
+  ecoBadgeN: {
+    backgroundColor: "rgba(0, 0, 0, 0.65)",
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.15)",
+  },
   ecoSquareBullet: {
-    width: 9,
-    height: 9,
+    width: 8,
+    height: 8,
     borderRadius: 2,
   },
   ecoCardTitle: {
     color: c.white,
     fontFamily: fonts.h800,
-    fontSize: 15,
-    letterSpacing: 0.3,
+    fontSize: 13.5,
+    letterSpacing: 0.5,
+    ...textShadow("rgba(0,0,0,0.95)", 3, 1),
   },
   ecoCardN: {
-    color: "rgba(255,255,255,0.45)",
+    color: "rgba(255,255,255,0.85)",
     fontFamily: fonts.b800,
-    fontSize: 11,
+    fontSize: 10.5,
     letterSpacing: 1,
   },
-  ecoCardDesc: {
-    color: "rgba(255,255,255,0.85)",
-    fontFamily: fonts.b400,
-    fontSize: 11.5,
-    lineHeight: 16.5,
+  ecoDescBox: {
+    backgroundColor: "rgba(0, 0, 0, 0.65)",
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 7,
     marginTop: 8,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.12)",
+  },
+  ecoCardDesc: {
+    color: c.white,
+    fontFamily: fonts.b600,
+    fontSize: 11,
+    lineHeight: 16,
+    letterSpacing: 0.1,
+    ...textShadow("rgba(0,0,0,0.9)", 2, 1),
   },
   ecoCtaPill: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
     alignSelf: "flex-start",
-    marginTop: 10,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
+    marginTop: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 11,
     borderRadius: 999,
-    backgroundColor: "rgba(255,255,255,0.10)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
+    backgroundColor: "rgba(0, 0, 0, 0.75)",
+    borderWidth: 1.5,
   },
   ecoCtaText: {
-    fontFamily: fonts.b700,
+    fontFamily: fonts.b800,
     fontSize: 11,
-    letterSpacing: 0.3,
+    letterSpacing: 0.4,
+    color: c.white,
   },
   ecoCardFull: {
     width: "100%",
-    minHeight: 145,
+    minHeight: 160,
     borderRadius: 18,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
-    backgroundColor: "#11261B",
+    borderColor: "rgba(255,255,255,0.16)",
+    backgroundColor: "#0B1D14",
   },
   ecoCardFullInner: {
     flex: 1,
-    padding: 16,
+    padding: 14,
     justifyContent: "space-between",
   },
   ecoTickerStrip: {
