@@ -73,13 +73,14 @@ export default function Checkout() {
     location: "",
   });
   const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethod>("mpesa");
-  const [forcePaystackForMpesa, setForcePaystackForMpesa] = useState(false);
-  const isDirectMpesa = paymentMethod === "mpesa" && !forcePaystackForMpesa;
-  const isPaystackMethod =
-    paymentMethod === "airtel" ||
+  const [forceHostedPaystack, setForceHostedPaystack] = useState(false);
+  const isMobileMoneyMethod = paymentMethod === "mpesa" || paymentMethod === "airtel";
+  const isDirectPaystackMobile = isMobileMoneyMethod && !forceHostedPaystack;
+  const isPaystackHosted =
     paymentMethod === "visa" ||
     paymentMethod === "mastercard" ||
-    (paymentMethod === "mpesa" && forcePaystackForMpesa);
+    paymentMethod === "paystack" ||
+    (isMobileMoneyMethod && forceHostedPaystack);
   const methodLabel =
     paymentMethod === "mpesa"
       ? "M-Pesa"
@@ -89,8 +90,9 @@ export default function Checkout() {
       ? "Visa"
       : paymentMethod === "mastercard"
       ? "Mastercard"
+      : paymentMethod === "paystack"
+      ? "Paystack"
       : "Pay on Delivery";
-  const isMobileMoneyMethod = paymentMethod === "mpesa" || paymentMethod === "airtel";
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(true);
@@ -219,9 +221,9 @@ export default function Checkout() {
     (async () => {
       try {
         const list = await api.getOrders().catch(() => []);
-        if (m === "mpesa" || m === "airtel" || m === "visa" || m === "mastercard") {
+        if (m === "mpesa" || m === "airtel" || m === "visa" || m === "mastercard" || m === "paystack") {
           setPaymentMethod(m);
-          if (m === "mpesa") setForcePaystackForMpesa(true);
+          if (m === "mpesa" || m === "airtel") setForceHostedPaystack(true);
         }
         const matched = Array.isArray(list) ? list.find((item) => item.id === orderIdParam) : undefined;
         setOrder(
@@ -266,8 +268,8 @@ export default function Checkout() {
       const finished = applyPaymentStatus(res);
       if (!finished) {
         toast(
-          isDirectMpesa
-            ? "Payment not confirmed yet — enter your M-Pesa PIN on your phone and check again."
+          isDirectPaystackMobile
+            ? `Payment not confirmed yet — approve the ${methodLabel} prompt on your phone and check again.`
             : "Payment not confirmed yet — complete checkout on Paystack and check again."
         );
       }
@@ -278,8 +280,12 @@ export default function Checkout() {
     }
   };
 
-  const paystackChannelsFor = (m: CheckoutPaymentMethod): string[] =>
-    m === "mpesa" || m === "airtel" ? ["mobile_money"] : ["card"];
+  const paystackChannelsFor = (m: CheckoutPaymentMethod): string[] | undefined =>
+    m === "mpesa" || m === "airtel"
+      ? ["mobile_money"]
+      : m === "visa" || m === "mastercard"
+      ? ["card"]
+      : undefined;
 
   const openPaystackUrl = (url: string) => {
     if (Platform.OS === "web" && typeof window !== "undefined") {
@@ -290,52 +296,36 @@ export default function Checkout() {
     setPayModalOpen(true);
   };
 
-  const triggerMpesaStkCheckout = async (targetOrder: Order, phone: string) => {
-    setForcePaystackForMpesa(false);
-    setOrder(targetOrder);
-    setOrderCancelled(false);
-    setStkStatus("prompting");
-    setStkMessage(`Sending M-Pesa STK Push prompt to ${phone}...`);
-    try {
-      const res = await api.initiateMpesaStkPush(targetOrder.id, phone);
-      if (res.success) {
-        setStkStatus("waiting_pin");
-        setStkMessage(
-          res.message || `Check your phone (${phone}) and enter your M-Pesa PIN to complete payment.`
-        );
-        pollPayment(targetOrder.id);
-      } else {
-        setStkStatus("failed");
-        setStkMessage("Could not send M-Pesa STK Push to your phone. Tap Retry or try Paystack.");
-      }
-    } catch (e: any) {
-      if (e?.status === 409) {
-        setOrderCancelled(true);
-      }
-      setStkStatus("failed");
-      setStkMessage(e?.message || "M-Pesa STK Push request failed. Tap Retry or try Paystack.");
-    }
+  const resolveCustomerEmail = (phone: string) => {
+    const email = user?.email?.trim().toLowerCase() || "";
+    if (email.includes("@")) return email;
+    const digits = phone.replace(/[^0-9]/g, "") || "shopper";
+    return `${digits}@mqulima.com`;
   };
 
   const triggerPaystackCheckout = async (targetOrder: Order, method: CheckoutPaymentMethod) => {
-    if (method === "mpesa") {
-      setForcePaystackForMpesa(true);
+    if (method === "mpesa" || method === "airtel") {
+      setForceHostedPaystack(true);
     }
     const label =
       method === "mpesa"
         ? "Paystack M-Pesa"
         : method === "airtel"
         ? "Paystack Airtel Money"
+        : method === "paystack"
+        ? "Paystack"
         : `Paystack ${method === "visa" ? "Visa" : "Mastercard"}`;
     const callbackUrl =
       Platform.OS === "web" && typeof window !== "undefined"
         ? `${window.location.origin}/checkout?orderId=${encodeURIComponent(targetOrder.id)}&method=${method}`
         : undefined;
     try {
-      const res = await api.initiatePaystack(targetOrder.id, user?.email || "", {
+      const phoneForPaystack = checkoutPhone || f.phone.replace(/[\s\-()]/g, "");
+      const res = await api.initiatePaystack(targetOrder.id, resolveCustomerEmail(phoneForPaystack), {
         channels: paystackChannelsFor(method),
         paymentMethod: method,
         callbackUrl,
+        phone: phoneForPaystack,
       });
       if (res.success && res.authorizationUrl) {
         setOrderCancelled(false);
@@ -371,6 +361,43 @@ export default function Checkout() {
     }
   };
 
+  const triggerPaystackMobileCheckout = async (
+    targetOrder: Order,
+    phone: string,
+    method: "mpesa" | "airtel"
+  ) => {
+    setForceHostedPaystack(false);
+    setOrder(targetOrder);
+    setOrderCancelled(false);
+    setStkStatus("prompting");
+    const label = method === "airtel" ? "Airtel Money" : "M-Pesa";
+    setStkMessage(`Sending Paystack ${label} prompt to ${phone}...`);
+    try {
+      const provider = method === "airtel" ? "atl" : "mpesa";
+      const res = await api.initiatePaystackMobileMoney(
+        targetOrder.id,
+        phone,
+        resolveCustomerEmail(phone),
+        provider
+      );
+      if (res.success) {
+        if (res.reference) setPayReference(res.reference);
+        setStkStatus("waiting_pin");
+        setStkMessage(
+          res.displayText ||
+            `Check your phone (${phone}) and approve the Paystack ${label} prompt to complete payment.`
+        );
+        pollPayment(targetOrder.id);
+        return;
+      }
+    } catch {
+      // Fall back smoothly to Paystack hosted checkout below
+    }
+
+    // Automatic fallback to Paystack hosted checkout if direct /charge could not dispatch
+    await triggerPaystackCheckout(targetOrder, method);
+  };
+
   const submit = async () => {
     if (!user) {
       toast("Sign in to place your order");
@@ -404,14 +431,14 @@ export default function Checkout() {
       });
 
       setOrderCancelled(false);
-      setForcePaystackForMpesa(false);
+      setForceHostedPaystack(false);
       qc.invalidateQueries({ queryKey: ["orders"] });
 
       if (paymentMethod === "manual") {
         setOrder(o);
         clearCart();
-      } else if (paymentMethod === "mpesa") {
-        await triggerMpesaStkCheckout(o, cleanPhone);
+      } else if (paymentMethod === "mpesa" || paymentMethod === "airtel") {
+        await triggerPaystackMobileCheckout(o, cleanPhone, paymentMethod);
       } else {
         await triggerPaystackCheckout(o, paymentMethod);
       }
@@ -444,8 +471,8 @@ export default function Checkout() {
         });
         setOrderCancelled(false);
         qc.invalidateQueries({ queryKey: ["orders"] });
-        if (paymentMethod === "mpesa" && !forcePaystackForMpesa) {
-          await triggerMpesaStkCheckout(o, cleanPhone);
+        if ((paymentMethod === "mpesa" || paymentMethod === "airtel") && !forceHostedPaystack) {
+          await triggerPaystackMobileCheckout(o, cleanPhone, paymentMethod);
         } else {
           await triggerPaystackCheckout(o, paymentMethod);
         }
@@ -455,8 +482,8 @@ export default function Checkout() {
       }
       return;
     }
-    if (paymentMethod === "mpesa" && !forcePaystackForMpesa) {
-      await triggerMpesaStkCheckout(order, cleanPhone);
+    if ((paymentMethod === "mpesa" || paymentMethod === "airtel") && !forceHostedPaystack) {
+      await triggerPaystackMobileCheckout(order, cleanPhone, paymentMethod);
       return;
     }
     await triggerPaystackCheckout(order, paymentMethod);
@@ -465,7 +492,7 @@ export default function Checkout() {
   const switchPaymentMethod = () => {
     stopPolling();
     setPayModalOpen(false);
-    setForcePaystackForMpesa(false);
+    setForceHostedPaystack(false);
     setOrder(null);
     setStkStatus("idle");
     setStkMessage("");
@@ -573,10 +600,10 @@ export default function Checkout() {
                   <Text style={s.stkTitle}>
                     {isFailed
                       ? "Payment Cancelled or Unconfirmed"
-                      : isDirectMpesa
+                      : isDirectPaystackMobile
                       ? stkStatus === "waiting_pin"
-                        ? "Enter M-Pesa PIN on Your Phone"
-                        : "Sending M-Pesa STK Push..."
+                        ? `Approve Paystack ${methodLabel} Prompt`
+                        : `Sending Paystack ${methodLabel} Prompt...`
                       : stkStatus === "waiting_pin"
                       ? "Awaiting Paystack Confirmation"
                       : "Connecting to Paystack..."}
@@ -595,8 +622,8 @@ export default function Checkout() {
                     <ActivityIndicator color={colors.brandPrimary} />
                     <Text style={[s.stkDesc, { flex: 1 }]}>
                       {stkMessage ||
-                        (isDirectMpesa
-                          ? `Approve the M-Pesa STK Push prompt sent to ${checkoutPhone} to confirm your order.`
+                        (isDirectPaystackMobile
+                          ? `Approve the Paystack ${methodLabel} prompt sent to ${checkoutPhone} to confirm your order.`
                           : `Complete your ${methodLabel} payment on Paystack to confirm your order.`)}
                     </Text>
                   </View>
@@ -609,8 +636,8 @@ export default function Checkout() {
                     <View style={s.liveStepRow}>
                       <Lucide name={stkStatus === "waiting_pin" ? "loader" : "radio"} size={15} color={colors.orange} />
                       <Text style={s.liveStepActive}>
-                        {isDirectMpesa
-                          ? `Enter M-Pesa PIN on ${checkoutPhone}`
+                        {isDirectPaystackMobile
+                          ? `Enter ${methodLabel} PIN on ${checkoutPhone}`
                           : `Complete ${methodLabel} checkout on Paystack`}
                       </Text>
                     </View>
@@ -624,8 +651,8 @@ export default function Checkout() {
                     <View style={s.tipBox}>
                       <Lucide name="info" size={14} color={colors.forest} />
                       <Text style={s.tipText}>
-                        {isDirectMpesa
-                          ? `Keep your phone unlocked to approve the Safaricom STK Push for ${ksh(order.total)}.`
+                        {isDirectPaystackMobile
+                          ? `Keep your phone unlocked to approve the Paystack ${methodLabel} prompt for ${ksh(order.total)}.`
                           : `Enter your number and approve the ${methodLabel} prompt inside Paystack, then tap Check Status below.`}
                       </Text>
                     </View>
@@ -635,7 +662,7 @@ export default function Checkout() {
                 <Text style={[s.stkDesc, { color: colors.error, marginTop: 2 }]}>{stkMessage}</Text>
               )}
 
-              {payUrl && isPaystackMethod && !isFailed ? (
+              {payUrl && isPaystackHosted && !isFailed ? (
                 <Btn small variant="green" label="Open Paystack Payment Page" onPress={() => openPaystackUrl(payUrl)} style={{ marginTop: 6 }} />
               ) : null}
             </View>
@@ -664,16 +691,16 @@ export default function Checkout() {
                     full
                     variant="green"
                     icon="refresh-cw"
-                    label={isPaystackMethod ? `Retry ${methodLabel} Payment` : "Retry M-Pesa STK Push"}
+                    label={`Retry ${methodLabel} Payment`}
                     onPress={handleRetryPayment}
                   />
-                  {paymentMethod === "mpesa" && !orderCancelled ? (
+                  {isMobileMoneyMethod && !orderCancelled ? (
                     <Btn
                       full
                       variant="outline"
                       icon="credit-card"
-                      label="Pay via Paystack M-Pesa Page Instead"
-                      onPress={() => triggerPaystackCheckout(order, "mpesa")}
+                      label="Open Paystack Checkout Page Instead"
+                      onPress={() => triggerPaystackCheckout(order, paymentMethod)}
                     />
                   ) : null}
                   <Btn
@@ -694,13 +721,13 @@ export default function Checkout() {
                     loading={checkingNow}
                     onPress={handleCheckNow}
                   />
-                  {isDirectMpesa ? (
+                  {isDirectPaystackMobile ? (
                     <Btn
                       full
                       variant="outline"
                       icon="credit-card"
-                      label="No STK Prompt? Pay via Paystack Page"
-                      onPress={() => triggerPaystackCheckout(order, "mpesa")}
+                      label="No Prompt? Open Paystack Checkout Page"
+                      onPress={() => triggerPaystackCheckout(order, paymentMethod)}
                     />
                   ) : null}
                 </>
@@ -721,9 +748,9 @@ export default function Checkout() {
     ? "Sign In to Place Order"
     : paymentMethod === "manual"
     ? `Reserve Cash-on-Delivery (${ksh(grandTotal)})`
-    : paymentMethod === "mpesa"
-    ? `Pay ${ksh(grandTotal)} via M-Pesa STK Push`
-    : `Pay ${ksh(grandTotal)} via ${methodLabel}`;
+    : paymentMethod === "paystack"
+    ? `Pay ${ksh(grandTotal)} via Paystack`
+    : `Pay ${ksh(grandTotal)} via Paystack ${methodLabel}`;
 
   return (
     <Page title="Checkout" testID="checkout-screen">
@@ -926,7 +953,7 @@ export default function Checkout() {
           testID="checkout-place-order-btn"
           full
           variant="green"
-          icon={isMobileMoneyMethod ? "smartphone" : isPaystackMethod ? "credit-card" : "check"}
+          icon={isMobileMoneyMethod ? "smartphone" : isPaystackHosted ? "credit-card" : "check"}
           label={ctaLabel}
           loading={loading}
           onPress={cart.length ? submit : () => router.navigate("/(tabs)/shop")}

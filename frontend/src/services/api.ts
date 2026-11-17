@@ -1109,7 +1109,7 @@ export const api = {
   initiatePaystack: (
     orderId: string,
     email: string,
-    opts?: { channels?: string[]; paymentMethod?: string; callbackUrl?: string }
+    opts?: { channels?: string[]; paymentMethod?: string; callbackUrl?: string; phone?: string }
   ) =>
     request<{ success: boolean; authorizationUrl?: string; accessCode?: string; reference?: string }>(
       "/payments/paystack/initialize",
@@ -1118,6 +1118,23 @@ export const api = {
         body: JSON.stringify({ orderId, email, ...opts }),
       }
     ),
+
+  initiatePaystackMobileMoney: (
+    orderId: string,
+    phone: string,
+    email: string,
+    provider: "mpesa" | "atl"
+  ) =>
+    request<{
+      success: boolean;
+      reference?: string;
+      status?: string;
+      displayText?: string;
+      error?: string;
+    }>("/payments/paystack/mobile-money", {
+      method: "POST",
+      body: JSON.stringify({ orderId, phone, email, provider }),
+    }),
 
   verifyPaystack: (reference: string) =>
     request<{ success: boolean; paid: boolean; reference: string }>("/payments/paystack/verify", {

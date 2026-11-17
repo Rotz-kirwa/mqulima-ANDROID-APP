@@ -9,10 +9,11 @@ export type CheckoutPaymentMethod =
   | "airtel"
   | "visa"
   | "mastercard"
+  | "paystack"
   | "manual";
 
 type TileConfig = {
-  id: Exclude<CheckoutPaymentMethod, "manual">;
+  id: "mpesa" | "airtel" | "visa" | "mastercard";
   label: string;
   accent: string;
   footerTextColor?: string;
@@ -202,11 +203,13 @@ export function PaymentMethodSelector({
       <View style={s.infoStrip}>
         <Text style={s.infoText}>
           {value === "mpesa"
-            ? `Instant M-Pesa STK Push will be sent straight to ${phonePreview?.trim() || "your phone"} to enter your PIN.`
+            ? `Pay with M-Pesa via Paystack (${phonePreview?.trim() || "your mobile number"}). Prompt sent directly or via Paystack checkout.`
             : value === "airtel"
-            ? "Pay seamlessly with Airtel Money powered by Paystack."
+            ? `Pay with Airtel Money via Paystack (${phonePreview?.trim() || "your mobile number"}). Prompt sent straight to your line.`
+            : value === "paystack"
+            ? "Open full Paystack checkout with all enabled options (M-Pesa, Cards, Bank Transfer, PesaLink)."
             : value === "manual"
-            ? "Pay cash upon physical delivery — no M-Pesa STK Push is sent at checkout."
+            ? "Pay cash upon physical delivery — no online Paystack payment is initiated now."
             : "Complete encrypted Visa or Mastercard checkout securely via Paystack."}
         </Text>
       </View>
@@ -270,6 +273,28 @@ export function PaymentMethodSelector({
           </View>
         ))}
       </View>
+
+      {/* All Paystack Checkout Channels row */}
+      <Pressable
+        testID="payment-method-paystack"
+        onPress={() => onChange("paystack")}
+        style={({ pressed }) => [
+          s.manualRow,
+          value === "paystack" && { borderColor: "#0EA5E9", backgroundColor: "#F0F9FF" },
+          pressed && { opacity: 0.9 },
+        ]}
+      >
+        <View style={[s.manualIconBox, { backgroundColor: value === "paystack" ? "#0284C7" : "#E0F2FE" }]}>
+          <Lucide name="layers" size={16} color={value === "paystack" ? "#FFFFFF" : "#0284C7"} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={s.manualTitle}>Paystack All Options (Bank / PesaLink / Any Card)</Text>
+          <Text style={s.manualSub}>Open full Paystack hosted checkout with every supported method</Text>
+        </View>
+        <View style={[s.radioOuter, value === "paystack" && { borderColor: "#0284C7" }]}>
+          {value === "paystack" ? <View style={[s.radioInner, { backgroundColor: "#0284C7" }]} /> : null}
+        </View>
+      </Pressable>
 
       {/* Clean Pay on Delivery secondary row */}
       <Pressable
