@@ -6,9 +6,10 @@ import { useRouter } from "expo-router";
 import { Lucide } from "@react-native-vector-icons/lucide";
 import { TopBar } from "@/src/components/TopBar";
 import { ProductCard } from "@/src/components/Cards";
+import { Footer } from "@/src/components/Footer";
 import { GridSkeleton } from "@/src/components/Skeleton";
 import { Btn, Body } from "@/src/components/ui";
-import { useTabBottom } from "@/src/components/Page";
+import { usesNativeTabs } from "@/src/navigation";
 import { api, PAGE_SIZE } from "@/src/services/api";
 import { PRODUCT_TAXONOMY, SubcategoryItem, ProductCategory } from "@/src/data/products";
 import { fonts, makeStyles, useTheme } from "@/src/theme";
@@ -42,7 +43,6 @@ export default function Shop() {
   const s = useStyles();
   const { colors } = useTheme();
   const router = useRouter();
-  const bottom = useTabBottom();
   const insets = useSafeAreaInsets();
 
   const [cat, setCat] = useState("All");
@@ -426,7 +426,7 @@ export default function Shop() {
           keyExtractor={(p) => p.id}
           numColumns={2}
           columnWrapperStyle={{ gap: 12, paddingHorizontal: 16 }}
-          contentContainerStyle={{ gap: 12, paddingTop: 10, paddingBottom: bottom }}
+          contentContainerStyle={{ gap: 12, paddingTop: 10, paddingBottom: usesNativeTabs ? insets.bottom + 24 : 0 }}
           refreshControl={
             <RefreshControl
               refreshing={query.isRefetching}
@@ -543,7 +543,8 @@ export default function Shop() {
             </View>
           )}
           ListFooterComponent={
-            <View style={{ paddingHorizontal: 16, gap: 12, marginTop: 12 }}>
+            <View style={{ gap: 16, marginTop: 12 }}>
+              <View style={{ paddingHorizontal: 16, gap: 12 }}>
               {res && res.total > 0 ? (
                 <View style={{ gap: 10, alignItems: "center" }} testID="shop-pagination">
                   <Text style={s.count} testID="shop-showing">
@@ -613,6 +614,8 @@ export default function Shop() {
                   onPress={() => router.push({ pathname: "/contact", params: { subject: "Sourcing Request" } })}
                 />
               </View>
+              </View>
+              <Footer />
             </View>
           }
         />

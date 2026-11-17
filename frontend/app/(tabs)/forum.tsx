@@ -7,11 +7,13 @@ import {
   Text,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useRouter, useIsFocused } from "expo-router";
 import { Lucide } from "@react-native-vector-icons/lucide";
 import { ListSkeleton } from "@/src/components/Skeleton";
 import { useTabBottom } from "@/src/components/Page";
+import { usesNativeTabs } from "@/src/navigation";
 import { api, ForumFilters } from "@/src/services/api";
 import { fonts, makeStyles, useTheme } from "@/src/theme";
 import { ThreadCard } from "@/src/components/ThreadCard";
@@ -39,6 +41,7 @@ export default function Forum() {
   const { colors } = useTheme();
   const router = useRouter();
   const bottom = useTabBottom();
+  const insets = useSafeAreaInsets();
   const focused = useIsFocused();
   const { user, ready } = useApp();
   const [filters, setFilters] = useState<ForumFilters>(initial);
@@ -192,7 +195,7 @@ export default function Forum() {
         testID="forum-thread-list"
         data={data}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={[s.list, { paddingBottom: bottom + 16 }]}
+        contentContainerStyle={[s.list, { paddingBottom: usesNativeTabs ? insets.bottom + 24 : 0 }]}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         refreshControl={
