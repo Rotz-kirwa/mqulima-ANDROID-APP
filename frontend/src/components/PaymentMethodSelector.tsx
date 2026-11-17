@@ -202,11 +202,11 @@ export function PaymentMethodSelector({
       <View style={s.infoStrip}>
         <Text style={s.infoText}>
           {value === "mpesa"
-            ? `Pay seamlessly with Paystack M-Pesa${phonePreview?.trim() ? ` (${phonePreview.trim()})` : ""}.`
+            ? `Instant M-Pesa STK Push will be sent straight to ${phonePreview?.trim() || "your phone"} to enter your PIN.`
             : value === "airtel"
             ? "Pay seamlessly with Airtel Money powered by Paystack."
             : value === "manual"
-            ? "Pay cash or M-Pesa upon physical inspection when your order arrives."
+            ? "Pay cash upon physical delivery — no M-Pesa STK Push is sent at checkout."
             : "Complete encrypted Visa or Mastercard checkout securely via Paystack."}
         </Text>
       </View>
@@ -285,8 +285,8 @@ export function PaymentMethodSelector({
           <Lucide name="truck" size={16} color={value === "manual" ? "#FFFFFF" : "#EA580C"} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={s.manualTitle}>Pay on Delivery / Counter Cash</Text>
-          <Text style={s.manualSub}>Pay when inputs arrive at your location</Text>
+          <Text style={s.manualTitle}>Pay Cash on Delivery (No STK Push)</Text>
+          <Text style={s.manualSub}>Pay when inputs arrive — does not send an M-Pesa prompt now</Text>
         </View>
         <View style={[s.radioOuter, value === "manual" && { borderColor: colors.brandPrimary }]}>
           {value === "manual" ? <View style={s.radioInner} /> : null}

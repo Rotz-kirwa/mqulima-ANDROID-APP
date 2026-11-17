@@ -51,9 +51,12 @@ test("mobile screens connect forgot-password OTP flow, cached-order warning, and
   const forgotSrc = readRel("app/auth/forgot.tsx");
   const legalSrc = readRel("app/legal.tsx");
   const ordersSrc = readRel("app/account/orders.tsx");
+  const checkoutSrc = readRel("app/checkout.tsx");
 
   assert.match(forgotSrc, /api\.forgotPassword\(/);
   assert.match(forgotSrc, /api\.resetPassword\(/);
   assert.match(legalSrc, /https:\/\/www\.mqulima\.com\/privacy/);
   assert.match(ordersSrc, /cached order snapshot/i);
+  assert.match(checkoutSrc, /api\.initiateMpesaStkPush\(/);
+  assert.match(checkoutSrc, /Order Reserved — Pay on Delivery/);
 });

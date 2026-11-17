@@ -73,7 +73,13 @@ export default function Checkout() {
     location: "",
   });
   const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethod>("mpesa");
-  const isPaystackMethod = paymentMethod !== "manual";
+  const [forcePaystackForMpesa, setForcePaystackForMpesa] = useState(false);
+  const isDirectMpesa = paymentMethod === "mpesa" && !forcePaystackForMpesa;
+  const isPaystackMethod =
+    paymentMethod === "airtel" ||
+    paymentMethod === "visa" ||
+    paymentMethod === "mastercard" ||
+    (paymentMethod === "mpesa" && forcePaystackForMpesa);
   const methodLabel =
     paymentMethod === "mpesa"
       ? "M-Pesa"
@@ -149,62 +155,6 @@ export default function Checkout() {
     return () => stopPolling();
   }, []);
 
-  useEffect(() => {
-    const orderIdParam = typeof params.orderId === "string" ? params.orderId.trim() : "";
-    const refParam =
-      typeof params.reference === "string" && params.reference.trim()
-        ? params.reference.trim()
-        : typeof params.trxref === "string" && params.trxref.trim()
-        ? params.trxref.trim()
-        : "";
-    if (!orderIdParam || !refParam) return;
-    const key = `${orderIdParam}:${refParam}`;
-    if (handledCallbackRef.current === key) return;
-    handledCallbackRef.current = key;
-
-    const m = typeof params.method === "string" ? params.method : "";
-    if (m === "mpesa" || m === "airtel" || m === "visa" || m === "mastercard") {
-      setPaymentMethod(m);
-    }
-
-    (async () => {
-      try {
-        const list = await api.getOrders().catch(() => []);
-        const matched = Array.isArray(list) ? list.find((item) => item.id === orderIdParam) : undefined;
-        setOrder(
-          matched || {
-            id: orderIdParam,
-            date: new Date().toISOString(),
-            status: "Pending Payment",
-            paymentStatus: "Pending",
-            items: [],
-            subtotal: total,
-            delivery,
-            total: grandTotal || total,
-            county: f.county || "Kenya",
-            subcounty: f.subcounty || "",
-            location: f.location || f.county || "Delivery",
-            phone: f.phone || user?.phone || "",
-          }
-        );
-        setPayReference(refParam);
-        setStkStatus("prompting");
-        setStkMessage("Verifying your Paystack payment...");
-        await api.verifyPaystack(refParam).catch(() => null);
-        const statusRes = await api.getPaymentStatus(orderIdParam);
-        if (!applyPaymentStatus(statusRes)) {
-          setStkStatus("waiting_pin");
-          setStkMessage("Checking Paystack confirmation status...");
-          pollPayment(orderIdParam);
-        }
-      } catch {
-        setStkStatus("failed");
-        setStkMessage("Could not verify Paystack payment automatically. Tap Check Status or Retry.");
-      }
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.orderId, params.reference, params.trxref]);
-
   const applyPaymentStatus = (res: Awaited<ReturnType<typeof api.getPaymentStatus>>) => {
     if (res.paid) {
       stopPolling();
@@ -241,7 +191,7 @@ export default function Checkout() {
       if (attempts > POLL_MAX_ATTEMPTS) {
         stopPolling();
         setStkStatus("failed");
-        setStkMessage("Payment confirmation timed out. If you closed Paystack before paying, no charge was confirmed.");
+        setStkMessage("Payment confirmation timed out. If you didn't enter your PIN or closed checkout, no charge was confirmed.");
         return;
       }
       try {
@@ -251,6 +201,63 @@ export default function Checkout() {
     }, POLL_INTERVAL_MS);
   };
 
+  useEffect(() => {
+    const orderIdParam = typeof params.orderId === "string" ? params.orderId.trim() : "";
+    const refParam =
+      typeof params.reference === "string" && params.reference.trim()
+        ? params.reference.trim()
+        : typeof params.trxref === "string" && params.trxref.trim()
+        ? params.trxref.trim()
+        : "";
+    if (!orderIdParam || !refParam) return;
+    const key = `${orderIdParam}:${refParam}`;
+    if (handledCallbackRef.current === key) return;
+    handledCallbackRef.current = key;
+
+    const m = typeof params.method === "string" ? params.method : "";
+
+    (async () => {
+      try {
+        const list = await api.getOrders().catch(() => []);
+        if (m === "mpesa" || m === "airtel" || m === "visa" || m === "mastercard") {
+          setPaymentMethod(m);
+          if (m === "mpesa") setForcePaystackForMpesa(true);
+        }
+        const matched = Array.isArray(list) ? list.find((item) => item.id === orderIdParam) : undefined;
+        setOrder(
+          matched || {
+            id: orderIdParam,
+            date: new Date().toISOString(),
+            status: "Pending Payment",
+            paymentStatus: "Pending",
+            items: [],
+            subtotal: total,
+            delivery,
+            total: grandTotal || total,
+            county: f.county || "Kenya",
+            subcounty: f.subcounty || "",
+            location: f.location || f.county || "Delivery",
+            phone: f.phone || user?.phone || "",
+          }
+        );
+        setPayReference(refParam);
+        setStkStatus("prompting");
+        setStkMessage("Verifying your Paystack payment...");
+        await api.verifyPaystack(refParam).catch(() => null);
+        const statusRes = await api.getPaymentStatus(orderIdParam);
+        if (!applyPaymentStatus(statusRes)) {
+          setStkStatus("waiting_pin");
+          setStkMessage("Checking Paystack confirmation status...");
+          pollPayment(orderIdParam);
+        }
+      } catch {
+        setStkStatus("failed");
+        setStkMessage("Could not verify Paystack payment automatically. Tap Check Status or Retry.");
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.orderId, params.reference, params.trxref]);
+
   const handleCheckNow = async () => {
     if (!order || checkingNow) return;
     setCheckingNow(true);
@@ -258,7 +265,11 @@ export default function Checkout() {
       const res = await api.getPaymentStatus(order.id);
       const finished = applyPaymentStatus(res);
       if (!finished) {
-        toast("Payment not confirmed yet — complete checkout on Paystack and check again.");
+        toast(
+          isDirectMpesa
+            ? "Payment not confirmed yet — enter your M-Pesa PIN on your phone and check again."
+            : "Payment not confirmed yet — complete checkout on Paystack and check again."
+        );
       }
     } catch {
       toast("Could not reach payment gateway right now.");
@@ -279,7 +290,37 @@ export default function Checkout() {
     setPayModalOpen(true);
   };
 
+  const triggerMpesaStkCheckout = async (targetOrder: Order, phone: string) => {
+    setForcePaystackForMpesa(false);
+    setOrder(targetOrder);
+    setOrderCancelled(false);
+    setStkStatus("prompting");
+    setStkMessage(`Sending M-Pesa STK Push prompt to ${phone}...`);
+    try {
+      const res = await api.initiateMpesaStkPush(targetOrder.id, phone);
+      if (res.success) {
+        setStkStatus("waiting_pin");
+        setStkMessage(
+          res.message || `Check your phone (${phone}) and enter your M-Pesa PIN to complete payment.`
+        );
+        pollPayment(targetOrder.id);
+      } else {
+        setStkStatus("failed");
+        setStkMessage("Could not send M-Pesa STK Push to your phone. Tap Retry or try Paystack.");
+      }
+    } catch (e: any) {
+      if (e?.status === 409) {
+        setOrderCancelled(true);
+      }
+      setStkStatus("failed");
+      setStkMessage(e?.message || "M-Pesa STK Push request failed. Tap Retry or try Paystack.");
+    }
+  };
+
   const triggerPaystackCheckout = async (targetOrder: Order, method: CheckoutPaymentMethod) => {
+    if (method === "mpesa") {
+      setForcePaystackForMpesa(true);
+    }
     const label =
       method === "mpesa"
         ? "Paystack M-Pesa"
@@ -363,12 +404,15 @@ export default function Checkout() {
       });
 
       setOrderCancelled(false);
+      setForcePaystackForMpesa(false);
       qc.invalidateQueries({ queryKey: ["orders"] });
 
       if (paymentMethod === "manual") {
         setOrder(o);
         clearCart();
-      } else if (isPaystackMethod) {
+      } else if (paymentMethod === "mpesa") {
+        await triggerMpesaStkCheckout(o, cleanPhone);
+      } else {
         await triggerPaystackCheckout(o, paymentMethod);
       }
     } catch (ex: any) {
@@ -384,11 +428,11 @@ export default function Checkout() {
   };
 
   const handleRetryPayment = async () => {
-    if (!order || !isPaystackMethod) return;
+    if (!order || paymentMethod === "manual") return;
+    const cleanPhone = checkoutPhone || f.phone.replace(/[\s\-()]/g, "");
     if (orderCancelled && cart.length > 0) {
       setStkStatus("prompting");
       try {
-        const cleanPhone = checkoutPhone || f.phone.replace(/[\s\-()]/g, "");
         const o = await api.createOrder({
           items: cart.map((c) => ({ productId: c.productId, variant: c.variant, qty: c.qty })),
           name: f.name.trim(),
@@ -400,11 +444,19 @@ export default function Checkout() {
         });
         setOrderCancelled(false);
         qc.invalidateQueries({ queryKey: ["orders"] });
-        await triggerPaystackCheckout(o, paymentMethod);
+        if (paymentMethod === "mpesa" && !forcePaystackForMpesa) {
+          await triggerMpesaStkCheckout(o, cleanPhone);
+        } else {
+          await triggerPaystackCheckout(o, paymentMethod);
+        }
       } catch (err: any) {
         setStkStatus("failed");
         setStkMessage(err?.message || "Could not re-initiate order. Please check your cart.");
       }
+      return;
+    }
+    if (paymentMethod === "mpesa" && !forcePaystackForMpesa) {
+      await triggerMpesaStkCheckout(order, cleanPhone);
       return;
     }
     await triggerPaystackCheckout(order, paymentMethod);
@@ -413,6 +465,7 @@ export default function Checkout() {
   const switchPaymentMethod = () => {
     stopPolling();
     setPayModalOpen(false);
+    setForcePaystackForMpesa(false);
     setOrder(null);
     setStkStatus("idle");
     setStkMessage("");
@@ -430,17 +483,18 @@ export default function Checkout() {
   if (order) {
     const isOrderConfirmed = paymentMethod === "manual" || stkStatus === "paid";
     if (isOrderConfirmed) {
+      const isPaidOrder = stkStatus === "paid";
       return (
-        <Page title={stkStatus === "paid" ? "Order Confirmed" : "Order Placed"} testID="checkout-success-screen">
+        <Page title={isPaidOrder ? "Order Confirmed" : "Order Reserved (Unpaid)"} testID="checkout-success-screen">
           <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}>
             <Animated.View entering={FadeInDown.duration(260)}>
               <SuccessState
                 testID="checkout-success"
-                title={stkStatus === "paid" ? "Payment Confirmed & Order Placed!" : "Order Placed Successfully!"}
+                title={isPaidOrder ? "Payment Confirmed & Order Placed!" : "Order Reserved — Pay on Delivery"}
                 text={
-                  stkStatus === "paid"
+                  isPaidOrder
                     ? `Order #${order.id.slice(0, 8).toUpperCase()} • ${ksh(order.total)}\nPayment verified cleanly. Delivering to ${order.location}, ${order.county}.`
-                    : `Order #${order.id.slice(0, 8).toUpperCase()} • ${ksh(order.total)}\nPay on delivery to ${order.location}, ${order.county}.`
+                    : `Order #${order.id.slice(0, 8).toUpperCase()} • ${ksh(order.total)}\nNo M-Pesa STK Push was sent. Pay cash upon delivery to ${order.location}, ${order.county}.`
                 }
               >
                 <View style={s.receiptCard}>
@@ -450,9 +504,15 @@ export default function Checkout() {
                   </View>
                   <View style={s.receiptRow}>
                     <Text style={s.receiptLabel}>Payment Status</Text>
-                    <View style={s.paidPill}>
-                      <Lucide name="shield-check" size={13} color={colors.brandPrimary} />
-                      <Text style={s.paidPillText}>{stkStatus === "paid" ? "Paid & Verified" : "Pay on Delivery"}</Text>
+                    <View style={[s.paidPill, !isPaidOrder && { backgroundColor: "#FEF3C7" }]}>
+                      <Lucide
+                        name={isPaidOrder ? "shield-check" : "clock"}
+                        size={13}
+                        color={isPaidOrder ? colors.brandPrimary : "#B45309"}
+                      />
+                      <Text style={[s.paidPillText, !isPaidOrder && { color: "#B45309" }]}>
+                        {isPaidOrder ? "Paid & Verified" : "Unpaid • Pay on Delivery"}
+                      </Text>
                     </View>
                   </View>
                   {stkStatus === "paid" && (
@@ -513,6 +573,10 @@ export default function Checkout() {
                   <Text style={s.stkTitle}>
                     {isFailed
                       ? "Payment Cancelled or Unconfirmed"
+                      : isDirectMpesa
+                      ? stkStatus === "waiting_pin"
+                        ? "Enter M-Pesa PIN on Your Phone"
+                        : "Sending M-Pesa STK Push..."
                       : stkStatus === "waiting_pin"
                       ? "Awaiting Paystack Confirmation"
                       : "Connecting to Paystack..."}
@@ -530,7 +594,10 @@ export default function Checkout() {
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
                     <ActivityIndicator color={colors.brandPrimary} />
                     <Text style={[s.stkDesc, { flex: 1 }]}>
-                      {stkMessage || `Complete your ${methodLabel} payment on Paystack to confirm your order.`}
+                      {stkMessage ||
+                        (isDirectMpesa
+                          ? `Approve the M-Pesa STK Push prompt sent to ${checkoutPhone} to confirm your order.`
+                          : `Complete your ${methodLabel} payment on Paystack to confirm your order.`)}
                     </Text>
                   </View>
 
@@ -542,7 +609,9 @@ export default function Checkout() {
                     <View style={s.liveStepRow}>
                       <Lucide name={stkStatus === "waiting_pin" ? "loader" : "radio"} size={15} color={colors.orange} />
                       <Text style={s.liveStepActive}>
-                        Complete {methodLabel} checkout on Paystack
+                        {isDirectMpesa
+                          ? `Enter M-Pesa PIN on ${checkoutPhone}`
+                          : `Complete ${methodLabel} checkout on Paystack`}
                       </Text>
                     </View>
                     <View style={s.liveStepRow}>
@@ -555,7 +624,9 @@ export default function Checkout() {
                     <View style={s.tipBox}>
                       <Lucide name="info" size={14} color={colors.forest} />
                       <Text style={s.tipText}>
-                        Enter your number and approve the {methodLabel} prompt inside Paystack, then tap Check Status below.
+                        {isDirectMpesa
+                          ? `Keep your phone unlocked to approve the Safaricom STK Push for ${ksh(order.total)}.`
+                          : `Enter your number and approve the ${methodLabel} prompt inside Paystack, then tap Check Status below.`}
                       </Text>
                     </View>
                   ) : null}
@@ -593,9 +664,18 @@ export default function Checkout() {
                     full
                     variant="green"
                     icon="refresh-cw"
-                    label={isPaystackMethod ? `Retry ${methodLabel} Payment` : "Retry M-Pesa Payment"}
+                    label={isPaystackMethod ? `Retry ${methodLabel} Payment` : "Retry M-Pesa STK Push"}
                     onPress={handleRetryPayment}
                   />
+                  {paymentMethod === "mpesa" && !orderCancelled ? (
+                    <Btn
+                      full
+                      variant="outline"
+                      icon="credit-card"
+                      label="Pay via Paystack M-Pesa Page Instead"
+                      onPress={() => triggerPaystackCheckout(order, "mpesa")}
+                    />
+                  ) : null}
                   <Btn
                     full
                     variant="yellow"
@@ -605,14 +685,25 @@ export default function Checkout() {
                   />
                 </>
               ) : (
-                <Btn
-                  full
-                  variant="green"
-                  icon="refresh-cw"
-                  label="I've Completed Payment — Check Status"
-                  loading={checkingNow}
-                  onPress={handleCheckNow}
-                />
+                <>
+                  <Btn
+                    full
+                    variant="green"
+                    icon="refresh-cw"
+                    label="I've Completed Payment — Check Status"
+                    loading={checkingNow}
+                    onPress={handleCheckNow}
+                  />
+                  {isDirectMpesa ? (
+                    <Btn
+                      full
+                      variant="outline"
+                      icon="credit-card"
+                      label="No STK Prompt? Pay via Paystack Page"
+                      onPress={() => triggerPaystackCheckout(order, "mpesa")}
+                    />
+                  ) : null}
+                </>
               )}
 
               <Btn testID="checkout-back-cart-btn" full variant="outline" label="Return to Cart" onPress={() => { stopPolling(); router.replace("/cart"); }} />
@@ -629,7 +720,9 @@ export default function Checkout() {
     : !user
     ? "Sign In to Place Order"
     : paymentMethod === "manual"
-    ? `Place Order (${ksh(grandTotal)})`
+    ? `Reserve Cash-on-Delivery (${ksh(grandTotal)})`
+    : paymentMethod === "mpesa"
+    ? `Pay ${ksh(grandTotal)} via M-Pesa STK Push`
     : `Pay ${ksh(grandTotal)} via ${methodLabel}`;
 
   return (
