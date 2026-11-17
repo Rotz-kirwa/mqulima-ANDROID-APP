@@ -416,17 +416,11 @@ async function getMergedCatalog(forceRefresh = false): Promise<Product[]> {
 }
 
 
-// Local registered accounts storage helper
-async function saveRegisteredAccount(userWithPw: User & { password?: string }) {
+// Legacy plaintext user-cache cleanup helper
+async function purgeLegacyRegisteredUsers() {
   try {
-    const raw = await storage.getItem("mqulima_registered_users", "[]");
-    const list: (User & { password?: string })[] = JSON.parse(raw || "[]");
-    const filtered = list.filter((u) => u.email !== userWithPw.email && u.phone !== userWithPw.phone);
-    filtered.push(userWithPw);
-    await storage.setItem("mqulima_registered_users", JSON.stringify(filtered));
-  } catch (e) {
-    console.warn("[Auth] Failed to persist registered user:", e);
-  }
+    await storage.removeItem("mqulima_registered_users");
+  } catch {}
 }
 
 // Smart multi-token search matcher for products
@@ -539,7 +533,7 @@ export const api = {
     }
 
     if (res && res.user) {
-      await saveRegisteredAccount({ ...res.user, password: body.password });
+      await purgeLegacyRegisteredUsers();
       return res;
     }
 
@@ -590,7 +584,7 @@ export const api = {
     }
 
     if (res && res.user) {
-      await saveRegisteredAccount({ ...res.user, password });
+      await purgeLegacyRegisteredUsers();
       return res;
     }
 
@@ -636,6 +630,8 @@ export const api = {
     try {
       await storage.secureRemove(TOKEN_KEY);
       await storage.removeItem("mqulima_user");
+      await storage.removeItem("mqulima_orders");
+      await purgeLegacyRegisteredUsers();
     } catch (e) {
       console.warn("[Auth] Error during logout:", e);
     }
@@ -643,18 +639,36 @@ export const api = {
 
   deleteAccount: async () => {
     try {
-      return await request<{ success: boolean; deleted: boolean; message?: string }>("/account", {
+      const res = await request<{ success: boolean; deleted: boolean; message?: string }>("/account", {
         method: "DELETE",
       });
+      await storage.removeItem("mqulima_orders");
+      await purgeLegacyRegisteredUsers();
+      return res;
     } catch (err: any) {
       if (err?.status === 404) {
-        return await request<{ success: boolean; deleted: boolean; message?: string }>("/auth/me", {
+        const res = await request<{ success: boolean; deleted: boolean; message?: string }>("/auth/me", {
           method: "DELETE",
         });
+        await storage.removeItem("mqulima_orders");
+        await purgeLegacyRegisteredUsers();
+        return res;
       }
       throw err;
     }
   },
+
+  forgotPassword: (identifier: string) =>
+    request<{ success: boolean; message: string; maskedHint?: string }>("/auth/forgot-password", {
+      method: "POST",
+      body: JSON.stringify({ identifier }),
+    }),
+
+  resetPassword: (body: { identifier: string; code: string; newPassword: string }) =>
+    request<{ success: boolean; message: string }>("/auth/reset-password", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
 
   updateProfile: async (data: Partial<User>) => {
     try {
@@ -674,10 +688,7 @@ export const api = {
       try {
         const user = { ...JSON.parse(cached), ...data };
         await storage.setItem("mqulima_user", JSON.stringify(user));
-        const raw = await storage.getItem("mqulima_registered_users", "[]");
-        const list: (User & { password?: string })[] = JSON.parse(raw || "[]");
-        const updated = list.map((u) => (u.id === user.id ? { ...u, ...data } : u));
-        await storage.setItem("mqulima_registered_users", JSON.stringify(updated));
+        await purgeLegacyRegisteredUsers();
         return { success: true, user };
       } catch {}
     }
@@ -1072,18 +1083,8 @@ export const api = {
   },
 
   getOrders: async () => {
-    try {
-      const res = await request<Order[]>("/orders");
-      if (Array.isArray(res) && res.length > 0) {
-        return res;
-      }
-    } catch {}
-    try {
-      const raw = await storage.getItem("mqulima_orders", "[]");
-      return JSON.parse(raw || "[]") as Order[];
-    } catch {
-      return [];
-    }
+    const res = await request<Order[]>("/orders");
+    return Array.isArray(res) ? res : [];
   },
 
   // ---- 6. Live Payment Services (Safaricom Daraja M-Pesa STK Push & Paystack) ----

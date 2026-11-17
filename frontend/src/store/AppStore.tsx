@@ -52,6 +52,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           setState({ ...initial, ...JSON.parse(raw) });
         } catch {}
       }
+      // Purge legacy insecure plaintext-password cache from earlier builds.
+      await storage.removeItem("mqulima_registered_users");
       // Restore session from the stored JWT (user object is cached for instant paint, then refreshed).
       const token = await storage.secureGet(TOKEN_KEY, "");
       if (token) {

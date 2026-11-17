@@ -87,10 +87,18 @@ export default function Account() {
                 onPress={async () => {
                   setDeleting(true);
                   try {
-                    await api.deleteAccount().catch(() => null);
+                    await api.deleteAccount();
                     await signOut();
-                    toast("Account removed cleanly.");
+                    toast("Account permanently deleted.");
                     router.replace("/");
+                  } catch (err: any) {
+                    if (err?.status === 401) {
+                      await signOut();
+                      toast("Your session expired. Please sign in again to delete your account.");
+                      router.replace("/auth/sign-in");
+                      return;
+                    }
+                    toast(err?.message || "Could not delete account right now. Please try again or email mqulima@mqulima.com.");
                   } finally {
                     setDeleting(false);
                   }

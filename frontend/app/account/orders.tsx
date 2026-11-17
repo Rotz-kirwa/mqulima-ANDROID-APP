@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { FlatList, RefreshControl, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
+import { useNetInfo } from "@react-native-community/netinfo";
 import { Lucide } from "@react-native-vector-icons/lucide";
 import { Page, useStackBottom } from "@/src/components/Page";
 import { ListSkeleton } from "@/src/components/Skeleton";
@@ -17,7 +18,10 @@ export default function Orders() {
   const router = useRouter();
   const bottom = useStackBottom();
   const { user, ready } = useApp();
+  const netInfo = useNetInfo();
+  const isOffline = netInfo.isConnected === false || netInfo.isInternetReachable === false;
   const q = useQuery({ queryKey: ["orders"], queryFn: api.getOrders, enabled: !!user });
+  const isLiveVerified = !isOffline && !q.isError && !q.isPaused && q.isFetchedAfterMount;
 
   useEffect(() => {
     if (ready && !user) router.replace("/auth/sign-in");
@@ -33,19 +37,41 @@ export default function Orders() {
           keyExtractor={(o) => o.id}
           contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: bottom }}
           refreshControl={<RefreshControl refreshing={q.isRefetching} onRefresh={q.refetch} tintColor={colors.brandPrimary} colors={[colors.brandPrimary]} />}
+          ListHeaderComponent={
+            (q.data?.length ?? 0) > 0 && !isLiveVerified ? (
+              <View
+                testID="orders-stale-warning"
+                style={{
+                  backgroundColor: "#FEF3C7",
+                  borderWidth: 1,
+                  borderColor: "#F59E0B",
+                  borderRadius: 14,
+                  padding: 12,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 8,
+                }}
+              >
+                <Lucide name="wifi-off" size={16} color="#92400E" />
+                <Text style={{ flex: 1, fontFamily: fonts.b600, fontSize: 12, color: "#92400E" }}>
+                  Showing cached order snapshot — reconnect and pull down to verify live payment and delivery status.
+                </Text>
+              </View>
+            ) : null
+          }
           ListEmptyComponent={
             <View style={{ alignItems: "center", gap: 10, paddingTop: 48 }} testID="orders-empty">
               <Lucide name="receipt" size={40} color={colors.subtle} />
-              <Text style={s.title}>{q.isError ? "Could not load orders" : "No orders yet"}</Text>
-              <Body>{q.isError ? "Pull down to try again." : "Your AgroShop orders will appear here."}</Body>
+              <Text style={s.title}>{q.isError || isOffline ? "Could not verify live orders" : "No orders yet"}</Text>
+              <Body>{q.isError || isOffline ? "Check your connection and pull down to load live order status." : "Your AgroShop orders will appear here."}</Body>
               <Btn variant="green" label="Shop Now" onPress={() => router.navigate("/(tabs)/shop")} />
             </View>
           }
           renderItem={({ item }) => (
             <View style={s.card} testID={`order-${item.id}`}>
-              <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
                 <Text style={s.title}>{item.id}</Text>
-                <Text style={s.status}>{item.status}</Text>
+                <Text style={s.status}>{isLiveVerified ? item.status : `${item.status} (Cached)`}</Text>
               </View>
               <Text style={s.meta}>
                 {new Date(item.date).toLocaleString()}

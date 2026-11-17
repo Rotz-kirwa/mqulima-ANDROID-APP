@@ -1,7 +1,7 @@
 import React from "react";
-import { ScrollView, Text, View } from "react-native";
+import { Linking, ScrollView, Text, View } from "react-native";
 import { Page, useStackBottom } from "@/src/components/Page";
-import { Body } from "@/src/components/ui";
+import { Body, Btn } from "@/src/components/ui";
 import { legal } from "@/src/data/pages";
 import { fonts, makeStyles } from "@/src/theme";
 
@@ -17,7 +17,23 @@ export default function Legal() {
             {sec.body.map((p, i) => <Body key={i} style={{ fontSize: 13 }}>{`${i + 1}. ${p}`}</Body>)}
           </View>
         ))}
-        <Text style={s.meta}>Last updated: September 2026 • Questions? mqulima@mqulima.com</Text>
+        <View style={{ gap: 10 }}>
+          <Btn
+            testID="legal-online-privacy-btn"
+            full
+            variant="outline"
+            label="View Full Privacy Policy (mqulima.com/privacy)"
+            onPress={() => Linking.openURL("https://www.mqulima.com/privacy")}
+          />
+          <Btn
+            testID="legal-online-terms-btn"
+            full
+            variant="outline"
+            label="View Terms on mqulima.com/terms"
+            onPress={() => Linking.openURL("https://www.mqulima.com/terms")}
+          />
+        </View>
+        <Text style={s.meta}>Last updated: November 2026 • Questions? mqulima@mqulima.com</Text>
       </ScrollView>
     </Page>
   );

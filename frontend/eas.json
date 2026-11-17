@@ -28,8 +28,7 @@
       },
       "env": {
         "EXPO_PUBLIC_BACKEND_URL": "https://www.mqulima.com",
-        "EXPO_PUBLIC_CDN_URL": "https://cdn.mqulima.com",
-        "EXPO_PUBLIC_MPESA_SHORTCODE": "174379"
+        "EXPO_PUBLIC_CDN_URL": "https://cdn.mqulima.com"
       }
     }
   },

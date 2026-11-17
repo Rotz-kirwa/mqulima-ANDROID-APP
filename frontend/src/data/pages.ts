@@ -33,9 +33,11 @@ export const legal = [
     "Community posts must be respectful, accurate and relevant to agriculture. Mqulima may remove content that violates these guidelines.",
   ] },
   { title: "Privacy Policy", body: [
-    "We collect information you provide — such as your name, phone number, county and order details — to deliver products and services.",
-    "We do not sell your personal data. Information is shared only with suppliers and service providers needed to fulfil your request.",
-    "You may request access to, correction of, or deletion of your personal data at any time by contacting mqulima@mqulima.com.",
+    "We collect account details you provide — full name, email address, phone number, and county — to authenticate your account, deliver AgroShop orders, and match agricultural service requests.",
+    "When you grant optional permissions, Mqulima collects farm/crop photos you submit to Crop Doctor or Community forums (processed by AI crop-diagnosis models and uploaded to CDN storage) and device location (used strictly to localize Kenyan county weather forecasts and delivery estimates).",
+    "Order and payment records (M-Pesa and Paystack references, totals, and fulfilment status) are processed through our backend and regulated payment partners; card details and M-Pesa PINs are never stored by Mqulima.",
+    "We do not sell your personal data. Information is shared only with verified fulfilment partners, service providers, and cloud/AI processors needed to deliver your requested features.",
+    "You can permanently delete your account at any time in-app via Account -> Delete Account, or request data access, correction, or deletion by emailing mqulima@mqulima.com.",
   ] },
   { title: "Refunds & Returns", body: [
     "Damaged or incorrect items reported within 48 hours of delivery are eligible for replacement or refund after verification.",
