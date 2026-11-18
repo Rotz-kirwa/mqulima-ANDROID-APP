@@ -3,6 +3,7 @@
 // it shows up in the Metro output. Do not mount additional boundaries.
 
 import { reloadAppAsync } from "expo";
+import * as Sentry from "@sentry/react-native";
 import { Component, type ErrorInfo, type PropsWithChildren, useState } from "react";
 import { Platform, Pressable, ScrollView, Text, View } from "react-native";
 
@@ -19,6 +20,7 @@ export class ErrorBoundary extends Component<PropsWithChildren, ErrorBoundarySta
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
     console.error("[ErrorBoundary] render crash:", error, info.componentStack ?? "");
+    Sentry.captureException(error, { extra: { componentStack: info.componentStack } });
   }
 
   resetError = (): void => {

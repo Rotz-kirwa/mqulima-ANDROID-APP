@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 from auth import OptionalUser, now_iso
 from db import NO_ID, db
 from sms import send_sms
+from tasks import create_background_task
 
 router = APIRouter(prefix="/orders", tags=["orders"])
 FREE_DELIVERY_FROM = 5000
@@ -90,8 +91,10 @@ async def create_order(body: OrderIn, user: OptionalUser):
     # Trigger background order confirmation SMS
     try:
         sms_msg = f"Habari {body.name}, order {order['id']} of KSh {order['total']:,} has been received and is being processed. Mqulima Team."
-        import asyncio
-        asyncio.create_task(send_sms(recipient=body.phone.strip(), message=sms_msg, trigger_type="order_placed"))
+        create_background_task(
+            send_sms(recipient=body.phone.strip(), message=sms_msg, trigger_type="order_placed"),
+            name=f"order_sms:{order['id']}",
+        )
     except Exception:
         pass
 

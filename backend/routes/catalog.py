@@ -10,6 +10,7 @@ from fastapi import APIRouter, HTTPException, Query
 from pymongo import UpdateOne
 
 from db import NO_ID, db
+from tasks import create_background_task
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["catalog"])
@@ -20,7 +21,6 @@ _COUNT_TTL_SECONDS = 15.0
 _COUNT_CACHE: dict[str, tuple[float, int]] = {}
 _article_read_buffer: dict[str, int] = defaultdict(int)
 _flush_task: Optional[asyncio.Task] = None
-_background_tasks: set[asyncio.Task] = set()
 
 
 async def _get_cached_product_count(flt: dict) -> int:
@@ -57,10 +57,7 @@ def _queue_article_read(aid: str) -> None:
     global _flush_task
     _article_read_buffer[aid] += 1
     if _flush_task is None or _flush_task.done():
-        task = asyncio.create_task(_flush_article_reads())
-        _flush_task = task
-        _background_tasks.add(task)
-        task.add_done_callback(_background_tasks.discard)
+        _flush_task = create_background_task(_flush_article_reads(), name="flush_article_reads")
 
 
 def _rx(q: str):

@@ -11,9 +11,21 @@ from db import client, ensure_indexes
 from hardening import SecurityAndLimitMiddleware, configure_structured_logging
 from routes import admin, ai, auth, catalog, content, forum, media, orders, tools
 from seed import seed_if_empty
+from tasks import create_background_task, shutdown_background_tasks
 
 configure_structured_logging()
 settings = validate_startup_settings()
+
+if settings.SENTRY_DSN.strip():
+    import sentry_sdk
+    from sentry_sdk.integrations.fastapi import FastApiIntegration
+
+    sentry_sdk.init(
+        dsn=settings.SENTRY_DSN.strip(),
+        environment=settings.APP_ENV,
+        traces_sample_rate=settings.SENTRY_TRACES_SAMPLE_RATE,
+        integrations=[FastApiIntegration()],
+    )
 
 
 @asynccontextmanager
@@ -30,9 +42,10 @@ async def lifespan(_: FastAPI):
         except Exception:
             logging.warning("Image storage warmup unavailable; uploads will retry on demand")
 
-    storage_task = asyncio.create_task(warm_storage())
+    storage_task = create_background_task(warm_storage(), name="warm_storage")
     yield
     storage_task.cancel()
+    await shutdown_background_tasks()
     client.close()
 
 

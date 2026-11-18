@@ -1,6 +1,7 @@
 import { onlineManager } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import NetInfo from "@react-native-community/netinfo";
+import * as Sentry from "@sentry/react-native";
 import { Stack, usePathname, useRouter } from "expo-router";
 import { LogBox, Platform, StyleSheet, Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -19,7 +20,18 @@ import { OnboardingFlow } from "@/src/components/OnboardingFlow";
 import { storage } from "@/src/utils/storage";
 import { colors, fonts } from "@/src/theme";
 
-LogBox.ignoreAllLogs(true);
+const SENTRY_DSN = process.env.EXPO_PUBLIC_SENTRY_DSN?.trim() || "";
+if (SENTRY_DSN) {
+  Sentry.init({
+    dsn: SENTRY_DSN,
+    tracesSampleRate: 0.1,
+    enabled: !__DEV__ || Boolean(SENTRY_DSN),
+  });
+}
+
+if (__DEV__) {
+  LogBox.ignoreAllLogs(true);
+}
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 onlineManager.setEventListener((setOnline) => {
@@ -142,7 +154,7 @@ function AppContent() {
   );
 }
 
-export default function RootLayout() {
+function RootLayout() {
   const [loaded, error] = useFonts({
     "Lora-700": require("../assets/fonts/Lora-700.ttf"),
     "Outfit-600": require("../assets/fonts/Outfit-600.ttf"),
@@ -199,3 +211,5 @@ const styles = StyleSheet.create({
     color: "#92400E",
   },
 });
+
+export default Sentry.wrap(RootLayout);

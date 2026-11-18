@@ -1,4 +1,3 @@
-import asyncio
 from typing import Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, EmailStr, Field
@@ -7,6 +6,7 @@ from auth import CurrentUser, make_token, new_id, now_iso, password_hash, public
 from db import db
 from operations import audit, check_limit, record_attempt
 from sms import send_welcome_sms
+from tasks import create_background_task
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 account_router = APIRouter(tags=["account"])
@@ -74,7 +74,10 @@ async def register(body: RegisterIn):
 
     # Fire official Mqulima welcome SMS via TextSMS Kenya
     if phone_number:
-        asyncio.create_task(send_welcome_sms(full_name, phone_number, body.password))
+        create_background_task(
+            send_welcome_sms(full_name, phone_number, body.password),
+            name=f"welcome_sms:{doc['id']}",
+        )
 
     tok = make_token(doc["id"])
     return {"access_token": tok, "token": tok, "token_type": "bearer", "user": public_user(doc)}
