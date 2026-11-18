@@ -40,45 +40,58 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    let active = true;
     (async () => {
-      const seenOnboarding = await storage.getItem<boolean>(ONBOARDING_KEY, false);
+      const [seenOnboarding, raw, token, cachedUser] = await Promise.all([
+        storage.getItem<boolean>(ONBOARDING_KEY, false),
+        storage.getItem(KEY, ""),
+        storage.secureGet(TOKEN_KEY, ""),
+        storage.getItem("mqulima_user", ""),
+      ]);
+      if (!active) return;
+
       if (seenOnboarding === true) {
         setOnboardingCompleted(true);
       }
-
-      const raw = await storage.getItem(KEY, "");
       if (raw) {
         try {
           setState({ ...initial, ...JSON.parse(raw) });
         } catch {}
       }
-      // Purge legacy insecure plaintext-password cache from earlier builds.
-      await storage.removeItem("mqulima_registered_users");
-      // Restore session from the stored JWT (user object is cached for instant paint, then refreshed).
-      const token = await storage.secureGet(TOKEN_KEY, "");
-      if (token) {
-        const cached = await storage.getItem("mqulima_user", "");
-        if (cached) {
-          try {
-            setUser(JSON.parse(cached));
-          } catch {}
-        }
+      if (token && cachedUser) {
         try {
-          const u = await api.me();
-          if (u) {
+          setUser(JSON.parse(cachedUser));
+        } catch {}
+      }
+
+      // Unblock first paint immediately from local state; verify token and purge legacy keys in background.
+      setReady(true);
+      storage.removeItem("mqulima_registered_users").catch(() => {});
+
+      if (token) {
+        try {
+          const u = await Promise.race<User | null>([
+            api.me({ timeoutMs: 3000, retries: 0 }),
+            new Promise<null>((_, reject) => setTimeout(() => reject(new Error("auth_verify_timeout")), 3000)),
+          ]);
+          if (active && u) {
             setUser(u);
             await storage.setItem("mqulima_user", JSON.stringify(u));
           }
         } catch (e: any) {
           if (e?.status === 401) {
-            await storage.secureRemove(TOKEN_KEY);
-            await storage.removeItem("mqulima_user");
-            setUser(null);
+            await Promise.all([
+              storage.secureRemove(TOKEN_KEY),
+              storage.removeItem("mqulima_user"),
+            ]);
+            if (active) setUser(null);
           }
         }
       }
-      setReady(true);
     })();
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
