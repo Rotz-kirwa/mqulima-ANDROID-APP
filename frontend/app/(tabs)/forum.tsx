@@ -17,7 +17,7 @@ import { usesNativeTabs } from "@/src/navigation";
 import { api, ForumFilters } from "@/src/services/api";
 import { fonts, makeStyles, useTheme } from "@/src/theme";
 import { ThreadCard } from "@/src/components/ThreadCard";
-import { useApp } from "@/src/store/AppStore";
+import { useAuth } from "@/src/store/AppStore";
 import { ForumState, ForumToolbar, Guidelines } from "@/src/components/forum/ForumUI";
 import { ForumFeedHeader } from "@/src/components/forum/ForumFeedHeader";
 import {
@@ -43,7 +43,7 @@ export default function Forum() {
   const bottom = useTabBottom();
   const insets = useSafeAreaInsets();
   const focused = useIsFocused();
-  const { user, ready } = useApp();
+  const { user, ready } = useAuth();
   const [filters, setFilters] = useState<ForumFilters>(initial);
   const [search, setSearch] = useState("");
   const [guidelines, setGuidelines] = useState(false);

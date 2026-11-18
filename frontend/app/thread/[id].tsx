@@ -8,7 +8,7 @@ import { Lucide } from "@react-native-vector-icons/lucide";
 import { ListSkeleton } from "@/src/components/Skeleton";
 import { ThreadCard } from "@/src/components/ThreadCard";
 import { fonts, makeStyles, useTheme } from "@/src/theme";
-import { useApp } from "@/src/store/AppStore";
+import { useAuth, useToast } from "@/src/store/AppStore";
 import { api, ApiThread } from "@/src/services/api";
 import { Comment } from "@/src/data/forum";
 import { ForumState, ForumToolbar } from "@/src/components/forum/ForumUI";
@@ -18,7 +18,7 @@ import { useThreadActions } from "@/src/components/forum/useThreadActions";
 function ResolveQuestion({ t }: { t: ApiThread }) {
   const s = useStyles();
   const { colors } = useTheme();
-  const { user } = useApp();
+  const { user } = useAuth();
   const { resolve } = useThreadActions(t);
   if (t.tag !== "Question" || !user || user.id !== t.user_id) return null;
   return <Pressable testID="thread-resolve-button" disabled={resolve.isPending} accessibilityState={{ selected: !!t.resolved, disabled: resolve.isPending }} onPress={() => resolve.mutate()} style={s.resolve}>{resolve.isPending ? <ActivityIndicator size="small" color={colors.brand} /> : <Lucide name={t.resolved ? "rotate-ccw" : "circle-check"} size={18} color={colors.brand} />}<View style={s.resolveBody}><Text testID="thread-resolve-label" style={s.resolveTitle}>{t.resolved ? "Question resolved · Reopen" : "Got the help you needed?"}</Text><Text style={s.meta}>{t.resolved ? "Tap if you still need advice." : "Mark your question as resolved."}</Text></View><Lucide name="chevron-right" size={17} color={colors.brand} /></Pressable>;
@@ -31,7 +31,8 @@ export default function ThreadDetail() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const qc = useQueryClient();
-  const { user, ready, toast } = useApp();
+  const { user, ready } = useAuth();
+  const toast = useToast();
   const [text, setText] = useState("");
   const [target, setTarget] = useState<Comment | null>(null);
   const [newest, setNewest] = useState(false);

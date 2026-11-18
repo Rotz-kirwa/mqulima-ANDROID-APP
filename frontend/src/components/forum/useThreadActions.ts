@@ -2,12 +2,13 @@ import { useState } from "react";
 import { useMutation, useQueryClient, InfiniteData } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { api, ApiThread, ForumFeed } from "@/src/services/api";
-import { useApp } from "@/src/store/AppStore";
+import { useAuth, useToast } from "@/src/store/AppStore";
 
 export function useThreadActions(t: ApiThread) {
   const qc = useQueryClient();
   const router = useRouter();
-  const { user, toast } = useApp();
+  const { user } = useAuth();
+  const toast = useToast();
   const [shareOpen, setShareOpen] = useState(false);
   const apply = (patch: Partial<ApiThread>) => {
     const update = (item: ApiThread) => item.id === t.id ? { ...item, ...patch } : item;

@@ -10,7 +10,7 @@ import { SelectField } from "@/src/components/Form";
 import { Image } from "@/src/components/Img";
 import { counties } from "@/src/data/home";
 import { fonts, makeStyles, useTheme } from "@/src/theme";
-import { useApp } from "@/src/store/AppStore";
+import { useAuth } from "@/src/store/AppStore";
 import { api } from "@/src/services/api";
 import { pickAndUploadForumImages } from "@/src/utils/forumMedia";
 import { FarmerAvatar, ForumState, ForumToolbar, topics } from "@/src/components/forum/ForumUI";
@@ -24,7 +24,7 @@ export default function CreatePost() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const qc = useQueryClient();
-  const { user, ready } = useApp();
+  const { user, ready } = useAuth();
   const { draft, update, loaded, saved, clear } = useDiscussionDraft(user?.id, user?.county);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);

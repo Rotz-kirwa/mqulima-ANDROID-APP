@@ -5,7 +5,7 @@ import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 import { Lucide } from "@react-native-vector-icons/lucide";
 import { api } from "@/src/services/api";
-import { useApp } from "@/src/store/AppStore";
+import { useAuth, useToast } from "@/src/store/AppStore";
 import { compressImageAsset } from "@/src/utils/mediaCompress";
 import { counties } from "@/src/data/home";
 import { SelectField } from "@/src/components/Form";
@@ -57,7 +57,8 @@ export function CropDoctorTool() {
   const s = useStyles();
   const { colors } = useTheme();
   const router = useRouter();
-  const { user, toast } = useApp();
+  const { user } = useAuth();
+  const toast = useToast();
 
   const [crop, setCrop] = useState("Maize");
   const [county, setCounty] = useState(user?.county || "Uasin Gishu");

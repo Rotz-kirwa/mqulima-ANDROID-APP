@@ -6,7 +6,7 @@ import { Page, useStackBottom } from "@/src/components/Page";
 import { Avatar, Btn } from "@/src/components/ui";
 import { avatar } from "@/src/data/home";
 import { fonts, makeStyles, useTheme } from "@/src/theme";
-import { cartCount, useApp } from "@/src/store/AppStore";
+import { cartCount, useAuth, useCartState, useSaved, useToast } from "@/src/store/AppStore";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/src/services/api";
 
@@ -15,7 +15,10 @@ export default function Account() {
   const { colors } = useTheme();
   const router = useRouter();
   const bottom = useStackBottom();
-  const { user, signOut, saved, cart, ready, toast } = useApp();
+  const { user, signOut, ready } = useAuth();
+  const { saved } = useSaved();
+  const cart = useCartState();
+  const toast = useToast();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const orders = useQuery({ queryKey: ["orders"], queryFn: api.getOrders, enabled: !!user });

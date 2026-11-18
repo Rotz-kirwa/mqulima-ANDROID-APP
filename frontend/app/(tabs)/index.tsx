@@ -15,14 +15,14 @@ import { Footer } from "@/src/components/Footer";
 import { useTabBottom } from "@/src/components/Page";
 import { api } from "@/src/services/api";
 import * as H from "@/src/data/home";
-import { useApp } from "@/src/store/AppStore";
+import { useAuth } from "@/src/store/AppStore";
 import { fonts, makeStyles, textShadow, useTheme } from "@/src/theme";
 
 export default function Home() {
   const s = useStyles();
   const { colors } = useTheme();
   const router = useRouter();
-  const { user } = useApp();
+  const { user } = useAuth();
   const { width } = useWindowDimensions();
   const bottom = useTabBottom();
   const featured = useQuery({ queryKey: ["featured"], queryFn: api.getFeaturedProducts });

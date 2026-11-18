@@ -32,7 +32,7 @@ import {
 } from "@/src/data/services";
 import { counties, contactInfo } from "@/src/data/home";
 import { fonts, useTheme } from "@/src/theme";
-import { useApp } from "@/src/store/AppStore";
+import { useAuth } from "@/src/store/AppStore";
 
 const WHATSAPP_NUMBER = "254723346134";
 
@@ -52,7 +52,7 @@ export default function Services() {
   const { colors } = useTheme();
   const router = useRouter();
   const bottom = useStackBottom();
-  const { user } = useApp();
+  const { user } = useAuth();
   const params = useLocalSearchParams<{ category?: string }>();
 
   const scrollRef = useRef<ScrollView>(null);

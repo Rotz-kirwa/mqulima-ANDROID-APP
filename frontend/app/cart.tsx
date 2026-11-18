@@ -8,14 +8,14 @@ import { Page } from "@/src/components/Page";
 import { Btn, Body } from "@/src/components/ui";
 import { ksh } from "@/src/data/products";
 import { fonts, makeStyles, useTheme } from "@/src/theme";
-import { cartTotal, useApp } from "@/src/store/AppStore";
+import { cartTotal, useCart } from "@/src/store/AppStore";
 
 export default function Cart() {
   const s = useStyles();
   const { colors } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { cart, setQty, removeFromCart } = useApp();
+  const { cart, setQty, removeFromCart } = useCart();
   const total = cartTotal(cart);
 
   return (
