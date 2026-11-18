@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, FlatList, Modal, Platform, Pressable, RefreshControl, ScrollView, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { InfiniteData, useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { Lucide } from "@react-native-vector-icons/lucide";
 import { TopBar } from "@/src/components/TopBar";
@@ -60,9 +60,9 @@ export default function Shop() {
   }, [q]);
 
   const [subcatModalOpen, setSubcatModalOpen] = useState(false);
-  const [knownCatalogTotal, setKnownCatalogTotal] = useState<number>(0);
 
   const listRef = useRef<FlatList>(null);
+  const qc = useQueryClient();
 
   const query = useInfiniteQuery({
     queryKey: ["products", cat, subcat, debouncedQ],
@@ -73,12 +73,7 @@ export default function Shop() {
 
   const firstPage = query.data?.pages[0];
   const resTotal = firstPage?.total ?? 0;
-
-  useEffect(() => {
-    if (cat === "All" && subcat === "all" && !debouncedQ && typeof firstPage?.total === "number") {
-      setKnownCatalogTotal(firstPage.total);
-    }
-  }, [cat, subcat, debouncedQ, firstPage?.total]);
+  const cachedAllTotal = qc.getQueryData<InfiniteData<{ total: number }>>(["products", "All", "all", ""])?.pages[0]?.total;
 
   const items = useMemo(() => {
     if (!query.data?.pages) return [];
@@ -96,8 +91,8 @@ export default function Shop() {
   }, [query.data]);
 
   const totalCatalogCount =
-    (cat === "All" && subcat === "all" && !debouncedQ ? firstPage?.total : knownCatalogTotal) ||
-    knownCatalogTotal ||
+    (cat === "All" && subcat === "all" && !debouncedQ ? firstPage?.total : cachedAllTotal) ??
+    cachedAllTotal ??
     resTotal;
   const from = items.length > 0 ? 1 : 0;
   const to = items.length;

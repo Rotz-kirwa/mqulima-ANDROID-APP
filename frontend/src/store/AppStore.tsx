@@ -70,33 +70,35 @@ function ToastProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-function CartAndSavedProvider({
-  initialCart,
-  initialSaved,
-  ready,
-  children,
-}: {
-  initialCart: CartItem[];
-  initialSaved: string[];
-  ready: boolean;
-  children: React.ReactNode;
-}) {
-  const [cart, setCart] = useState<CartItem[]>(initialCart);
-  const [saved, setSaved] = useState<string[]>(initialSaved);
+function CartAndSavedProvider({ children }: { children: React.ReactNode }) {
+  const [cart, setCart] = useState<CartItem[]>(initial.cart);
+  const [saved, setSaved] = useState<string[]>(initial.saved);
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    setCart(initialCart);
-  }, [initialCart]);
+    let active = true;
+    (async () => {
+      const raw = await storage.getItem(KEY, "");
+      if (!active) return;
+      if (raw) {
+        try {
+          const parsed = { ...initial, ...JSON.parse(raw) };
+          setCart(parsed.cart);
+          setSaved(parsed.saved);
+        } catch {}
+      }
+      setHydrated(true);
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
-    setSaved(initialSaved);
-  }, [initialSaved]);
-
-  useEffect(() => {
-    if (ready) {
+    if (hydrated) {
       storage.setItem(KEY, JSON.stringify({ cart, saved }));
     }
-  }, [cart, saved, ready]);
+  }, [cart, saved, hydrated]);
 
   const addToCart = useCallback((item: Omit<CartItem, "key" | "qty">, qty = 1) => {
     setCart((prev) => {
@@ -141,7 +143,6 @@ function CartAndSavedProvider({
 }
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [hydratedState, setHydratedState] = useState<State>(initial);
   const [user, setUser] = useState<User | null>(null);
   const [ready, setReady] = useState(false);
   const [onboardingCompleted, setOnboardingCompleted] = useState(false);
@@ -149,9 +150,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let active = true;
     (async () => {
-      const [seenOnboarding, raw, token, cachedUser] = await Promise.all([
+      const [seenOnboarding, token, cachedUser] = await Promise.all([
         storage.getItem<boolean>(ONBOARDING_KEY, false),
-        storage.getItem(KEY, ""),
         storage.secureGet(TOKEN_KEY, ""),
         storage.getItem("mqulima_user", ""),
       ]);
@@ -159,11 +159,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       if (seenOnboarding === true) {
         setOnboardingCompleted(true);
-      }
-      if (raw) {
-        try {
-          setHydratedState({ ...initial, ...JSON.parse(raw) });
-        } catch {}
       }
       if (token && cachedUser) {
         try {
@@ -239,11 +234,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   return (
     <AuthContext.Provider value={authValue}>
       <ToastProvider>
-        <CartAndSavedProvider
-          initialCart={hydratedState.cart}
-          initialSaved={hydratedState.saved}
-          ready={ready}
-        >
+        <CartAndSavedProvider>
           {children}
         </CartAndSavedProvider>
       </ToastProvider>
