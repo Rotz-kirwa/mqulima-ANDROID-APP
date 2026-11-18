@@ -9,6 +9,7 @@ import { fonts, makeStyles, useTheme } from "@/src/theme";
 import { cartCount, useAuth, useCartState, useSaved, useToast } from "@/src/store/AppStore";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/src/services/api";
+import { QUERY_STALE_TIMES } from "@/src/query-client";
 
 export default function Account() {
   const s = useStyles();
@@ -21,7 +22,12 @@ export default function Account() {
   const toast = useToast();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const orders = useQuery({ queryKey: ["orders"], queryFn: api.getOrders, enabled: !!user });
+  const orders = useQuery({
+    queryKey: ["orders"],
+    queryFn: ({ signal }) => api.getOrders(signal),
+    enabled: !!user,
+    staleTime: QUERY_STALE_TIMES.ORDERS,
+  });
   const myThreads = useQuery({ queryKey: ["my-threads"], queryFn: api.getMyThreads, enabled: !!user });
 
   useEffect(() => {

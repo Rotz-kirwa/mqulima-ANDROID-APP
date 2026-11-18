@@ -3,14 +3,13 @@ import { Pressable, Text, View } from "react-native";
 import { Image } from "@/src/components/Img";
 import { useRouter } from "expo-router";
 import { Lucide } from "@react-native-vector-icons/lucide";
-import Animated, { FadeInDown } from "react-native-reanimated";
 import { Product, ksh } from "@/src/data/products";
 import { Article } from "@/src/data/articles";
 import { fonts, makeStyles, useTheme } from "@/src/theme";
 import { useCartActions, useSaved, useToast } from "@/src/store/AppStore";
 import { Btn } from "./ui";
 
-export function ProductCard({ p, index = 0 }: { p: Product; index?: number }) {
+export const ProductCard = React.memo(function ProductCard({ p }: { p: Product; index?: number }) {
   const router = useRouter();
   const s = useStyles();
   const { colors } = useTheme();
@@ -20,10 +19,10 @@ export function ProductCard({ p, index = 0 }: { p: Product; index?: number }) {
   const isSaved = saved.includes(p.id);
   const price = p.variants?.[0]?.price ?? p.price;
   return (
-    <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * 50)} style={s.card}>
+    <View style={s.card}>
       <Pressable testID={`product-card-${p.id}`} onPress={() => router.push(`/product/${p.id}`)}>
         <View style={s.imgWrap}>
-          <Image source={{ uri: p.image }} style={s.img} contentFit="contain" transition={250} />
+          <Image source={{ uri: p.image }} recyclingKey={p.id} style={s.img} contentFit="contain" transition={160} />
           <Pressable testID={`product-save-${p.id}`} hitSlop={8} onPress={() => { toggleSaved(p.id); toast(isSaved ? "Removed from saved" : "Saved for later"); }} style={s.heart}>
             <Lucide name="heart" size={16} color={isSaved ? colors.error : colors.muted} />
           </Pressable>
@@ -45,18 +44,18 @@ export function ProductCard({ p, index = 0 }: { p: Product; index?: number }) {
           onPress={() => { addToCart({ productId: p.id, name: p.name, image: p.image, price, variant: p.variants?.[0]?.label }); toast("Added to cart"); }}
         />
       </View>
-    </Animated.View>
+    </View>
   );
-}
+});
 
-export function ArticleCard({ a, index = 0 }: { a: Article; index?: number }) {
+export const ArticleCard = React.memo(function ArticleCard({ a }: { a: Article; index?: number }) {
   const router = useRouter();
   const s = useStyles();
   return (
-    <Animated.View entering={FadeInDown.delay(Math.min(index, 6) * 60)} style={s.article}>
+    <View style={s.article}>
       <Pressable testID={`article-card-${a.id.slice(0, 24)}`} onPress={() => router.push(`/article/${a.id}`)}>
         <View>
-          <Image source={{ uri: a.image }} style={{ width: "100%", aspectRatio: 16 / 10 }} contentFit="cover" transition={300} />
+          <Image source={{ uri: a.image }} recyclingKey={a.id} style={{ width: "100%", aspectRatio: 16 / 10 }} contentFit="cover" transition={200} />
           <View style={s.catPill}><Text style={s.catPillText}>{a.category}</Text></View>
         </View>
         <View style={{ padding: 20, gap: 8 }}>
@@ -66,9 +65,9 @@ export function ArticleCard({ a, index = 0 }: { a: Article; index?: number }) {
           <Btn label="Read article" icon="arrow-up-right" full small onPress={() => router.push(`/article/${a.id}`)} style={{ marginTop: 8 }} />
         </View>
       </Pressable>
-    </Animated.View>
+    </View>
   );
-}
+});
 
 const useStyles = makeStyles((c) => ({
   card: { flex: 1, backgroundColor: c.surfaceSecondary, borderWidth: 1, borderColor: c.border, borderRadius: 16, borderTopLeftRadius: 0, borderTopRightRadius: 0, overflow: "hidden" },

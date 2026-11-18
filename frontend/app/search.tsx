@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Lucide } from "@react-native-vector-icons/lucide";
 import { ListSkeleton } from "@/src/components/Skeleton";
 import { api } from "@/src/services/api";
+import { QUERY_STALE_TIMES } from "@/src/query-client";
 import { ksh } from "@/src/data/products";
 import { fonts, makeStyles, useTheme } from "@/src/theme";
 
@@ -23,8 +24,9 @@ export default function Search() {
   }, [q]);
   const r = useQuery({
     queryKey: ["search", debouncedQ],
-    queryFn: () => api.search(debouncedQ),
+    queryFn: ({ signal }) => api.search(debouncedQ, signal),
     enabled: debouncedQ.length > 0,
+    staleTime: QUERY_STALE_TIMES.PRODUCTS,
   });
   const d = r.data;
   const empty = debouncedQ && d && !d.products.length && !d.articles.length && !d.services.length;

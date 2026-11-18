@@ -10,7 +10,8 @@ import { Footer } from "@/src/components/Footer";
 import { GridSkeleton } from "@/src/components/Skeleton";
 import { Btn, Body } from "@/src/components/ui";
 import { usesNativeTabs } from "@/src/navigation";
-import { api } from "@/src/services/api";
+import { api, PAGE_SIZE } from "@/src/services/api";
+import { QUERY_STALE_TIMES } from "@/src/query-client";
 import { PRODUCT_TAXONOMY, SubcategoryItem, ProductCategory } from "@/src/data/products";
 import { fonts, makeStyles, useTheme } from "@/src/theme";
 
@@ -67,8 +68,9 @@ export default function Shop() {
   const query = useInfiniteQuery({
     queryKey: ["products", cat, subcat, debouncedQ],
     initialPageParam: 1,
-    queryFn: ({ pageParam }) => api.getProducts(cat, debouncedQ, pageParam, subcat),
+    queryFn: ({ pageParam, signal }) => api.getProducts(cat, debouncedQ, pageParam, subcat, PAGE_SIZE, signal),
     getNextPageParam: (lastPage) => (lastPage.page < lastPage.pages ? lastPage.page + 1 : undefined),
+    staleTime: QUERY_STALE_TIMES.PRODUCTS,
   });
 
   const firstPage = query.data?.pages[0];

@@ -1,8 +1,9 @@
 import uuid
 from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel, Field
+from pymongo.errors import DuplicateKeyError
 
 from auth import OptionalUser, now_iso
 from db import NO_ID, db
@@ -31,7 +32,17 @@ class OrderIn(BaseModel):
 
 
 @router.post("", status_code=201)
-async def create_order(body: OrderIn, user: OptionalUser):
+async def create_order(
+    body: OrderIn,
+    user: OptionalUser,
+    idempotency_key: Optional[str] = Header(default=None, alias="Idempotency-Key"),
+):
+    idem = (idempotency_key or "").strip()[:128] or None
+    if idem:
+        existing = await db.orders.find_one({"idempotency_key": idem}, NO_ID)
+        if existing:
+            return {"success": True, "order": existing, **existing}
+
     ids = list({i.productId for i in body.items})
     products = {p["id"]: p for p in await db.products.find({"id": {"$in": ids}, "status": {"$nin": ["draft", "archived"]}}, NO_ID).to_list(len(ids))}
     items = []
@@ -74,6 +85,8 @@ async def create_order(body: OrderIn, user: OptionalUser):
         "payment_status": "Pending",
         "stock_reserved": True,
     }
+    if idem:
+        order["idempotency_key"] = idem
     quantities = {pid: sum(item["qty"] for item in items if item["productId"] == pid) for pid in ids}
     reserved = []
     try:
@@ -82,7 +95,16 @@ async def create_order(body: OrderIn, user: OptionalUser):
             if not result.modified_count:
                 raise HTTPException(409, f"Not enough stock for {products[pid]['name']}. Update your cart.")
             reserved.append((pid, quantity))
-        await db.orders.insert_one(order)
+        try:
+            await db.orders.insert_one(order)
+        except DuplicateKeyError:
+            for pid, quantity in reserved:
+                await db.products.update_one({"id": pid}, {"$inc": {"stock": quantity}})
+            if idem:
+                existing = await db.orders.find_one({"idempotency_key": idem}, NO_ID)
+                if existing:
+                    return {"success": True, "order": existing, **existing}
+            raise
     except Exception:
         for pid, quantity in reserved:
             await db.products.update_one({"id": pid}, {"$inc": {"stock": quantity}})

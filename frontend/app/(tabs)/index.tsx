@@ -1,11 +1,11 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Pressable, ScrollView, Text, View, useWindowDimensions } from "react-native";
 import { Image } from "@/src/components/Img";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import { useIsFocused, useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { Lucide } from "@react-native-vector-icons/lucide";
-import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { TopBar } from "@/src/components/TopBar";
 import { Btn, Body, Pill, SectionTitle, Avatar } from "@/src/components/ui";
 import { ArticleCard } from "@/src/components/Cards";
@@ -14,6 +14,7 @@ import { FeaturedCollectionCarousel } from "@/src/components/FeaturedCollectionC
 import { Footer } from "@/src/components/Footer";
 import { useTabBottom } from "@/src/components/Page";
 import { api } from "@/src/services/api";
+import { QUERY_STALE_TIMES } from "@/src/query-client";
 import * as H from "@/src/data/home";
 import { useAuth } from "@/src/store/AppStore";
 import { fonts, makeStyles, textShadow, useTheme } from "@/src/theme";
@@ -22,14 +23,40 @@ export default function Home() {
   const s = useStyles();
   const { colors } = useTheme();
   const router = useRouter();
+  const focused = useIsFocused();
   const { user } = useAuth();
   const { width } = useWindowDimensions();
   const bottom = useTabBottom();
-  const featured = useQuery({ queryKey: ["featured"], queryFn: api.getFeaturedProducts });
-  const latest = useQuery({ queryKey: ["articles", "All"], queryFn: () => api.getArticles("All") });
-  const services = useQuery({ queryKey: ["serviceCategories"], queryFn: api.getServiceCategories });
-  const courses = useQuery({ queryKey: ["courses"], queryFn: api.getCourses });
-  const serviceCards = (services.data ?? []).slice(0, 6).map(c => ({ ...c, category: c.id, items: c.subs.map(item => item.title), icon: H.homeServiceCards.find(original => original.category === c.id)?.icon || "sprout" }));
+  const featured = useQuery({
+    queryKey: ["featured"],
+    queryFn: ({ signal }) => api.getFeaturedProducts(signal),
+    staleTime: QUERY_STALE_TIMES.PRODUCTS,
+  });
+  const latest = useQuery({
+    queryKey: ["articles", "All"],
+    queryFn: ({ signal }) => api.getArticles("All", signal),
+    staleTime: QUERY_STALE_TIMES.ARTICLES,
+  });
+  const services = useQuery({
+    queryKey: ["serviceCategories"],
+    queryFn: api.getServiceCategories,
+    staleTime: QUERY_STALE_TIMES.CATEGORIES,
+  });
+  const courses = useQuery({
+    queryKey: ["courses"],
+    queryFn: api.getCourses,
+    staleTime: QUERY_STALE_TIMES.CATEGORIES,
+  });
+  const serviceCards = useMemo(
+    () =>
+      (services.data ?? []).slice(0, 6).map((c) => ({
+        ...c,
+        category: c.id,
+        items: c.subs.map((item) => item.title),
+        icon: H.homeServiceCards.find((original) => original.category === c.id)?.icon || "sprout",
+      })),
+    [services.data]
+  );
 
   return (
     <View style={s.root} testID="home-screen">
@@ -217,6 +244,7 @@ export default function Home() {
             products={featured.data}
             isLoading={featured.isLoading}
             showExploreButton
+            paused={!focused}
           />
         </View>
 

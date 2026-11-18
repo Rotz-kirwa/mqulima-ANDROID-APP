@@ -9,7 +9,7 @@ import { FarmerAvatar, TopicBadge, timeAgo } from "./forum/ForumUI";
 import { SharePostModal } from "./forum/ShareModal";
 import { useThreadActions } from "./forum/useThreadActions";
 
-export function ThreadCard({ t, onPress, full = false, onReply }: { t: ApiThread; onPress?: () => void; full?: boolean; onReply?: () => void }) {
+export const ThreadCard = React.memo(function ThreadCard({ t, onPress, full = false, onReply }: { t: ApiThread; onPress?: () => void; full?: boolean; onReply?: () => void }) {
   const s = useStyles();
   const { colors } = useTheme();
   const router = useRouter();
@@ -175,7 +175,7 @@ export function ThreadCard({ t, onPress, full = false, onReply }: { t: ApiThread
       <SharePostModal visible={shareOpen} onClose={() => setShareOpen(false)} thread={t} />
     </View>
   );
-}
+});
 
 const useStyles = makeStyles((c) => ({
   card: {

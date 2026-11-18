@@ -28,6 +28,12 @@ async def ensure_indexes() -> None:
         await db.users.create_index([("id", ASCENDING)], unique=True, background=True)
         await db.users.create_index([("email", ASCENDING)], unique=True, background=True)
         await db.orders.create_index([("user_id", ASCENDING), ("created_at", DESCENDING)], background=True)
+        await db.orders.create_index(
+            [("idempotency_key", ASCENDING)],
+            unique=True,
+            partialFilterExpression={"idempotency_key": {"$type": "string"}},
+            background=True,
+        )
 
         await db.products.create_index([("id", ASCENDING)], unique=True, background=True)
         await db.products.create_index([("category", ASCENDING), ("status", ASCENDING)], background=True)
