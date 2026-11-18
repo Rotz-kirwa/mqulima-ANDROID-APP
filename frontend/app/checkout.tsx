@@ -111,10 +111,17 @@ export default function Checkout() {
   const [checkoutPhone, setCheckoutPhone] = useState(user?.phone ?? "");
   const [secondsLeft, setSecondsLeft] = useState(90);
   const [checkingNow, setCheckingNow] = useState(false);
-  const pollTimer = useRef<any>(null);
-  const countdownTimer = useRef<any>(null);
-  const fallbackTimer = useRef<any>(null);
+  const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const countdownTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const fallbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pollAbortRef = useRef<AbortController | null>(null);
+  const submitLockRef = useRef(false);
+  const retryLockRef = useRef(false);
+  const orderIdempotencyKeyRef = useRef<string | null>(null);
   const handledCallbackRef = useRef<string | null>(null);
+
+  const nextIdempotencyKey = () =>
+    `mq-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 
   const itemCount = cartCount(cart);
   const total = cartTotal(cart);
@@ -131,6 +138,7 @@ export default function Checkout() {
     !!f.location.trim();
 
   const set = (k: keyof typeof f) => (v: string) => {
+    orderIdempotencyKeyRef.current = null;
     setF((x) => ({ ...x, [k]: v }));
     setErrors((prev) => {
       if (!prev[k]) return prev;
@@ -141,8 +149,12 @@ export default function Checkout() {
   };
 
   const stopPolling = () => {
+    if (pollAbortRef.current) {
+      pollAbortRef.current.abort();
+      pollAbortRef.current = null;
+    }
     if (pollTimer.current) {
-      clearInterval(pollTimer.current);
+      clearTimeout(pollTimer.current);
       pollTimer.current = null;
     }
     if (countdownTimer.current) {
@@ -174,6 +186,7 @@ export default function Checkout() {
       stopPolling();
       setStkStatus("failed");
       setOrderCancelled(true);
+      orderIdempotencyKeyRef.current = null;
       setStkMessage(res.message || "Payment was cancelled or declined. No charge was made.");
       qc.invalidateQueries({ queryKey: ["orders"] });
       return true;
@@ -183,6 +196,8 @@ export default function Checkout() {
 
   const pollPayment = (orderId: string) => {
     stopPolling();
+    const controller = new AbortController();
+    pollAbortRef.current = controller;
     let attempts = 0;
     setSecondsLeft(Math.round((POLL_MAX_ATTEMPTS * POLL_INTERVAL_MS) / 1000));
 
@@ -190,8 +205,9 @@ export default function Checkout() {
       setSecondsLeft((prev) => (prev > 0 ? prev - 1 : 0));
     }, 1000);
 
-    pollTimer.current = setInterval(async () => {
-      attempts++;
+    const runPoll = async () => {
+      if (controller.signal.aborted) return;
+      attempts += 1;
       if (attempts > POLL_MAX_ATTEMPTS) {
         stopPolling();
         setStkStatus("failed");
@@ -199,10 +215,19 @@ export default function Checkout() {
         return;
       }
       try {
-        const res = await api.getPaymentStatus(orderId);
-        applyPaymentStatus(res);
-      } catch {}
-    }, POLL_INTERVAL_MS);
+        const res = await api.getPaymentStatus(orderId, { signal: controller.signal });
+        if (controller.signal.aborted || applyPaymentStatus(res)) {
+          return;
+        }
+      } catch {
+        if (controller.signal.aborted) return;
+      }
+      if (!controller.signal.aborted) {
+        pollTimer.current = setTimeout(runPoll, POLL_INTERVAL_MS);
+      }
+    };
+
+    pollTimer.current = setTimeout(runPoll, POLL_INTERVAL_MS);
   };
 
   useEffect(() => {
@@ -305,7 +330,7 @@ export default function Checkout() {
     return `${digits}@mqulima.com`;
   };
 
-  const triggerPaystackCheckout = async (targetOrder: Order, method: CheckoutPaymentMethod) => {
+  const triggerPaystackCheckout = async (targetOrder: Order, method: CheckoutPaymentMethod, paymentIdemKey?: string) => {
     if (method === "mpesa" || method === "airtel") {
       setForceHostedPaystack(true);
     }
@@ -328,6 +353,7 @@ export default function Checkout() {
         paymentMethod: method,
         callbackUrl,
         phone: phoneForPaystack,
+        idempotencyKey: paymentIdemKey,
       });
       if (res.success && res.authorizationUrl) {
         setOrderCancelled(false);
@@ -366,7 +392,8 @@ export default function Checkout() {
   const triggerPaystackMobileCheckout = async (
     targetOrder: Order,
     phone: string,
-    method: "mpesa" | "airtel"
+    method: "mpesa" | "airtel",
+    paymentIdemKey?: string
   ) => {
     setForceHostedPaystack(false);
     setOrder(targetOrder);
@@ -380,7 +407,8 @@ export default function Checkout() {
         targetOrder.id,
         phone,
         resolveCustomerEmail(phone),
-        provider
+        provider,
+        paymentIdemKey
       );
       if (res.success) {
         if (res.reference) setPayReference(res.reference);
@@ -397,10 +425,11 @@ export default function Checkout() {
     }
 
     // Automatic fallback to Paystack hosted checkout if direct /charge could not dispatch
-    await triggerPaystackCheckout(targetOrder, method);
+    await triggerPaystackCheckout(targetOrder, method, paymentIdemKey ? `${paymentIdemKey}-web` : undefined);
   };
 
   const submit = async () => {
+    if (submitLockRef.current || loading) return;
     if (!user) {
       toast("Sign in to place your order");
       router.push("/auth/sign-in");
@@ -419,18 +448,24 @@ export default function Checkout() {
       return;
     }
 
+    submitLockRef.current = true;
+    const idemKey = orderIdempotencyKeyRef.current || nextIdempotencyKey();
+    orderIdempotencyKeyRef.current = idemKey;
     setCheckoutPhone(cleanPhone);
     setLoading(true);
     try {
-      const o = await api.createOrder({
-        items: cart.map((c) => ({ productId: c.productId, variant: c.variant, qty: c.qty })),
-        name: f.name.trim(),
-        phone: cleanPhone,
-        county: f.county,
-        subcounty: f.subcounty.trim(),
-        location: f.location.trim(),
-        paymentMethod,
-      });
+      const o = await api.createOrder(
+        {
+          items: cart.map((c) => ({ productId: c.productId, variant: c.variant, qty: c.qty })),
+          name: f.name.trim(),
+          phone: cleanPhone,
+          county: f.county,
+          subcounty: f.subcounty.trim(),
+          location: f.location.trim(),
+          paymentMethod,
+        },
+        { idempotencyKey: idemKey }
+      );
 
       setOrderCancelled(false);
       setForceHostedPaystack(false);
@@ -439,10 +474,11 @@ export default function Checkout() {
       if (paymentMethod === "manual") {
         setOrder(o);
         clearCart();
+        orderIdempotencyKeyRef.current = null;
       } else if (paymentMethod === "mpesa" || paymentMethod === "airtel") {
-        await triggerPaystackMobileCheckout(o, cleanPhone, paymentMethod);
+        await triggerPaystackMobileCheckout(o, cleanPhone, paymentMethod, `${idemKey}-pay`);
       } else {
-        await triggerPaystackCheckout(o, paymentMethod);
+        await triggerPaystackCheckout(o, paymentMethod, `${idemKey}-pay`);
       }
     } catch (ex: any) {
       if (ex?.status === 401) {
@@ -452,47 +488,58 @@ export default function Checkout() {
         setErrors({ location: ex?.message ?? "Could not place order. Please try again." });
       }
     } finally {
+      submitLockRef.current = false;
       setLoading(false);
     }
   };
 
   const handleRetryPayment = async () => {
-    if (!order || paymentMethod === "manual") return;
+    if (!order || paymentMethod === "manual" || retryLockRef.current) return;
+    retryLockRef.current = true;
     const cleanPhone = checkoutPhone || f.phone.replace(/[\s\-()]/g, "");
-    if (orderCancelled && cart.length > 0) {
-      setStkStatus("prompting");
-      try {
-        const o = await api.createOrder({
-          items: cart.map((c) => ({ productId: c.productId, variant: c.variant, qty: c.qty })),
-          name: f.name.trim(),
-          phone: cleanPhone,
-          county: f.county,
-          subcounty: f.subcounty.trim(),
-          location: f.location.trim(),
-          paymentMethod,
-        });
-        setOrderCancelled(false);
-        qc.invalidateQueries({ queryKey: ["orders"] });
-        if ((paymentMethod === "mpesa" || paymentMethod === "airtel") && !forceHostedPaystack) {
-          await triggerPaystackMobileCheckout(o, cleanPhone, paymentMethod);
-        } else {
-          await triggerPaystackCheckout(o, paymentMethod);
+    const retryKey = nextIdempotencyKey();
+    try {
+      if (orderCancelled && cart.length > 0) {
+        setStkStatus("prompting");
+        try {
+          const o = await api.createOrder(
+            {
+              items: cart.map((c) => ({ productId: c.productId, variant: c.variant, qty: c.qty })),
+              name: f.name.trim(),
+              phone: cleanPhone,
+              county: f.county,
+              subcounty: f.subcounty.trim(),
+              location: f.location.trim(),
+              paymentMethod,
+            },
+            { idempotencyKey: retryKey }
+          );
+          setOrderCancelled(false);
+          qc.invalidateQueries({ queryKey: ["orders"] });
+          if ((paymentMethod === "mpesa" || paymentMethod === "airtel") && !forceHostedPaystack) {
+            await triggerPaystackMobileCheckout(o, cleanPhone, paymentMethod, `${retryKey}-pay`);
+          } else {
+            await triggerPaystackCheckout(o, paymentMethod, `${retryKey}-pay`);
+          }
+        } catch (err: any) {
+          setStkStatus("failed");
+          setStkMessage(err?.message || "Could not re-initiate order. Please check your cart.");
         }
-      } catch (err: any) {
-        setStkStatus("failed");
-        setStkMessage(err?.message || "Could not re-initiate order. Please check your cart.");
+        return;
       }
-      return;
+      if ((paymentMethod === "mpesa" || paymentMethod === "airtel") && !forceHostedPaystack) {
+        await triggerPaystackMobileCheckout(order, cleanPhone, paymentMethod, `${retryKey}-pay`);
+        return;
+      }
+      await triggerPaystackCheckout(order, paymentMethod, `${retryKey}-pay`);
+    } finally {
+      retryLockRef.current = false;
     }
-    if ((paymentMethod === "mpesa" || paymentMethod === "airtel") && !forceHostedPaystack) {
-      await triggerPaystackMobileCheckout(order, cleanPhone, paymentMethod);
-      return;
-    }
-    await triggerPaystackCheckout(order, paymentMethod);
   };
 
   const switchPaymentMethod = () => {
     stopPolling();
+    orderIdempotencyKeyRef.current = null;
     setPayModalOpen(false);
     setForceHostedPaystack(false);
     setOrder(null);

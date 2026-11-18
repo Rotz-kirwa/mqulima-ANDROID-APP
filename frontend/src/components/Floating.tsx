@@ -1,9 +1,9 @@
 import React, { useEffect } from "react";
-import { Linking, Platform, Pressable, Text, View } from "react-native";
+import { AppState, Linking, Platform, Pressable, Text, View } from "react-native";
 import { usePathname, useRouter, useSegments } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { FontAwesome6 } from "@react-native-vector-icons/fontawesome6";
-import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, FadeInDown, FadeOutDown } from "react-native-reanimated";
+import Animated, { cancelAnimation, useSharedValue, useAnimatedStyle, withRepeat, withTiming, FadeInDown, FadeOutDown } from "react-native-reanimated";
 import { contactInfo } from "@/src/data/home";
 import { colors, fonts } from "@/src/theme";
 import { useAuth, useToastMessage } from "@/src/store/AppStore";
@@ -26,7 +26,19 @@ export function FloatingButtons() {
   const { onboardingCompleted } = useAuth();
   const ring = useSharedValue(1);
   useEffect(() => {
-    ring.value = withRepeat(withTiming(1.5, { duration: 1200 }), -1, false);
+    const startPulse = () => {
+      ring.value = 1;
+      ring.value = withRepeat(withTiming(1.5, { duration: 1200 }), -1, false);
+    };
+    startPulse();
+    const sub = AppState.addEventListener("change", (next) => {
+      if (next === "active") startPulse();
+      else cancelAnimation(ring);
+    });
+    return () => {
+      sub.remove();
+      cancelAnimation(ring);
+    };
   }, [ring]);
   const ringStyle = useAnimatedStyle(() => ({ transform: [{ scale: ring.value }], opacity: 1.5 - ring.value }));
   const hideAi = pathname === "/ai";

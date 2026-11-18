@@ -10,6 +10,7 @@ import { Btn, Body } from "@/src/components/ui";
 import { ksh } from "@/src/data/products";
 import { fonts, makeStyles, useTheme } from "@/src/theme";
 import { useAuth } from "@/src/store/AppStore";
+import { QUERY_STALE_TIMES } from "@/src/query-client";
 import { api } from "@/src/services/api";
 
 export default function Orders() {
@@ -20,7 +21,12 @@ export default function Orders() {
   const { user, ready } = useAuth();
   const netInfo = useNetInfo();
   const isOffline = netInfo.isConnected === false || netInfo.isInternetReachable === false;
-  const q = useQuery({ queryKey: ["orders"], queryFn: api.getOrders, enabled: !!user });
+  const q = useQuery({
+    queryKey: ["orders"],
+    queryFn: ({ signal }) => api.getOrders(signal),
+    enabled: !!user,
+    staleTime: QUERY_STALE_TIMES.ORDERS,
+  });
   const isLiveVerified = !isOffline && !q.isError && !q.isPaused && q.isFetchedAfterMount;
 
   useEffect(() => {

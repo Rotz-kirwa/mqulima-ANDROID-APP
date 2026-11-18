@@ -22,14 +22,16 @@ type Props = {
   showExploreButton?: boolean;
   compact?: boolean;
   intervalMs?: number;
+  paused?: boolean;
 };
 
-export function FeaturedCollectionCarousel({
+export const FeaturedCollectionCarousel = React.memo(function FeaturedCollectionCarousel({
   products = [],
   isLoading = false,
   showExploreButton = true,
   compact = false,
   intervalMs = 3000,
+  paused = false,
 }: Props) {
   const router = useRouter();
   const { colors } = useTheme();
@@ -42,17 +44,7 @@ export function FeaturedCollectionCarousel({
   const [isPaused, setIsPaused] = useState(false);
   const pauseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const pageRef = useRef(pageIndex);
-  useEffect(() => {
-    pageRef.current = pageIndex;
-  }, [pageIndex]);
-
-  // Keep pageIndex within bounds if product list or screen width changes
-  useEffect(() => {
-    if (pageIndex >= totalPages) {
-      setPageIndex(0);
-    }
-  }, [pageIndex, totalPages]);
+  const activePage = pageIndex >= totalPages ? 0 : pageIndex;
 
   const pauseBriefly = useCallback(() => {
     setIsPaused(true);
@@ -68,23 +60,29 @@ export function FeaturedCollectionCarousel({
     };
   }, []);
 
-  // Auto-slide every 3 seconds (matching mqulima.com)
+  // Auto-slide every 3 seconds when visible and active
   useEffect(() => {
-    if (isPaused || totalPages <= 1 || isLoading) return;
+    if (paused || isPaused || totalPages <= 1 || isLoading) return;
     const timer = setInterval(() => {
-      setPageIndex((prev) => (prev + 1) % totalPages);
+      setPageIndex((prev) => ((prev >= totalPages ? 0 : prev) + 1) % totalPages);
     }, intervalMs);
     return () => clearInterval(timer);
-  }, [isPaused, totalPages, isLoading, intervalMs]);
+  }, [paused, isPaused, totalPages, isLoading, intervalMs]);
 
   const goPrev = useCallback(() => {
     pauseBriefly();
-    setPageIndex((prev) => (prev - 1 + totalPages) % totalPages);
+    setPageIndex((prev) => {
+      const cur = prev >= totalPages ? 0 : prev;
+      return (cur - 1 + totalPages) % totalPages;
+    });
   }, [pauseBriefly, totalPages]);
 
   const goNext = useCallback(() => {
     pauseBriefly();
-    setPageIndex((prev) => (prev + 1) % totalPages);
+    setPageIndex((prev) => {
+      const cur = prev >= totalPages ? 0 : prev;
+      return (cur + 1) % totalPages;
+    });
   }, [pauseBriefly, totalPages]);
 
   const goToPage = useCallback(
@@ -115,19 +113,19 @@ export function FeaturedCollectionCarousel({
   // Current group of products (2 on mobile, 3 on tablet/desktop)
   const currentGroup = useMemo(() => {
     if (!products.length) return [];
-    const start = (pageIndex * itemsPerPage) % products.length;
+    const start = (activePage * itemsPerPage) % products.length;
     const group: (Product & { uniqueKey: string })[] = [];
     for (let i = 0; i < Math.min(itemsPerPage, products.length); i++) {
       const p = products[(start + i) % products.length];
       if (p) {
         group.push({
           ...p,
-          uniqueKey: `${p.id}-slot-${i}-page-${pageIndex}`,
+          uniqueKey: `${p.id}-slot-${i}-page-${activePage}`,
         });
       }
     }
     return group;
-  }, [products, pageIndex, itemsPerPage]);
+  }, [products, activePage, itemsPerPage]);
 
   const horizontalPad = 16;
   const gap = 12;
@@ -190,7 +188,7 @@ export function FeaturedCollectionCarousel({
         </View>
       ) : (
         <Animated.View
-          key={`featured-page-${pageIndex}`}
+          key={`featured-page-${activePage}`}
           entering={FadeInRight.duration(340)}
           style={styles.cardsRow}
           testID="featured-collection-list"
@@ -256,7 +254,7 @@ export function FeaturedCollectionCarousel({
       {totalPages > 1 && (
         <View style={styles.paginationRow} testID="featured-pagination">
           {Array.from({ length: totalPages }).map((_, idx) => {
-            const active = pageIndex === idx;
+            const active = activePage === idx;
             return (
               <Pressable
                 key={idx}
@@ -298,7 +296,7 @@ export function FeaturedCollectionCarousel({
       )}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

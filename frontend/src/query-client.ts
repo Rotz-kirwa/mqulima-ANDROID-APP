@@ -8,12 +8,26 @@ import { Query, QueryClient } from "@tanstack/react-query";
 
 export const QUERY_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 24; // 24 hours
 
+export const QUERY_STALE_TIMES = {
+  CATEGORIES: 1000 * 60 * 30, // 30 minutes
+  ARTICLES: 1000 * 60 * 10,   // 10 minutes
+  WEATHER: 1000 * 60 * 10,    // 10 minutes
+  PRODUCTS: 1000 * 60 * 5,    // 5 minutes
+  MARKETS: 1000 * 60 * 5,     // 5 minutes
+  FORUM: 1000 * 60,           // 1 minute
+  ORDERS: 1000 * 30,          // 30 seconds
+} as const;
+
 const EXCLUDED_PERSIST_KEYS = new Set([
   "products",
   "product",
   "search",
   "saved-products",
   "products-catalog-total-count",
+  "orders",
+  "payment-status",
+  "my-threads",
+  "auth",
 ]);
 
 export function shouldDehydratePersistedQuery(query: Query): boolean {
@@ -49,7 +63,7 @@ export const asyncStoragePersister = createAsyncStoragePersister({
 export const QUERY_PERSIST_OPTIONS = {
   persister: asyncStoragePersister,
   maxAge: QUERY_CACHE_MAX_AGE_MS,
-  buster: "v2",
+  buster: "v3",
   dehydrateOptions: {
     shouldDehydrateQuery: shouldDehydratePersistedQuery,
   },

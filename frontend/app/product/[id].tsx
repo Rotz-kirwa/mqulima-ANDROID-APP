@@ -9,6 +9,7 @@ import { Page } from "@/src/components/Page";
 import { Skeleton } from "@/src/components/Skeleton";
 import { Btn, Body, Pill } from "@/src/components/ui";
 import { api } from "@/src/services/api";
+import { QUERY_STALE_TIMES } from "@/src/query-client";
 import { ksh } from "@/src/data/products";
 import { fonts, makeStyles, useTheme } from "@/src/theme";
 import { useCartActions, useSaved, useToast } from "@/src/store/AppStore";
@@ -22,7 +23,11 @@ export default function ProductDetail() {
   const { addToCart } = useCartActions();
   const toast = useToast();
   const { saved, toggleSaved } = useSaved();
-  const q = useQuery({ queryKey: ["product", id], queryFn: () => api.getProduct(id) });
+  const q = useQuery({
+    queryKey: ["product", id],
+    queryFn: ({ signal }) => api.getProduct(id, signal),
+    staleTime: QUERY_STALE_TIMES.PRODUCTS,
+  });
   const [vi, setVi] = useState(0);
   const [qty, setQty] = useState(1);
   const p = q.data;

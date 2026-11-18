@@ -21,6 +21,7 @@ import { Footer } from "@/src/components/Footer";
 import { Skeleton } from "@/src/components/Skeleton";
 import { newsDate, useShareArticle } from "@/src/components/news/NewsUI";
 import { api } from "@/src/services/api";
+import { QUERY_STALE_TIMES } from "@/src/query-client";
 import {
   type Article,
   articleFilters,
@@ -95,21 +96,22 @@ export default function News() {
   // Fetch all articles from live backend (with fallback to static articles)
   const q = useQuery({
     queryKey: ["articles", "All"],
-    queryFn: () => api.getArticles("All"),
+    queryFn: ({ signal }) => api.getArticles("All", signal),
     initialData: fallbackArticles,
+    staleTime: QUERY_STALE_TIMES.ARTICLES,
     retry: 1,
   });
 
+  const articlesData = q.data;
   const allPosts = useMemo(
-    () => (q.data && q.data.length > 0 ? q.data : fallbackArticles),
-    [q.data]
+    () => (articlesData && articlesData.length > 0 ? articlesData : fallbackArticles),
+    [articlesData]
   );
 
   // Featured Carousel List (Top 3 stories)
   const featuredPostsList = useMemo(() => {
     const flagged = allPosts.filter((p) => p.featured);
-    if (flagged.length >= 2) return flagged.slice(0, 4);
-    return allPosts.slice(0, 3);
+    return flagged.length >= 2 ? flagged.slice(0, 4) : allPosts.slice(0, 3);
   }, [allPosts]);
 
   const currentFeaturedPost = useMemo(() => {
@@ -118,27 +120,29 @@ export default function News() {
     return featuredPostsList[safeIdx];
   }, [featuredPostsList, featuredIndex]);
 
-  // Auto-slide Featured Story Carousel every 5s
+  // Auto-slide Featured Story Carousel every 5s when tab is focused
   useEffect(() => {
-    if (featuredPostsList.length <= 1 || activeReadingPost || newsletterModalOpen) return;
+    if (!focused || featuredPostsList.length <= 1 || activeReadingPost || newsletterModalOpen) return;
     const timer = setInterval(() => {
       setFeaturedIndex((prev) => (prev + 1) % featuredPostsList.length);
     }, 5000);
     return () => clearInterval(timer);
-  }, [featuredPostsList.length, activeReadingPost, newsletterModalOpen]);
+  }, [focused, featuredPostsList.length, activeReadingPost, newsletterModalOpen]);
 
-  // Auto-rotate Testimonials every 6s
+  // Auto-rotate Testimonials every 6s when tab is focused
   useEffect(() => {
+    if (!focused) return;
     const timer = setInterval(() => {
       setActiveTestimonial((prev) => (prev + 1) % newsTestimonials.length);
     }, 6000);
     return () => clearInterval(timer);
-  }, []);
+  }, [focused]);
 
-  // Reset pagination when filter or search changes
-  useEffect(() => {
+  const resetFilters = () => {
+    setGroup("All");
+    setSearchQuery("");
     setVisibleCount(6);
-  }, [group, searchQuery]);
+  };
 
   // Filtered Posts
   const filteredPosts = useMemo(() => {
@@ -225,6 +229,7 @@ export default function News() {
 
   const selectCategory = (val: string) => {
     setGroup(val);
+    setVisibleCount(6);
     scrollRef.current?.scrollTo({ y: 0, animated: true });
   };
 
@@ -275,13 +280,22 @@ export default function News() {
             <TextInput
               testID="news-search-input"
               value={searchQuery}
-              onChangeText={setSearchQuery}
+              onChangeText={(text) => {
+                setSearchQuery(text);
+                setVisibleCount(6);
+              }}
               placeholder="Search articles, crops, or market insights..."
               placeholderTextColor="#94A3B8"
               style={styles.searchInput}
             />
             {searchQuery.length > 0 && (
-              <Pressable onPress={() => setSearchQuery("")} hitSlop={8}>
+              <Pressable
+                onPress={() => {
+                  setSearchQuery("");
+                  setVisibleCount(6);
+                }}
+                hitSlop={8}
+              >
                 <Lucide name="x" size={16} color="#64748B" />
               </Pressable>
             )}
@@ -530,10 +544,7 @@ export default function News() {
               </Text>
               {(group !== "All" || searchQuery.trim().length > 0) && (
                 <Pressable
-                  onPress={() => {
-                    setGroup("All");
-                    setSearchQuery("");
-                  }}
+                  onPress={resetFilters}
                   style={styles.viewAllBtn}
                 >
                   <Text style={styles.viewAllBtnText}>VIEW ALL</Text>
@@ -551,10 +562,7 @@ export default function News() {
                 Try another keyword or switch back to All categories.
               </Text>
               <Pressable
-                onPress={() => {
-                  setGroup("All");
-                  setSearchQuery("");
-                }}
+                onPress={resetFilters}
                 style={styles.resetEmptyBtn}
               >
                 <Text style={styles.resetEmptyBtnText}>BROWSE ALL STORIES</Text>
@@ -705,8 +713,7 @@ export default function News() {
               <Text style={styles.widgetTitle}>Popular Posts</Text>
               <Pressable
                 onPress={() => {
-                  setGroup("All");
-                  setSearchQuery("");
+                  resetFilters();
                   scrollRef.current?.scrollTo({ y: 0, animated: true });
                 }}
                 style={styles.widgetActionBtn}

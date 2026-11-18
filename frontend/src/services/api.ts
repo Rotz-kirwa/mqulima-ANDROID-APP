@@ -88,20 +88,23 @@ export async function request<T>(path: string, init: RequestOptions = {}): Promi
   const method = (init.method || "GET").toUpperCase();
   const hasIdempotencyKey = Boolean(headers["Idempotency-Key"] || headers["idempotency-key"]);
   const canRetry = method === "GET" || method === "HEAD" || hasIdempotencyKey || Boolean(init.idempotent);
-  const maxRetries = canRetry ? (init.retries ?? 2) : 0;
+  const maxRetries = init.retries !== undefined ? init.retries : (canRetry ? 2 : 0);
   const timeoutMs = init.timeoutMs ?? (path.startsWith("/ai/") ? 45000 : 15000);
 
   let lastErr: unknown;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const onAbort = () => controller.abort();
     if (init.signal) {
-      init.signal.addEventListener("abort", () => controller.abort(), { once: true });
+      if (init.signal.aborted) controller.abort();
+      else init.signal.addEventListener("abort", onAbort, { once: true });
     }
 
     try {
       const res = await fetch(`${BASE}${path}`, { ...init, headers, signal: controller.signal });
       clearTimeout(timer);
+      if (init.signal) init.signal.removeEventListener("abort", onAbort);
 
       if (res.ok) {
         return res.json();
@@ -122,7 +125,11 @@ export async function request<T>(path: string, init: RequestOptions = {}): Promi
       throw err;
     } catch (err: any) {
       clearTimeout(timer);
+      if (init.signal) init.signal.removeEventListener("abort", onAbort);
       if (err instanceof ApiError) {
+        throw err;
+      }
+      if (init.signal?.aborted) {
         throw err;
       }
       const isTimeout = err?.name === "AbortError";
@@ -141,7 +148,56 @@ export async function request<T>(path: string, init: RequestOptions = {}): Promi
   throw lastErr;
 }
 
-const delay = <T,>(data: T, ms = 300): Promise<T> => new Promise((r) => setTimeout(() => r(data), ms));
+const _inflightGetJson = new Map<string, Promise<any>>();
+
+async function fetchWithTimeout(
+  url: string,
+  options: { timeoutMs?: number; signal?: AbortSignal; headers?: Record<string, string> } = {}
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), options.timeoutMs ?? 12000);
+  const onAbort = () => controller.abort();
+  if (options.signal) {
+    if (options.signal.aborted) controller.abort();
+    else options.signal.addEventListener("abort", onAbort, { once: true });
+  }
+  try {
+    return await fetch(url, {
+      headers: { Accept: "application/json", ...options.headers },
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timer);
+    if (options.signal) options.signal.removeEventListener("abort", onAbort);
+  }
+}
+
+async function fetchJsonDedup<T = any>(
+  url: string,
+  options: { timeoutMs?: number; signal?: AbortSignal; headers?: Record<string, string> } = {}
+): Promise<{ ok: boolean; status: number; data: T | null }> {
+  const canDedup = !options.signal && !options.headers?.Authorization;
+  if (canDedup) {
+    const existing = _inflightGetJson.get(url);
+    if (existing) return existing;
+  }
+
+  const run = (async () => {
+    const res = await fetchWithTimeout(url, options);
+    const data = res.ok ? ((await res.json()) as T) : null;
+    return { ok: res.ok, status: res.status, data };
+  })();
+
+  if (canDedup) {
+    _inflightGetJson.set(url, run);
+    run.finally(() => {
+      if (_inflightGetJson.get(url) === run) {
+        _inflightGetJson.delete(url);
+      }
+    }).catch(() => {});
+  }
+  return run;
+}
 
 // =========================================================================
 // AgroShop Helpers: Normalization, Category Mapping & Live Backend Sync
@@ -709,7 +765,8 @@ export const api = {
     q = "",
     page = 1,
     subcategory?: string,
-    limit = PAGE_SIZE
+    limit = PAGE_SIZE,
+    signal?: AbortSignal
   ) => {
     const trimmedQ = (q || "").trim();
     const params = new URLSearchParams({
@@ -721,11 +778,8 @@ export const api = {
     if (subcategory && subcategory !== "all") params.set("sub_category", subcategory);
 
     try {
-      const res = await fetch(`${BASE}/products?${params.toString()}`, {
-        headers: { Accept: "application/json" },
-      });
-      if (res.ok) {
-        const data = await res.json();
+      const { ok, data } = await fetchJsonDedup<any>(`${BASE}/products?${params.toString()}`, { signal });
+      if (ok && data) {
         const rawList = data.items || data.products || (Array.isArray(data) ? data : []);
         const items: Product[] = Array.isArray(rawList) ? rawList.map(normalizeBackendProduct) : [];
         const total = typeof data.total === "number" ? data.total : items.length;
@@ -733,7 +787,9 @@ export const api = {
         const pages = typeof data.pages === "number" ? data.pages : Math.ceil(total / limit) || 1;
         return { items, total, page: currentPage, pages };
       }
-    } catch {}
+    } catch (err) {
+      if (signal?.aborted) throw err;
+    }
 
     // Offline fallback only when server catalog endpoint is unreachable
     const all = await getMergedCatalog();
@@ -765,64 +821,59 @@ export const api = {
     return { items, total, page, pages };
   },
 
-  getFeaturedProducts: async () => {
+  getFeaturedProducts: async (signal?: AbortSignal) => {
     try {
-      const res = await fetch(`${BASE}/products/featured`, {
-        headers: { Accept: "application/json" },
-      });
-      if (res.ok) {
-        const data = await res.json();
+      const { ok, data } = await fetchJsonDedup<any>(`${BASE}/products/featured`, { signal });
+      if (ok && data) {
         const list = Array.isArray(data) ? data : (data.items || data.products || []);
         if (list.length > 0) {
           return list.map(normalizeBackendProduct);
         }
       }
-    } catch {}
+    } catch (err) {
+      if (signal?.aborted) throw err;
+    }
 
     const all = await getMergedCatalog();
     const featured = all.filter((p) => p.featured);
     return featured.length > 0 ? featured.slice(0, 20) : all.slice(0, 12);
   },
 
-  getProduct: async (id: string) => {
+  getProduct: async (id: string, signal?: AbortSignal) => {
     try {
-      const res = await fetch(`${BASE}/products/${encodeURIComponent(id)}`, {
-        headers: { Accept: "application/json" },
-      });
-      if (res.ok) {
-        const data = await res.json();
+      const { ok, status, data } = await fetchJsonDedup<any>(`${BASE}/products/${encodeURIComponent(id)}`, { signal });
+      if (ok && data) {
         const p = data.product || data;
         if (p && (p.id || p.name)) {
           return normalizeBackendProduct(p);
         }
-      } else if (res.status === 404) {
+      } else if (status === 404) {
         return undefined;
       }
-    } catch {}
+    } catch (err) {
+      if (signal?.aborted) throw err;
+    }
 
     const all = await getMergedCatalog();
     return all.find((p) => p.id === id);
   },
 
-  getProductsByIds: async (ids: string[]) => {
+  getProductsByIds: async (ids: string[], signal?: AbortSignal) => {
     if (!ids || ids.length === 0) return [];
     try {
-      const res = await fetch(`${BASE}/products/by-ids?ids=${encodeURIComponent(ids.join(","))}`, {
-        headers: { Accept: "application/json" },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          return data.map(normalizeBackendProduct);
-        }
+      const { ok, data } = await fetchJsonDedup<any>(`${BASE}/products/by-ids?ids=${encodeURIComponent(ids.join(","))}`, { signal });
+      if (ok && Array.isArray(data) && data.length > 0) {
+        return data.map(normalizeBackendProduct);
       }
-    } catch {}
+    } catch (err) {
+      if (signal?.aborted) throw err;
+    }
 
     const all = await getMergedCatalog();
     return all.filter((p) => ids.includes(p.id));
   },
 
-  search: async (q: string) => {
+  search: async (q: string, signal?: AbortSignal) => {
     const term = q.trim();
     if (!term) return { products: [], articles: [], services: [] };
     const srvsRes = await api.getServiceCategories().catch(() => []);
@@ -840,20 +891,19 @@ export const api = {
     ).slice(0, 5);
 
     try {
-      const res = await fetch(`${BASE}/search?q=${encodeURIComponent(term)}`, {
-        headers: { Accept: "application/json" },
-      });
-      if (res.ok) {
-        const data = await res.json();
+      const { ok, data } = await fetchJsonDedup<any>(`${BASE}/search?q=${encodeURIComponent(term)}`, { signal });
+      if (ok && data) {
         const products: Product[] = Array.isArray(data.products) ? data.products.map(normalizeBackendProduct) : [];
         const articles: Article[] = Array.isArray(data.articles) ? data.articles.map(normalizeBackendArticle).slice(0, 5) : [];
         return { products, articles, services: matchedServices };
       }
-    } catch {}
+    } catch (err) {
+      if (signal?.aborted) throw err;
+    }
 
     const [prodsRes, artsRes] = await Promise.all([
-      api.getProducts("All", term, 1).catch(() => ({ items: [] })),
-      api.getArticles("All").catch(() => []),
+      api.getProducts("All", term, 1, undefined, PAGE_SIZE, signal).catch(() => ({ items: [] })),
+      api.getArticles("All", signal).catch(() => []),
     ]);
     const matchedArticles = (artsRes || []).filter(
       (a) => a.title.toLowerCase().includes(lower) || a.excerpt?.toLowerCase().includes(lower)
@@ -866,35 +916,32 @@ export const api = {
   },
 
   // ---- 3. The Mqulima Journal (News & Agronomy Tips) ----
-  getArticles: async (group = "All"): Promise<Article[]> => {
+  getArticles: async (group = "All", signal?: AbortSignal): Promise<Article[]> => {
     try {
       const query = group && group !== "All" ? `?group=${encodeURIComponent(group)}` : "";
-      const res = await fetch(`${BASE}/articles${query}`, {
-        headers: { Accept: "application/json" },
-      });
-      if (res.ok) {
-        const data = await res.json();
+      const { ok, data } = await fetchJsonDedup<any>(`${BASE}/articles${query}`, { signal });
+      if (ok && data) {
         const list = Array.isArray(data) ? data : (data.articles || data.items || []);
         if (Array.isArray(list) && list.length > 0) {
           return list.map(normalizeBackendArticle);
         }
       }
     } catch (err) {
+      if (signal?.aborted) throw err;
       console.warn("[Articles] Live articles fetch from /articles failed:", err);
     }
 
     try {
-      const res = await fetch(`${BASE}/news${group && group !== "All" ? `?category=${encodeURIComponent(group)}` : ""}`, {
-        headers: { Accept: "application/json" },
-      });
-      if (res.ok) {
-        const data = await res.json();
+      const { ok, data } = await fetchJsonDedup<any>(`${BASE}/news${group && group !== "All" ? `?category=${encodeURIComponent(group)}` : ""}`, { signal });
+      if (ok && data) {
         const list = Array.isArray(data) ? data : (data.articles || data.items || []);
         if (Array.isArray(list) && list.length > 0) {
           return list.map(normalizeBackendArticle);
         }
       }
-    } catch {}
+    } catch (err) {
+      if (signal?.aborted) throw err;
+    }
 
     if (group && group !== "All") {
       return staticArticles.filter(
@@ -906,32 +953,26 @@ export const api = {
     return staticArticles;
   },
 
-  getArticle: async (id: string): Promise<Article | undefined> => {
+  getArticle: async (id: string, signal?: AbortSignal): Promise<Article | undefined> => {
     try {
-      const res = await fetch(`${BASE}/articles/${encodeURIComponent(id)}`, {
-        headers: { Accept: "application/json" },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data && (data.id || data.title)) {
-          return normalizeBackendArticle(data);
-        }
+      const { ok, data } = await fetchJsonDedup<any>(`${BASE}/articles/${encodeURIComponent(id)}`, { signal });
+      if (ok && data && (data.id || data.title)) {
+        return normalizeBackendArticle(data);
       }
-    } catch {}
+    } catch (err) {
+      if (signal?.aborted) throw err;
+    }
 
     try {
-      const res = await fetch(`${BASE}/news/${encodeURIComponent(id)}`, {
-        headers: { Accept: "application/json" },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data && (data.id || data.title)) {
-          return normalizeBackendArticle(data);
-        }
+      const { ok, data } = await fetchJsonDedup<any>(`${BASE}/news/${encodeURIComponent(id)}`, { signal });
+      if (ok && data && (data.id || data.title)) {
+        return normalizeBackendArticle(data);
       }
-    } catch {}
+    } catch (err) {
+      if (signal?.aborted) throw err;
+    }
 
-    const all = await api.getArticles("All");
+    const all = await api.getArticles("All", signal);
     return (
       all.find((a) => a.id === id || a.slug === id) ||
       staticArticles.find((a) => a.id === id || a.slug === id)
@@ -939,25 +980,23 @@ export const api = {
   },
 
   // ---- 4. Community Forum ----
-  getThreads: async (): Promise<ApiThread[]> => {
+  getThreads: async (signal?: AbortSignal): Promise<ApiThread[]> => {
     try {
-      const res = await fetch(`${BASE}/threads`, {
-        headers: { Accept: "application/json" },
-      });
-      if (res.ok) {
-        const data = await res.json();
+      const { ok, data } = await fetchJsonDedup<any>(`${BASE}/threads`, { signal });
+      if (ok && data) {
         const list = Array.isArray(data) ? data : (data.items || data.posts || []);
         if (Array.isArray(list)) {
           return list.map(normalizeBackendPost);
         }
       }
     } catch (err) {
+      if (signal?.aborted) throw err;
       console.warn("[Forum] Failed to fetch live threads:", err);
     }
     return [];
   },
 
-  getForumFeed: async (filters: ForumFilters, page = 1): Promise<ForumFeed> => {
+  getForumFeed: async (filters: ForumFilters, page = 1, signal?: AbortSignal): Promise<ForumFeed> => {
     const params = new URLSearchParams();
     if (filters.q?.trim()) params.append("q", filters.q.trim());
     if (filters.tag && filters.tag !== "All") params.append("tag", filters.tag);
@@ -966,10 +1005,10 @@ export const api = {
     params.append("page", String(page));
 
     const token = await storage.secureGet(TOKEN_KEY, "");
-    const headers: Record<string, string> = { Accept: "application/json" };
+    const headers: Record<string, string> = {};
     if (token) headers.Authorization = `Bearer ${token}`;
 
-    const res = await fetch(`${BASE}/threads/feed?${params.toString()}`, { headers });
+    const res = await fetchWithTimeout(`${BASE}/threads/feed?${params.toString()}`, { headers, signal });
     if (!res.ok) {
       throw new ApiError(res.status, `Failed to load forum feed (${res.status})`);
     }
@@ -1109,46 +1148,46 @@ export const api = {
     }),
 
   // ---- 5. Orders & Checkout ----
-  createOrder: async (body: {
-    items: { productId: string; variant?: string; qty: number }[];
-    name: string;
-    phone: string;
-    county: string;
-    subcounty: string;
-    location: string;
-    paymentMethod?: string;
-  }) => {
+  createOrder: async (
+    body: {
+      items: { productId: string; variant?: string; qty: number }[];
+      name: string;
+      phone: string;
+      county: string;
+      subcounty: string;
+      location: string;
+      paymentMethod?: string;
+    },
+    opts?: { idempotencyKey?: string }
+  ) => {
     const res = await request<any>("/orders", {
       method: "POST",
+      retries: 0,
+      headers: opts?.idempotencyKey ? { "Idempotency-Key": opts.idempotencyKey } : undefined,
       body: JSON.stringify(body),
     });
     const order: Order = res.order || res;
     if (order && order.id) {
-      try {
-        const raw = await storage.getItem("mqulima_orders", "[]");
-        const list: Order[] = JSON.parse(raw || "[]");
-        const filtered = list.filter((o) => o.id !== order.id);
-        filtered.unshift(order);
-        await storage.setItem("mqulima_orders", JSON.stringify(filtered));
-      } catch {}
       return order;
     }
     throw new ApiError(500, "Unable to place order. Please try again.");
   },
 
-  getOrders: async () => {
-    const res = await request<Order[]>("/orders");
+  getOrders: async (signal?: AbortSignal) => {
+    const res = await request<Order[]>("/orders", { signal });
     return Array.isArray(res) ? res : [];
   },
 
   // ---- 6. Live Payment Services (Safaricom Daraja M-Pesa STK Push & Paystack) ----
-  initiateMpesaStkPush: (orderId: string, phone: string) =>
+  initiateMpesaStkPush: (orderId: string, phone: string, idempotencyKey?: string) =>
     request<{ success: boolean; checkoutRequestId: string; message: string }>("/payments/mpesa/stk-push", {
       method: "POST",
+      retries: 0,
+      headers: idempotencyKey ? { "Idempotency-Key": idempotencyKey } : undefined,
       body: JSON.stringify({ orderId, phone }),
     }),
 
-  getPaymentStatus: (orderId: string) =>
+  getPaymentStatus: (orderId: string, opts?: { signal?: AbortSignal }) =>
     request<{
       orderId: string;
       paid: boolean;
@@ -1158,26 +1197,35 @@ export const api = {
       receiptNumber?: string | null;
       provider?: string;
       message?: string | null;
-    }>(`/payments/status/${encodeURIComponent(orderId)}`),
+    }>(`/payments/status/${encodeURIComponent(orderId)}`, {
+      signal: opts?.signal,
+      timeoutMs: 10000,
+      retries: 0,
+    }),
 
   initiatePaystack: (
     orderId: string,
     email: string,
-    opts?: { channels?: string[]; paymentMethod?: string; callbackUrl?: string; phone?: string }
-  ) =>
-    request<{ success: boolean; authorizationUrl?: string; accessCode?: string; reference?: string }>(
+    opts?: { channels?: string[]; paymentMethod?: string; callbackUrl?: string; phone?: string; idempotencyKey?: string }
+  ) => {
+    const { idempotencyKey, ...payload } = opts ?? {};
+    return request<{ success: boolean; authorizationUrl?: string; accessCode?: string; reference?: string }>(
       "/payments/paystack/initialize",
       {
         method: "POST",
-        body: JSON.stringify({ orderId, email, ...opts }),
+        retries: 0,
+        headers: idempotencyKey ? { "Idempotency-Key": idempotencyKey } : undefined,
+        body: JSON.stringify({ orderId, email, ...payload }),
       }
-    ),
+    );
+  },
 
   initiatePaystackMobileMoney: (
     orderId: string,
     phone: string,
     email: string,
-    provider: "mpesa" | "atl"
+    provider: "mpesa" | "atl",
+    idempotencyKey?: string
   ) =>
     request<{
       success: boolean;
@@ -1187,6 +1235,8 @@ export const api = {
       error?: string;
     }>("/payments/paystack/mobile-money", {
       method: "POST",
+      retries: 0,
+      headers: idempotencyKey ? { "Idempotency-Key": idempotencyKey } : undefined,
       body: JSON.stringify({ orderId, phone, email, provider }),
     }),
 

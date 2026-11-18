@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Platform,
   Pressable,
   RefreshControl,
   Text,
@@ -14,7 +15,8 @@ import { Lucide } from "@react-native-vector-icons/lucide";
 import { ListSkeleton } from "@/src/components/Skeleton";
 import { useTabBottom } from "@/src/components/Page";
 import { usesNativeTabs } from "@/src/navigation";
-import { api, ForumFilters } from "@/src/services/api";
+import { api, ApiThread, ForumFilters } from "@/src/services/api";
+import { QUERY_STALE_TIMES } from "@/src/query-client";
 import { fonts, makeStyles, useTheme } from "@/src/theme";
 import { ThreadCard } from "@/src/components/ThreadCard";
 import { useAuth } from "@/src/store/AppStore";
@@ -74,16 +76,18 @@ export default function Forum() {
   const q = useInfiniteQuery({
     queryKey: ["forum-feed", user?.id, { ...filters, q: search }],
     initialPageParam: 1,
-    queryFn: ({ pageParam }) => api.getForumFeed({ ...filters, q: search }, pageParam),
+    queryFn: ({ pageParam, signal }) => api.getForumFeed({ ...filters, q: search }, pageParam, signal),
     getNextPageParam: (page) => page.next_page ?? undefined,
     enabled: ready,
+    staleTime: QUERY_STALE_TIMES.FORUM,
     retry: 1,
   });
 
   const articlesQ = useQuery({
-    queryKey: ["forum-latest-articles"],
-    queryFn: () => api.getArticles("All"),
+    queryKey: ["articles", "All"],
+    queryFn: ({ signal }) => api.getArticles("All", signal),
     enabled: ready,
+    staleTime: QUERY_STALE_TIMES.ARTICLES,
   });
 
   const firstPage = q.data?.pages[0];
@@ -115,6 +119,15 @@ export default function Forum() {
     setChatPartner(farmer);
     setSubpage("konnekt");
   };
+
+  const renderThreadItem = useCallback(
+    ({ item }: { item: ApiThread }) => (
+      <View style={s.item}>
+        <ThreadCard t={item} onPress={() => router.push(`/thread/${item.id}`)} />
+      </View>
+    ),
+    [router, s.item]
+  );
 
   const empty = () => {
     if (subpage !== "posts" && subpage !== "saved") {
@@ -195,6 +208,10 @@ export default function Forum() {
         testID="forum-thread-list"
         data={data}
         keyExtractor={(item) => item.id}
+        initialNumToRender={8}
+        maxToRenderPerBatch={6}
+        windowSize={5}
+        removeClippedSubviews={Platform.OS !== "web"}
         contentContainerStyle={[s.list, { paddingBottom: usesNativeTabs ? insets.bottom + 24 : 0 }]}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
@@ -262,11 +279,7 @@ export default function Forum() {
           </View>
         }
         ListEmptyComponent={empty}
-        renderItem={({ item }) => (
-          <View style={s.item}>
-            <ThreadCard t={item} onPress={() => router.push(`/thread/${item.id}`)} />
-          </View>
-        )}
+        renderItem={renderThreadItem}
         ListFooterComponent={
           <View style={s.footerWrap}>
             {(subpage === "posts" || subpage === "saved") && data.length > 0 && (

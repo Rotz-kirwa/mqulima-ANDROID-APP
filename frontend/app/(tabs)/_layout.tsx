@@ -31,6 +31,7 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
+        freezeOnBlur: true,
         tabBarActiveTintColor: colors.brand,
         tabBarInactiveTintColor: colors.subtle,
         tabBarStyle: { backgroundColor: colors.white, borderTopColor: colors.border, ...(Platform.OS === "web" ? { height: 64 } : {}) },

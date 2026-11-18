@@ -49,12 +49,12 @@ export function PaystackWebModal({
   const s = useStyles();
   const { colors } = useTheme();
   const [pageLoading, setPageLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const completedRef = useRef(false);
 
   useEffect(() => {
     if (visible && url) {
       completedRef.current = false;
-      setPageLoading(true);
     }
   }, [visible, url]);
 
@@ -121,7 +121,16 @@ export function PaystackWebModal({
               <Text style={s.loaderText}>Loading Paystack checkout...</Text>
             </View>
           ) : null}
+          {loadError ? (
+            <View style={[s.loaderBar, { backgroundColor: "#FEF2F2" }]}>
+              <Lucide name="alert-circle" size={16} color="#DC2626" />
+              <Text style={[s.loaderText, { color: "#991B1B" }]}>
+                Checkout page failed to load. Tap Browser above to complete payment.
+              </Text>
+            </View>
+          ) : null}
           <WebView
+            key={url}
             source={{ uri: url }}
             style={s.webview}
             originWhitelist={["*"]}
@@ -132,8 +141,20 @@ export function PaystackWebModal({
             thirdPartyCookiesEnabled
             sharedCookiesEnabled
             mixedContentMode="compatibility"
-            onLoadStart={() => setPageLoading(true)}
+            onLoadStart={() => {
+              setPageLoading(true);
+              setLoadError(false);
+            }}
             onLoadEnd={() => setPageLoading(false)}
+            onError={() => {
+              setPageLoading(false);
+              setLoadError(true);
+            }}
+            onHttpError={({ nativeEvent }) => {
+              if (nativeEvent.statusCode >= 500) {
+                setLoadError(true);
+              }
+            }}
             onNavigationStateChange={(navState) => handleNavigationUrl(navState.url)}
             onShouldStartLoadWithRequest={(req) => {
               if (isPaystackCallbackUrl(req.url)) {

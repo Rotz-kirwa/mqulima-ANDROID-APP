@@ -16,13 +16,21 @@ const proxy = (uri: string) => {
     return `${CDN_OR_BACKEND}${uri}`;
   }
   if (Platform.OS === "web" && (uri.startsWith("https://www.mqulima.com") || uri.startsWith("https://mqulima.com") || uri.includes("pinimg.com"))) {
-    return `https://images.weserv.nl/?url=${encodeURIComponent(uri.replace(/^https?:\/\//, ""))}&output=webp`;
+    return `https://images.weserv.nl/?url=${encodeURIComponent(uri.replace(/^https?:\/\//, ""))}&w=800&q=82&we&output=webp`;
   }
   return uri;
 };
 
-export function Image({ circular = false, style, ...props }: ImageProps & { circular?: boolean }) {
+export function Image({ circular = false, allowDownscaling = true, style, ...props }: ImageProps & { circular?: boolean }) {
   const src = props.source as { uri?: string } | undefined;
   const source = src && typeof src === "object" && "uri" in src && src.uri ? { ...src, uri: proxy(src.uri) } : props.source;
-  return <ExpoImage cachePolicy="memory-disk" {...props} source={source} style={circular ? style : [style, { borderRadius: 0 }]} />;
+  return (
+    <ExpoImage
+      cachePolicy="memory-disk"
+      allowDownscaling={allowDownscaling}
+      {...props}
+      source={source}
+      style={circular ? style : [style, { borderRadius: 0 }]}
+    />
+  );
 }

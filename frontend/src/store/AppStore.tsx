@@ -169,12 +169,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       // Unblock first paint immediately from local state; verify token and purge legacy keys in background.
       setReady(true);
       storage.removeItem("mqulima_registered_users").catch(() => {});
+      storage.removeItem("mqulima_orders").catch(() => {});
 
       if (token) {
+        let verifyTimer: ReturnType<typeof setTimeout> | null = null;
         try {
           const u = await Promise.race<User | null>([
             api.me({ timeoutMs: 3000, retries: 0 }),
-            new Promise<null>((_, reject) => setTimeout(() => reject(new Error("auth_verify_timeout")), 3000)),
+            new Promise<null>((_, reject) => {
+              verifyTimer = setTimeout(() => reject(new Error("auth_verify_timeout")), 3000);
+            }),
           ]);
           if (active && u) {
             setUser(u);
@@ -185,9 +189,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             await Promise.all([
               storage.secureRemove(TOKEN_KEY),
               storage.removeItem("mqulima_user"),
+              storage.removeItem("mqulima_orders"),
             ]);
             if (active) setUser(null);
           }
+        } finally {
+          if (verifyTimer) clearTimeout(verifyTimer);
         }
       }
     })();
@@ -216,10 +223,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
-    await storage.secureRemove(TOKEN_KEY);
-    await storage.removeItem("mqulima_user");
+    await Promise.all([
+      storage.secureRemove(TOKEN_KEY),
+      storage.removeItem("mqulima_user"),
+      storage.removeItem("mqulima_orders"),
+    ]);
     setUser(null);
     queryClient.removeQueries({ queryKey: ["orders"] });
+    queryClient.removeQueries({ queryKey: ["payment-status"] });
     queryClient.removeQueries({ queryKey: ["my-threads"] });
     queryClient.invalidateQueries({ queryKey: ["forum-feed"] });
     queryClient.invalidateQueries({ queryKey: ["thread"] });
