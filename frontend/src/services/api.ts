@@ -592,28 +592,35 @@ export const api = {
     throw lastError || new ApiError(401, "Invalid email/phone number or password.");
   },
 
-  me: async (): Promise<User> => {
+  me: async (options?: { timeoutMs?: number; retries?: number }): Promise<User> => {
     const token = await storage.secureGet(TOKEN_KEY, "");
     if (!token) throw new ApiError(401, "No auth token");
+    const timeoutMs = options?.timeoutMs ?? 15000;
+    const retries = options?.retries ?? 2;
 
     try {
-      const res = await request<any>("/auth/me");
+      const res = await request<any>("/auth/me", { timeoutMs, retries });
       const u = res?.user || res;
       if (u && u.id) return u as User;
     } catch (err: any) {
       if (err?.status === 401) throw err;
 
-      // Try direct fallback
+      // Try direct fallback within the same timeout budget
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
       try {
         const directRes = await fetch(`${BACKEND_HOST}/api/auth/me`, {
           headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+          signal: controller.signal,
         });
         if (directRes.ok) {
           const directData = await directRes.json();
           const u = directData?.user || directData;
           if (u && u.id) return u as User;
         }
-      } catch {}
+      } catch {} finally {
+        clearTimeout(timer);
+      }
 
       const cached = await storage.getItem("mqulima_user", "");
       if (cached) {
