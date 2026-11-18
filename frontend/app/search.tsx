@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { Image } from "@/src/components/Img";
 import { useRouter } from "expo-router";
@@ -16,9 +16,18 @@ export default function Search() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [q, setQ] = useState("");
-  const r = useQuery({ queryKey: ["search", q], queryFn: () => api.search(q) });
+  const [debouncedQ, setDebouncedQ] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQ(q.trim()), 200);
+    return () => clearTimeout(t);
+  }, [q]);
+  const r = useQuery({
+    queryKey: ["search", debouncedQ],
+    queryFn: () => api.search(debouncedQ),
+    enabled: debouncedQ.length > 0,
+  });
   const d = r.data;
-  const empty = q.trim() && d && !d.products.length && !d.articles.length && !d.services.length;
+  const empty = debouncedQ && d && !d.products.length && !d.articles.length && !d.services.length;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.surface }} testID="search-screen">

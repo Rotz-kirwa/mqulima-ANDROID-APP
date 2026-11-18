@@ -697,7 +697,38 @@ export const api = {
   },
 
   // ---- 2. AgroShop (Products & Categories) ----
-  getProducts: async (category = "All", q = "", page = 1, subcategory?: string) => {
+  getProducts: async (
+    category = "All",
+    q = "",
+    page = 1,
+    subcategory?: string,
+    limit = PAGE_SIZE
+  ) => {
+    const trimmedQ = (q || "").trim();
+    const params = new URLSearchParams({
+      category: category || "All",
+      page: String(page),
+      limit: String(limit),
+    });
+    if (trimmedQ) params.set("q", trimmedQ);
+    if (subcategory && subcategory !== "all") params.set("sub_category", subcategory);
+
+    try {
+      const res = await fetch(`${BASE}/products?${params.toString()}`, {
+        headers: { Accept: "application/json" },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const rawList = data.items || data.products || (Array.isArray(data) ? data : []);
+        const items: Product[] = Array.isArray(rawList) ? rawList.map(normalizeBackendProduct) : [];
+        const total = typeof data.total === "number" ? data.total : items.length;
+        const currentPage = typeof data.page === "number" ? data.page : page;
+        const pages = typeof data.pages === "number" ? data.pages : Math.ceil(total / limit) || 1;
+        return { items, total, page: currentPage, pages };
+      }
+    } catch {}
+
+    // Offline fallback only when server catalog endpoint is unreachable
     const all = await getMergedCatalog();
     let filtered = all;
 
@@ -717,13 +748,13 @@ export const api = {
       }
     }
 
-    if (q && q.trim()) {
-      filtered = filtered.filter((p) => matchProductTokens(p, q));
+    if (trimmedQ) {
+      filtered = filtered.filter((p) => matchProductTokens(p, trimmedQ));
     }
 
     const total = filtered.length;
-    const pages = Math.ceil(total / PAGE_SIZE) || 1;
-    const items = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+    const pages = Math.ceil(total / limit) || 1;
+    const items = filtered.slice((page - 1) * limit, page * limit);
     return { items, total, page, pages };
   },
 
@@ -757,6 +788,8 @@ export const api = {
         if (p && (p.id || p.name)) {
           return normalizeBackendProduct(p);
         }
+      } else if (res.status === 404) {
+        return undefined;
       }
     } catch {}
 
@@ -785,15 +818,8 @@ export const api = {
   search: async (q: string) => {
     const term = q.trim();
     if (!term) return { products: [], articles: [], services: [] };
-    const [prodsRes, artsRes, srvsRes] = await Promise.all([
-      api.getProducts("All", term, 1).catch(() => ({ items: [] })),
-      api.getArticles("All").catch(() => []),
-      api.getServiceCategories().catch(() => []),
-    ]);
+    const srvsRes = await api.getServiceCategories().catch(() => []);
     const lower = term.toLowerCase();
-    const matchedArticles = (artsRes || []).filter(
-      (a) => a.title.toLowerCase().includes(lower) || a.excerpt?.toLowerCase().includes(lower)
-    ).slice(0, 5);
     const matchedServices = (srvsRes || []).flatMap((c) =>
       c.subs
         .filter((s) => s.title.toLowerCase().includes(lower) || s.text.toLowerCase().includes(lower))
@@ -804,6 +830,26 @@ export const api = {
           tag: s.tag || c.title,
           image: c.image,
         }))
+    ).slice(0, 5);
+
+    try {
+      const res = await fetch(`${BASE}/search?q=${encodeURIComponent(term)}`, {
+        headers: { Accept: "application/json" },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const products: Product[] = Array.isArray(data.products) ? data.products.map(normalizeBackendProduct) : [];
+        const articles: Article[] = Array.isArray(data.articles) ? data.articles.map(normalizeBackendArticle).slice(0, 5) : [];
+        return { products, articles, services: matchedServices };
+      }
+    } catch {}
+
+    const [prodsRes, artsRes] = await Promise.all([
+      api.getProducts("All", term, 1).catch(() => ({ items: [] })),
+      api.getArticles("All").catch(() => []),
+    ]);
+    const matchedArticles = (artsRes || []).filter(
+      (a) => a.title.toLowerCase().includes(lower) || a.excerpt?.toLowerCase().includes(lower)
     ).slice(0, 5);
     return {
       products: prodsRes?.items || [],

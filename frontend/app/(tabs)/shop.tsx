@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { FlatList, Modal, Pressable, RefreshControl, ScrollView, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, FlatList, Modal, Platform, Pressable, RefreshControl, ScrollView, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { Lucide } from "@react-native-vector-icons/lucide";
 import { TopBar } from "@/src/components/TopBar";
@@ -10,7 +10,7 @@ import { Footer } from "@/src/components/Footer";
 import { GridSkeleton } from "@/src/components/Skeleton";
 import { Btn, Body } from "@/src/components/ui";
 import { usesNativeTabs } from "@/src/navigation";
-import { api, PAGE_SIZE } from "@/src/services/api";
+import { api } from "@/src/services/api";
 import { PRODUCT_TAXONOMY, SubcategoryItem, ProductCategory } from "@/src/data/products";
 import { fonts, makeStyles, useTheme } from "@/src/theme";
 
@@ -50,7 +50,6 @@ export default function Shop() {
   const [q, setQ] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [page, setPage] = useState(1);
 
   // Debounce search query by 250ms for instantaneous typing & optimal performance
   useEffect(() => {
@@ -61,31 +60,47 @@ export default function Shop() {
   }, [q]);
 
   const [subcatModalOpen, setSubcatModalOpen] = useState(false);
+  const [knownCatalogTotal, setKnownCatalogTotal] = useState<number>(0);
 
   const listRef = useRef<FlatList>(null);
 
-  const query = useQuery({
-    queryKey: ["products", cat, subcat, debouncedQ, page],
-    queryFn: () => api.getProducts(cat, debouncedQ, page, subcat),
+  const query = useInfiniteQuery({
+    queryKey: ["products", cat, subcat, debouncedQ],
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) => api.getProducts(cat, debouncedQ, pageParam, subcat),
+    getNextPageParam: (lastPage) => (lastPage.page < lastPage.pages ? lastPage.page + 1 : undefined),
   });
 
-  const res = query.data;
+  const firstPage = query.data?.pages[0];
+  const resTotal = firstPage?.total ?? 0;
 
-  const totalCountQuery = useQuery({
-    queryKey: ["products-catalog-total-count"],
-    queryFn: async () => {
-      const allRes = await api.getProducts("All", "", 1);
-      return allRes.total;
-    },
-    staleTime: 60_000,
-  });
-  const totalCatalogCount = totalCountQuery.data ?? (cat === "All" && !debouncedQ ? res?.total : undefined) ?? 0;
-  const goPage = (p: number) => {
-    setPage(p);
-    listRef.current?.scrollToOffset({ offset: 0, animated: true });
-  };
-  const from = res ? (res.page - 1) * PAGE_SIZE + 1 : 0;
-  const to = res ? Math.min(res.page * PAGE_SIZE, res.total) : 0;
+  useEffect(() => {
+    if (cat === "All" && subcat === "all" && !debouncedQ && typeof firstPage?.total === "number") {
+      setKnownCatalogTotal(firstPage.total);
+    }
+  }, [cat, subcat, debouncedQ, firstPage?.total]);
+
+  const items = useMemo(() => {
+    if (!query.data?.pages) return [];
+    const seen = new Set<string>();
+    const merged = [];
+    for (const pg of query.data.pages) {
+      for (const item of pg.items) {
+        if (!seen.has(item.id)) {
+          seen.add(item.id);
+          merged.push(item);
+        }
+      }
+    }
+    return merged;
+  }, [query.data]);
+
+  const totalCatalogCount =
+    (cat === "All" && subcat === "all" && !debouncedQ ? firstPage?.total : knownCatalogTotal) ||
+    knownCatalogTotal ||
+    resTotal;
+  const from = items.length > 0 ? 1 : 0;
+  const to = items.length;
 
   const currentCatDef = useMemo(
     () => PRODUCT_TAXONOMY.find((c) => c.id === cat) || PRODUCT_TAXONOMY[0],
@@ -119,7 +134,6 @@ export default function Shop() {
       setCat(selectedCategory);
       setSubcat("all");
     }
-    setPage(1);
   };
 
   const onSelectSubcategory = (subItem: SubcategoryItem & { parentCat?: string }) => {
@@ -127,14 +141,12 @@ export default function Shop() {
       setCat(subItem.parentCat);
     }
     setSubcat(subItem.id);
-    setPage(1);
     setSubcatModalOpen(false);
   };
 
   const clearSearch = () => {
     setQ("");
     setDebouncedQ("");
-    setPage(1);
   };
 
   const isFiltered = cat !== "All" || subcat !== "all" || !!debouncedQ;
@@ -144,7 +156,6 @@ export default function Shop() {
     setSubcat("all");
     setQ("");
     setDebouncedQ("");
-    setPage(1);
   };
 
   return (
@@ -166,10 +177,7 @@ export default function Shop() {
             value={q}
             onFocus={() => setIsSearchFocused(true)}
             onBlur={() => setIsSearchFocused(false)}
-            onChangeText={(v) => {
-              setQ(v);
-              setPage(1);
-            }}
+            onChangeText={setQ}
             placeholder="Search shop items..."
             placeholderTextColor={colors.subtle}
             style={s.searchInput}
@@ -204,7 +212,6 @@ export default function Shop() {
                 onPress={() => {
                   setQ(item);
                   setDebouncedQ(item);
-                  setPage(1);
                 }}
                 style={[s.quickSearchChip, isSelected && s.quickSearchChipActive]}
               >
@@ -238,7 +245,6 @@ export default function Shop() {
             onPress={() => {
               setCat("All");
               setSubcat("all");
-              setPage(1);
             }}
             style={[s.allBtn, cat === "All" && s.allBtnActive]}
           >
@@ -422,15 +428,25 @@ export default function Shop() {
         <FlatList
           ref={listRef}
           testID="shop-product-grid"
-          data={res?.items}
+          data={items}
           keyExtractor={(p) => p.id}
           numColumns={2}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={7}
+          removeClippedSubviews={Platform.OS !== "web"}
+          onEndReached={() => {
+            if (query.hasNextPage && !query.isFetchingNextPage) {
+              query.fetchNextPage();
+            }
+          }}
+          onEndReachedThreshold={0.4}
           columnWrapperStyle={{ gap: 12, paddingHorizontal: 16 }}
           contentContainerStyle={{ gap: 12, paddingTop: 10, paddingBottom: usesNativeTabs ? insets.bottom + 24 : 0 }}
           refreshControl={
             <RefreshControl
-              refreshing={query.isRefetching}
-              onRefresh={query.refetch}
+              refreshing={query.isRefetching && !query.isFetchingNextPage}
+              onRefresh={() => query.refetch()}
               tintColor={colors.brandPrimary}
               colors={[colors.brandPrimary]}
             />
@@ -441,13 +457,13 @@ export default function Shop() {
                 <View style={{ flex: 1, paddingRight: 8 }}>
                   <Text style={s.count} testID="shop-count">
                     {debouncedQ ? (
-                      `Results for "${debouncedQ}" (${res?.total ?? 0})`
+                      `Results for "${debouncedQ}" (${resTotal})`
                     ) : cat === "All" && subcat === "all" ? (
-                      `All Shop Items (${res?.total ?? totalCatalogCount})`
+                      `All Shop Items (${resTotal || totalCatalogCount})`
                     ) : subcat !== "all" ? (
-                      `${currentSubcatDef?.label || subcat} (${res?.total ?? 0})`
+                      `${currentSubcatDef?.label || subcat} (${resTotal})`
                     ) : (
-                      `${cat} (${res?.total ?? 0})`
+                      `${cat} (${resTotal})`
                     )}
                   </Text>
                   {Boolean(debouncedQ && cat !== "All") && (
@@ -455,7 +471,6 @@ export default function Shop() {
                       onPress={() => {
                         setCat("All");
                         setSubcat("all");
-                        setPage(1);
                       }}
                       style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 }}
                     >
@@ -497,7 +512,6 @@ export default function Shop() {
                   onPress={() => {
                     setCat("All");
                     setSubcat("all");
-                    setPage(1);
                   }}
                   style={{ marginTop: 8 }}
                 />
@@ -515,7 +529,6 @@ export default function Shop() {
                         setDebouncedQ(item);
                         setCat("All");
                         setSubcat("all");
-                        setPage(1);
                       }}
                       style={s.emptySuggestionPill}
                     >
@@ -545,43 +558,22 @@ export default function Shop() {
           ListFooterComponent={
             <View style={{ gap: 16, marginTop: 12 }}>
               <View style={{ paddingHorizontal: 16, gap: 12 }}>
-              {res && res.total > 0 ? (
+              {resTotal > 0 ? (
                 <View style={{ gap: 10, alignItems: "center" }} testID="shop-pagination">
                   <Text style={s.count} testID="shop-showing">
-                    Showing {from}–{to} of {res.total} items
+                    Showing {from}–{to} of {resTotal} items
                   </Text>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap", justifyContent: "center" }}>
-                    <Pressable
-                      testID="shop-page-prev"
-                      disabled={res.page <= 1}
-                      onPress={() => goPage(res.page - 1)}
-                      style={[s.pageBtn, res.page <= 1 && { opacity: 0.4 }]}
-                    >
-                      <Lucide name="chevron-left" size={18} color={colors.onSurface} />
-                    </Pressable>
-                    {Array.from({ length: res.pages }, (_, i) => i + 1)
-                      .filter((n) => n === 1 || n === res.pages || Math.abs(n - res.page) <= 1)
-                      .map((n, i, arr) => (
-                        <React.Fragment key={n}>
-                          {i > 0 && n - arr[i - 1] > 1 ? <Text style={s.count}>…</Text> : null}
-                          <Pressable
-                            testID={`shop-page-${n}`}
-                            onPress={() => goPage(n)}
-                            style={[s.pageBtn, n === res.page && s.pageActive]}
-                          >
-                            <Text style={[s.pageText, n === res.page && { color: colors.white }]}>{n}</Text>
-                          </Pressable>
-                        </React.Fragment>
-                      ))}
-                    <Pressable
-                      testID="shop-page-next"
-                      disabled={res.page >= res.pages}
-                      onPress={() => goPage(res.page + 1)}
-                      style={[s.pageBtn, res.page >= res.pages && { opacity: 0.4 }]}
-                    >
-                      <Lucide name="chevron-right" size={18} color={colors.onSurface} />
-                    </Pressable>
-                  </View>
+                  {query.isFetchingNextPage ? (
+                    <ActivityIndicator size="small" color={colors.brandPrimary} />
+                  ) : query.hasNextPage ? (
+                    <Btn
+                      testID="shop-load-more"
+                      small
+                      variant="outline"
+                      label="Load More Products"
+                      onPress={() => query.fetchNextPage()}
+                    />
+                  ) : null}
                 </View>
               ) : null}
               <View style={s.promo}>
@@ -597,7 +589,6 @@ export default function Shop() {
                   onPress={() => {
                     setCat("Fertilizers");
                     setSubcat("all");
-                    setPage(1);
                   }}
                 />
               </View>
