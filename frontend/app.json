@@ -83,7 +83,8 @@
       ],
       "expo-status-bar",
       "@react-native-vector-icons/lucide",
-      "@react-native-vector-icons/fontawesome6"
+      "@react-native-vector-icons/fontawesome6",
+      "@sentry/react-native"
     ],
     "experiments": {
       "typedRoutes": true

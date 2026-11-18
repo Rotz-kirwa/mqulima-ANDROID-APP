@@ -1,10 +1,13 @@
 """Validated environment settings for the Mqulima FastAPI backend."""
 from functools import lru_cache
+import ipaddress
 from pathlib import Path
-from typing import List
+from typing import List, Union
 
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+IPNetwork = Union[ipaddress.IPv4Network, ipaddress.IPv6Network]
 
 ROOT_DIR = Path(__file__).parent
 
@@ -36,9 +39,13 @@ class Settings(BaseSettings):
     RATE_LIMIT_AI_PER_HOUR: int = Field(default=30, ge=1)
     RATE_LIMIT_WRITE_PER_MIN: int = Field(default=60, ge=1)
     RATE_LIMIT_DEFAULT_PER_MIN: int = Field(default=180, ge=1)
+    REDIS_URL: str = Field(default="")
+    TRUSTED_PROXIES: str = Field(default="127.0.0.1,::1")
 
     EMERGENT_LLM_KEY: str = Field(default="")
     AI_TIMEOUT_SECONDS: float = Field(default=20.0, ge=2.0, le=60.0)
+    SENTRY_DSN: str = Field(default="")
+    SENTRY_TRACES_SAMPLE_RATE: float = Field(default=0.1, ge=0.0, le=1.0)
 
     @model_validator(mode="after")
     def _validate_production_secrets(self) -> "Settings":
@@ -56,6 +63,19 @@ class Settings(BaseSettings):
         if self.APP_ENV.strip().lower() == "production":
             return [o for o in origins if o.startswith("https://")]
         return origins or ["http://localhost:8081"]
+
+    @property
+    def trusted_proxy_networks(self) -> List[IPNetwork]:
+        nets: List[IPNetwork] = []
+        for raw in self.TRUSTED_PROXIES.split(","):
+            entry = raw.strip()
+            if not entry:
+                continue
+            try:
+                nets.append(ipaddress.ip_network(entry, strict=False))
+            except ValueError:
+                continue
+        return nets
 
 
 @lru_cache(maxsize=1)
