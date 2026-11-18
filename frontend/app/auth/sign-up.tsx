@@ -61,7 +61,9 @@ export default function SignUp() {
         <View style={{ alignItems: "center", gap: 8 }}>
           <Logo size={64} />
           <Text style={s.h1}>Create your account</Text>
-          <Text style={s.sub}>Taking you first class</Text>
+          <Text style={s.tagline}>
+            ✨ ...taking you <Text style={s.taglineAccent}>first class</Text> ✨
+          </Text>
         </View>
         <Field testID="sign-up-name-input" label="Full Names" value={f.name} onChangeText={set("name")} placeholder="e.g. Kosgei Kiprono" error={e.name} />
         <Field testID="sign-up-email-input" label="Email" value={f.email} onChangeText={set("email")} placeholder="you@example.com" keyboardType="email-address" autoCapitalize="none" error={e.email} />
@@ -80,6 +82,19 @@ export default function SignUp() {
 
 const useStyles = makeStyles((c) => ({
   h1: { fontFamily: fonts.h900, fontSize: 26, color: c.onSurface },
+  tagline: {
+    fontFamily: fonts.b700,
+    fontStyle: "italic",
+    fontSize: 15,
+    letterSpacing: 0.4,
+    color: c.brandPrimary,
+    textAlign: "center",
+  },
+  taglineAccent: {
+    fontFamily: fonts.b800,
+    fontStyle: "italic",
+    color: "#D97706",
+  },
   sub: { fontFamily: fonts.b500, fontSize: 14, color: c.onSurfaceTertiary },
   link: { fontFamily: fonts.b700, fontSize: 14, color: c.brandPrimary },
   legal: { fontFamily: fonts.b400, fontSize: 11, color: c.muted, textAlign: "center" },
