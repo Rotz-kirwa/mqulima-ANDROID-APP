@@ -6,7 +6,7 @@ import * as Clipboard from "expo-clipboard";
 import { Image } from "@/src/components/Img";
 import { Article } from "@/src/data/articles";
 import { fonts, makeStyles, useTheme } from "@/src/theme";
-import { useApp } from "@/src/store/AppStore";
+import { useToast } from "@/src/store/AppStore";
 
 export function newsDate(value: string) {
   if (!value) return "";
@@ -59,7 +59,7 @@ export function NewsState({ kind, title, text, onPress, label = "Try again", tes
 }
 
 export function useShareArticle() {
-  const { toast } = useApp();
+  const toast = useToast();
   return async (article: Article) => {
     const url = `${process.env.EXPO_PUBLIC_BACKEND_URL?.replace(/\/$/, "")}/article/${encodeURIComponent(article.id)}`;
     try { if (Platform.OS === "web") { await Clipboard.setStringAsync(url); toast("Article link copied"); } else await Share.share({ message: `${article.title}\n${url}`, ...(Platform.OS === "ios" ? { url } : {}) }); }

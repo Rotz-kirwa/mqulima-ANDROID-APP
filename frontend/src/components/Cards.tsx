@@ -7,14 +7,16 @@ import Animated, { FadeInDown } from "react-native-reanimated";
 import { Product, ksh } from "@/src/data/products";
 import { Article } from "@/src/data/articles";
 import { fonts, makeStyles, useTheme } from "@/src/theme";
-import { useApp } from "@/src/store/AppStore";
+import { useCartActions, useSaved, useToast } from "@/src/store/AppStore";
 import { Btn } from "./ui";
 
 export function ProductCard({ p, index = 0 }: { p: Product; index?: number }) {
   const router = useRouter();
   const s = useStyles();
   const { colors } = useTheme();
-  const { addToCart, toast, saved, toggleSaved } = useApp();
+  const { addToCart } = useCartActions();
+  const toast = useToast();
+  const { saved, toggleSaved } = useSaved();
   const isSaved = saved.includes(p.id);
   const price = p.variants?.[0]?.price ?? p.price;
   return (

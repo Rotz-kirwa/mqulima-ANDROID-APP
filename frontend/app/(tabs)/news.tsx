@@ -29,7 +29,7 @@ import {
 } from "@/src/data/articles";
 import { fonts, useTheme } from "@/src/theme";
 import { usesNativeTabs } from "@/src/navigation";
-import { useApp } from "@/src/store/AppStore";
+import { useAuth, useToast } from "@/src/store/AppStore";
 import { storage } from "@/src/utils/storage";
 
 const ALERTS_STORAGE_KEY = "mqulima_blog_alerts_v1";
@@ -63,7 +63,8 @@ export default function News() {
   const focused = useIsFocused();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { user, toast } = useApp();
+  const { user } = useAuth();
+  const toast = useToast();
   const shareArticle = useShareArticle();
 
   const scrollRef = useRef<ScrollView>(null);

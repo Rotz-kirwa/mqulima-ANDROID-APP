@@ -8,14 +8,15 @@ import { Logo } from "@/src/components/Logo";
 import { Btn } from "@/src/components/ui";
 import { Field, EMAIL_RE } from "@/src/components/Form";
 import { fonts, makeStyles } from "@/src/theme";
-import { useApp } from "@/src/store/AppStore";
+import { useAuth, useToast } from "@/src/store/AppStore";
 import { api } from "@/src/services/api";
 
 export default function SignIn() {
   const s = useStyles();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { signIn, toast } = useApp();
+  const { signIn } = useAuth();
+  const toast = useToast();
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
   const [e, setE] = useState<Record<string, string>>({});

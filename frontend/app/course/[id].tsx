@@ -13,10 +13,10 @@ import { WaitlistSection } from "@/src/components/academy/WaitlistSection";
 import { Course } from "@/src/data/academy";
 import { api } from "@/src/services/api";
 import { fonts, makeStyles, useTheme } from "@/src/theme";
-import { useApp } from "@/src/store/AppStore";
+import { useToast } from "@/src/store/AppStore";
 
 function CourseContent({ course, refreshing, refresh }: { course: Course; refreshing: boolean; refresh: () => void }) {
-  const s = useStyles(); const shared = useAcademyStyles(); const { colors } = useTheme(); const insets = useSafeAreaInsets(); const router = useRouter(); const { toast } = useApp();
+  const s = useStyles(); const shared = useAcademyStyles(); const { colors } = useTheme(); const insets = useSafeAreaInsets(); const router = useRouter(); const toast = useToast();
   const scroll = useRef<KeyboardAwareScrollViewRef>(null); const anchors = useRef({ outline: 0, sample: 0, waitlist: 0 });
   const [selectedKey, setSelectedKey] = useState<string | undefined>();
   const samples = courseSamples(course); const selected = samples.find(sample => sample.key === selectedKey) ?? samples[0];

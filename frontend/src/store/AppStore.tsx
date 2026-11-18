@@ -4,7 +4,15 @@ import { api, TOKEN_KEY, User } from "@/src/services/api";
 import { queryClient } from "@/src/query-client";
 
 export type { User };
-export type CartItem = { key: string; productId: string; name: string; image: string; variant?: string; price: number; qty: number };
+export type CartItem = {
+  key: string;
+  productId: string;
+  name: string;
+  image: string;
+  variant?: string;
+  price: number;
+  qty: number;
+};
 
 type State = { cart: CartItem[]; saved: string[] };
 
@@ -12,7 +20,7 @@ const initial: State = { cart: [], saved: [] };
 const KEY = "mqulima_state_v2";
 export const ONBOARDING_KEY = "mqulima_onboarding_completed_v7";
 
-type Ctx = State & {
+type AuthCtx = {
   user: User | null;
   ready: boolean;
   onboardingCompleted: boolean;
@@ -20,24 +28,123 @@ type Ctx = State & {
   resetOnboarding: () => Promise<void>;
   signIn: (token: string, u: User) => Promise<void>;
   signOut: () => Promise<void>;
+};
+
+type CartActionsCtx = {
   addToCart: (item: Omit<CartItem, "key" | "qty">, qty?: number) => void;
   setQty: (key: string, qty: number) => void;
   removeFromCart: (key: string) => void;
   clearCart: () => void;
-  toggleSaved: (id: string) => void;
-  toast: (msg: string) => void;
-  toastMsg: string | null;
 };
 
-const AppContext = createContext<Ctx | null>(null);
+type SavedCtx = {
+  saved: string[];
+  toggleSaved: (id: string) => void;
+};
+
+const AuthContext = createContext<AuthCtx | null>(null);
+const CartStateContext = createContext<CartItem[] | null>(null);
+const CartActionsContext = createContext<CartActionsCtx | null>(null);
+const SavedContext = createContext<SavedCtx | null>(null);
+const ToastActionContext = createContext<((msg: string) => void) | null>(null);
+const ToastStateContext = createContext<string | null>(null);
+
+function ToastProvider({ children }: { children: React.ReactNode }) {
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const toast = useCallback((msg: string) => {
+    setToastMsg(msg);
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => setToastMsg(null), 2400);
+  }, []);
+
+  useEffect(() => () => {
+    if (timer.current) clearTimeout(timer.current);
+  }, []);
+
+  return (
+    <ToastActionContext.Provider value={toast}>
+      <ToastStateContext.Provider value={toastMsg}>{children}</ToastStateContext.Provider>
+    </ToastActionContext.Provider>
+  );
+}
+
+function CartAndSavedProvider({
+  initialCart,
+  initialSaved,
+  ready,
+  children,
+}: {
+  initialCart: CartItem[];
+  initialSaved: string[];
+  ready: boolean;
+  children: React.ReactNode;
+}) {
+  const [cart, setCart] = useState<CartItem[]>(initialCart);
+  const [saved, setSaved] = useState<string[]>(initialSaved);
+
+  useEffect(() => {
+    setCart(initialCart);
+  }, [initialCart]);
+
+  useEffect(() => {
+    setSaved(initialSaved);
+  }, [initialSaved]);
+
+  useEffect(() => {
+    if (ready) {
+      storage.setItem(KEY, JSON.stringify({ cart, saved }));
+    }
+  }, [cart, saved, ready]);
+
+  const addToCart = useCallback((item: Omit<CartItem, "key" | "qty">, qty = 1) => {
+    setCart((prev) => {
+      const key = `${item.productId}::${item.variant ?? ""}`;
+      const exists = prev.find((c) => c.key === key);
+      return exists
+        ? prev.map((c) => (c.key === key ? { ...c, qty: c.qty + qty } : c))
+        : [...prev, { ...item, key, qty }];
+    });
+  }, []);
+
+  const setQty = useCallback((key: string, qty: number) => {
+    setCart((prev) => (qty <= 0 ? prev.filter((c) => c.key !== key) : prev.map((c) => (c.key === key ? { ...c, qty } : c))));
+  }, []);
+
+  const removeFromCart = useCallback((key: string) => {
+    setCart((prev) => prev.filter((c) => c.key !== key));
+  }, []);
+
+  const clearCart = useCallback(() => {
+    setCart([]);
+  }, []);
+
+  const toggleSaved = useCallback((id: string) => {
+    setSaved((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }, []);
+
+  const cartActions = useMemo<CartActionsCtx>(
+    () => ({ addToCart, setQty, removeFromCart, clearCart }),
+    [addToCart, setQty, removeFromCart, clearCart]
+  );
+
+  const savedValue = useMemo<SavedCtx>(() => ({ saved, toggleSaved }), [saved, toggleSaved]);
+
+  return (
+    <CartActionsContext.Provider value={cartActions}>
+      <CartStateContext.Provider value={cart}>
+        <SavedContext.Provider value={savedValue}>{children}</SavedContext.Provider>
+      </CartStateContext.Provider>
+    </CartActionsContext.Provider>
+  );
+}
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<State>(initial);
+  const [hydratedState, setHydratedState] = useState<State>(initial);
   const [user, setUser] = useState<User | null>(null);
   const [ready, setReady] = useState(false);
   const [onboardingCompleted, setOnboardingCompleted] = useState(false);
-  const [toastMsg, setToastMsg] = useState<string | null>(null);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -55,7 +162,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
       if (raw) {
         try {
-          setState({ ...initial, ...JSON.parse(raw) });
+          setHydratedState({ ...initial, ...JSON.parse(raw) });
         } catch {}
       }
       if (token && cachedUser) {
@@ -94,16 +201,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  useEffect(() => {
-    if (ready) storage.setItem(KEY, JSON.stringify(state));
-  }, [state, ready]);
-
-  const toast = useCallback((msg: string) => {
-    setToastMsg(msg);
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => setToastMsg(null), 2400);
-  }, []);
-
   const completeOnboarding = useCallback(async () => {
     setOnboardingCompleted(true);
     await storage.setItem(ONBOARDING_KEY, true);
@@ -114,59 +211,94 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     await storage.removeItem(ONBOARDING_KEY);
   }, []);
 
-  const value = useMemo<Ctx>(
-    () => ({
-      ...state,
-      user,
-      ready,
-      onboardingCompleted,
-      completeOnboarding,
-      resetOnboarding,
-      toastMsg,
-      toast,
-      signIn: async (token, u) => {
-        await storage.secureSet(TOKEN_KEY, token);
-        await storage.setItem("mqulima_user", JSON.stringify(u));
-        await storage.setItem(ONBOARDING_KEY, true);
-        setOnboardingCompleted(true);
-        setUser(u);
-        queryClient.invalidateQueries();
-      },
-      signOut: async () => {
-        await storage.secureRemove(TOKEN_KEY);
-        await storage.removeItem("mqulima_user");
-        setUser(null);
-        queryClient.removeQueries({ queryKey: ["orders"] });
-        queryClient.removeQueries({ queryKey: ["my-threads"] });
-        queryClient.invalidateQueries({ queryKey: ["forum-feed"] });
-        queryClient.invalidateQueries({ queryKey: ["thread"] });
-        queryClient.invalidateQueries({ queryKey: ["threads"] });
-      },
-      addToCart: (item, qty = 1) =>
-        setState((s) => {
-          const key = `${item.productId}::${item.variant ?? ""}`;
-          const exists = s.cart.find((c) => c.key === key);
-          const cart = exists
-            ? s.cart.map((c) => (c.key === key ? { ...c, qty: c.qty + qty } : c))
-            : [...s.cart, { ...item, key, qty }];
-          return { ...s, cart };
-        }),
-      setQty: (key, qty) =>
-        setState((s) => ({ ...s, cart: qty <= 0 ? s.cart.filter((c) => c.key !== key) : s.cart.map((c) => (c.key === key ? { ...c, qty } : c)) })),
-      removeFromCart: (key) => setState((s) => ({ ...s, cart: s.cart.filter((c) => c.key !== key) })),
-      clearCart: () => setState((s) => ({ ...s, cart: [] })),
-      toggleSaved: (id) => setState((s) => ({ ...s, saved: s.saved.includes(id) ? s.saved.filter((x) => x !== id) : [...s.saved, id] })),
-    }),
-    [state, user, ready, onboardingCompleted, completeOnboarding, resetOnboarding, toastMsg, toast],
+  const signIn = useCallback(async (token: string, u: User) => {
+    await storage.secureSet(TOKEN_KEY, token);
+    await storage.setItem("mqulima_user", JSON.stringify(u));
+    await storage.setItem(ONBOARDING_KEY, true);
+    setOnboardingCompleted(true);
+    setUser(u);
+    queryClient.invalidateQueries();
+  }, []);
+
+  const signOut = useCallback(async () => {
+    await storage.secureRemove(TOKEN_KEY);
+    await storage.removeItem("mqulima_user");
+    setUser(null);
+    queryClient.removeQueries({ queryKey: ["orders"] });
+    queryClient.removeQueries({ queryKey: ["my-threads"] });
+    queryClient.invalidateQueries({ queryKey: ["forum-feed"] });
+    queryClient.invalidateQueries({ queryKey: ["thread"] });
+    queryClient.invalidateQueries({ queryKey: ["threads"] });
+  }, []);
+
+  const authValue = useMemo<AuthCtx>(
+    () => ({ user, ready, onboardingCompleted, completeOnboarding, resetOnboarding, signIn, signOut }),
+    [user, ready, onboardingCompleted, completeOnboarding, resetOnboarding, signIn, signOut]
   );
 
-  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+  return (
+    <AuthContext.Provider value={authValue}>
+      <ToastProvider>
+        <CartAndSavedProvider
+          initialCart={hydratedState.cart}
+          initialSaved={hydratedState.saved}
+          ready={ready}
+        >
+          {children}
+        </CartAndSavedProvider>
+      </ToastProvider>
+    </AuthContext.Provider>
+  );
 }
 
-export function useApp() {
-  const ctx = useContext(AppContext);
-  if (!ctx) throw new Error("useApp must be used inside AppProvider");
+export function useAuth() {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used inside AppProvider");
   return ctx;
+}
+
+export function useCartState() {
+  const cart = useContext(CartStateContext);
+  if (!cart) throw new Error("useCartState must be used inside AppProvider");
+  return cart;
+}
+
+export function useCartActions() {
+  const actions = useContext(CartActionsContext);
+  if (!actions) throw new Error("useCartActions must be used inside AppProvider");
+  return actions;
+}
+
+export function useCart() {
+  const cart = useCartState();
+  const actions = useCartActions();
+  return useMemo(() => ({ cart, ...actions }), [cart, actions]);
+}
+
+export function useSaved() {
+  const ctx = useContext(SavedContext);
+  if (!ctx) throw new Error("useSaved must be used inside AppProvider");
+  return ctx;
+}
+
+export function useToast() {
+  const toast = useContext(ToastActionContext);
+  if (!toast) throw new Error("useToast must be used inside AppProvider");
+  return toast;
+}
+
+export function useToastMessage() {
+  return useContext(ToastStateContext);
+}
+
+/** Backward-compatible composed selector; prefer useAuth/useCart/useSaved/useToast for render isolation. */
+export function useApp() {
+  const auth = useAuth();
+  const cart = useCart();
+  const saved = useSaved();
+  const toast = useToast();
+  const toastMsg = useToastMessage();
+  return { ...auth, ...cart, ...saved, toast, toastMsg };
 }
 
 export const cartCount = (cart: CartItem[]) => cart.reduce((a, c) => a + c.qty, 0);

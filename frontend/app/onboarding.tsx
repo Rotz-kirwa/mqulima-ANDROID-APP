@@ -1,11 +1,11 @@
 import React from "react";
 import { useRouter } from "expo-router";
 import { OnboardingFlow } from "@/src/components/OnboardingFlow";
-import { useApp } from "@/src/store/AppStore";
+import { useAuth } from "@/src/store/AppStore";
 
 export default function OnboardingScreen() {
   const router = useRouter();
-  const { completeOnboarding } = useApp();
+  const { completeOnboarding } = useAuth();
 
   const handleFinish = async () => {
     await completeOnboarding();

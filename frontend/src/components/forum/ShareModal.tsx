@@ -13,7 +13,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Lucide } from "@react-native-vector-icons/lucide";
 import { FontAwesome6 } from "@react-native-vector-icons/fontawesome6";
 import { ApiThread } from "@/src/services/api";
-import { useApp } from "@/src/store/AppStore";
+import { useToast } from "@/src/store/AppStore";
 import { fonts, makeStyles, useTheme } from "@/src/theme";
 
 export function buildThreadSharePayload(t: ApiThread) {
@@ -53,7 +53,7 @@ export function SharePostModal({
   const s = useStyles();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const { toast } = useApp();
+  const toast = useToast();
 
   const { headline, text, url, fullMessage } = buildThreadSharePayload(thread);
 

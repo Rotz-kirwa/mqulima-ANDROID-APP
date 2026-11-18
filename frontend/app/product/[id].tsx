@@ -11,7 +11,7 @@ import { Btn, Body, Pill } from "@/src/components/ui";
 import { api } from "@/src/services/api";
 import { ksh } from "@/src/data/products";
 import { fonts, makeStyles, useTheme } from "@/src/theme";
-import { useApp } from "@/src/store/AppStore";
+import { useCartActions, useSaved, useToast } from "@/src/store/AppStore";
 
 export default function ProductDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -19,7 +19,9 @@ export default function ProductDetail() {
   const { colors } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { addToCart, toast, saved, toggleSaved } = useApp();
+  const { addToCart } = useCartActions();
+  const toast = useToast();
+  const { saved, toggleSaved } = useSaved();
   const q = useQuery({ queryKey: ["product", id], queryFn: () => api.getProduct(id) });
   const [vi, setVi] = useState(0);
   const [qty, setQty] = useState(1);

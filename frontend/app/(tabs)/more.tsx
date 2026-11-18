@@ -17,7 +17,7 @@ import Animated, {
 import { TopBar } from "@/src/components/TopBar";
 import { useTabBottom } from "@/src/components/Page";
 import { fonts, makeStyles, useTheme } from "@/src/theme";
-import { useApp } from "@/src/store/AppStore";
+import { useAuth } from "@/src/store/AppStore";
 
 function SpecialSoonBadge({ label }: { label: string }) {
   const s = useStyles();
@@ -109,7 +109,7 @@ export default function More() {
   const { colors } = useTheme();
   const router = useRouter();
   const bottom = useTabBottom();
-  const { user, resetOnboarding } = useApp();
+  const { user, resetOnboarding } = useAuth();
   return (
     <View style={s.root} testID="more-screen">
       <TopBar />

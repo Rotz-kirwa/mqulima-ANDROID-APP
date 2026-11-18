@@ -10,7 +10,7 @@ import { counties } from "@/src/data/home";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/src/services/api";
 import { fonts, makeStyles } from "@/src/theme";
-import { useApp } from "@/src/store/AppStore";
+import { useAuth } from "@/src/store/AppStore";
 
 
 export default function ServiceRequest() {
@@ -18,7 +18,7 @@ export default function ServiceRequest() {
   const s = useStyles();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { user } = useApp();
+  const { user } = useAuth();
   const services = useQuery({ queryKey: ["serviceCategories"], queryFn: api.getServiceCategories });
   const allServices = (services.data ?? []).flatMap(c => c.subs.map(item => item.title));
   const [f, setF] = useState({ service: params.service ?? "", name: user?.name ?? "", phone: user?.phone ?? "", county: user?.county ?? "", subcounty: "", date: "", details: "" });

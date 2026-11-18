@@ -12,8 +12,8 @@ import { useEffect, useRef, useState } from "react";
 import { Lucide } from "@react-native-vector-icons/lucide";
 
 import { ErrorBoundary } from "@/src/components/error-boundary";
-import { asyncStoragePersister, QUERY_CACHE_MAX_AGE_MS, queryClient } from "@/src/query-client";
-import { AppProvider, useApp } from "@/src/store/AppStore";
+import { QUERY_PERSIST_OPTIONS, queryClient } from "@/src/query-client";
+import { AppProvider, useAuth } from "@/src/store/AppStore";
 import { FloatingButtons, Toast } from "@/src/components/Floating";
 import { OnboardingFlow } from "@/src/components/OnboardingFlow";
 import { storage } from "@/src/utils/storage";
@@ -48,7 +48,7 @@ function OfflineBanner() {
 }
 
 function AppContent() {
-  const { ready, onboardingCompleted, completeOnboarding } = useApp();
+  const { ready, onboardingCompleted, completeOnboarding } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   const restored = useRef(false);
@@ -167,7 +167,7 @@ export default function RootLayout() {
       <ErrorBoundary>
         <PersistQueryClientProvider
           client={queryClient}
-          persistOptions={{ persister: asyncStoragePersister, maxAge: QUERY_CACHE_MAX_AGE_MS, buster: "v1" }}
+          persistOptions={QUERY_PERSIST_OPTIONS}
         >
           <KeyboardProvider>
             <AppProvider>

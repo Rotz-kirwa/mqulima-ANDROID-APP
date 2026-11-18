@@ -9,7 +9,7 @@ import { ListSkeleton } from "@/src/components/Skeleton";
 import { Btn, Body } from "@/src/components/ui";
 import { ksh } from "@/src/data/products";
 import { fonts, makeStyles, useTheme } from "@/src/theme";
-import { useApp } from "@/src/store/AppStore";
+import { useAuth } from "@/src/store/AppStore";
 import { api } from "@/src/services/api";
 
 export default function Orders() {
@@ -17,7 +17,7 @@ export default function Orders() {
   const { colors } = useTheme();
   const router = useRouter();
   const bottom = useStackBottom();
-  const { user, ready } = useApp();
+  const { user, ready } = useAuth();
   const netInfo = useNetInfo();
   const isOffline = netInfo.isConnected === false || netInfo.isInternetReachable === false;
   const q = useQuery({ queryKey: ["orders"], queryFn: api.getOrders, enabled: !!user });

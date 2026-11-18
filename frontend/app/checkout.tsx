@@ -23,7 +23,7 @@ import { Field, SelectField, SuccessState, PHONE_RE } from "@/src/components/For
 import { counties } from "@/src/data/home";
 import { ksh } from "@/src/data/products";
 import { fonts, makeStyles, useTheme } from "@/src/theme";
-import { cartCount, cartTotal, useApp } from "@/src/store/AppStore";
+import { cartCount, cartTotal, useAuth, useCart, useToast } from "@/src/store/AppStore";
 import { api, Order } from "@/src/services/api";
 
 const FREE_DELIVERY_THRESHOLD = 5000;
@@ -63,7 +63,9 @@ export default function Checkout() {
   }>();
   const insets = useSafeAreaInsets();
   const qc = useQueryClient();
-  const { cart, clearCart, user, toast } = useApp();
+  const { cart, clearCart } = useCart();
+  const { user } = useAuth();
+  const toast = useToast();
 
   const [f, setF] = useState({
     name: user?.name ?? "",

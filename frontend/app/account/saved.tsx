@@ -9,13 +9,13 @@ import { GridSkeleton } from "@/src/components/Skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/src/services/api";
 import { fonts, useTheme } from "@/src/theme";
-import { useApp } from "@/src/store/AppStore";
+import { useSaved } from "@/src/store/AppStore";
 
 export default function Saved() {
   const { colors } = useTheme();
   const router = useRouter();
   const bottom = useStackBottom();
-  const { saved } = useApp();
+  const { saved } = useSaved();
   const q = useQuery({ queryKey: ["saved-products", saved.join(",")], queryFn: () => api.getProductsByIds(saved) });
   const items = q.data ?? [];
   if (q.isLoading) return <Page title="Saved Items"><View style={{ paddingTop: 16 }}><GridSkeleton /></View></Page>;

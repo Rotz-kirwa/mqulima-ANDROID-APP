@@ -5,14 +5,15 @@ import { Lucide } from "@react-native-vector-icons/lucide";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Logo } from "./Logo";
 import { fonts, makeStyles, useTheme } from "@/src/theme";
-import { cartCount, useApp } from "@/src/store/AppStore";
+import { cartCount, useAuth, useCartState } from "@/src/store/AppStore";
 
 export function TopBar({ back, title }: { back?: boolean; title?: string }) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const s = useStyles();
-  const { cart, user } = useApp();
+  const cart = useCartState();
+  const { user } = useAuth();
   const count = cartCount(cart);
   const focused = useIsFocused();
   if (!focused) return null;

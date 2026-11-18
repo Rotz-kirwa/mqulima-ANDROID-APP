@@ -6,7 +6,7 @@ import { FontAwesome6 } from "@react-native-vector-icons/fontawesome6";
 import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, FadeInDown, FadeOutDown } from "react-native-reanimated";
 import { contactInfo } from "@/src/data/home";
 import { colors, fonts } from "@/src/theme";
-import { useApp } from "@/src/store/AppStore";
+import { useAuth, useToastMessage } from "@/src/store/AppStore";
 import { usesNativeTabs } from "@/src/navigation";
 import { AiLogo } from "./Logo";
 
@@ -23,7 +23,7 @@ export function FloatingButtons() {
   const bottom = useBottomOffset();
   const pathname = usePathname();
   const router = useRouter();
-  const { onboardingCompleted } = useApp();
+  const { onboardingCompleted } = useAuth();
   const ring = useSharedValue(1);
   useEffect(() => {
     ring.value = withRepeat(withTiming(1.5, { duration: 1200 }), -1, false);
@@ -59,7 +59,7 @@ export function FloatingButtons() {
 }
 
 export function Toast() {
-  const { toastMsg } = useApp();
+  const toastMsg = useToastMessage();
   const insets = useSafeAreaInsets();
   if (!toastMsg) return null;
   return (
