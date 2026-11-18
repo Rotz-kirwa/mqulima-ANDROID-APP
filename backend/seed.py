@@ -1,11 +1,15 @@
+import asyncio
 import json
 import logging
+import os
+import sys
 from pathlib import Path
 
 from db import db
 
 logger = logging.getLogger(__name__)
 SEED_FILE = Path(__file__).parent / "seed.json"
+_TRUTHY = {"1", "true", "yes", "on"}
 
 
 async def sync_products_328() -> int:
@@ -26,11 +30,12 @@ async def sync_products_328() -> int:
         except Exception as se:
             logger.warning("Could not sync seed.json: %s", se)
 
-        # Keep frontend static catalog synchronized with 328 items
+        # Keep frontend static catalog synchronized with 328 items when present in monorepo
         try:
             frontend_json = Path(__file__).resolve().parent.parent / "frontend" / "src" / "data" / "products_328.json"
-            frontend_json.write_text(json.dumps(PRODUCTS_328, indent=2))
-            logger.info("frontend products_328.json updated with %d products", len(PRODUCTS_328))
+            if frontend_json.parent.exists():
+                frontend_json.write_text(json.dumps(PRODUCTS_328, indent=2))
+                logger.info("frontend products_328.json updated with %d products", len(PRODUCTS_328))
         except Exception as fe:
             logger.warning("Could not sync frontend products_328.json: %s", fe)
 
@@ -43,8 +48,11 @@ async def sync_products_328() -> int:
 async def seed_if_empty() -> None:
     """Load the catalog/articles/threads into Mongo on first boot (idempotent)."""
     data = json.loads(SEED_FILE.read_text())
-    if await db.products.count_documents({}) < 300:
+    if os.getenv("SYNC_CATALOG_ON_STARTUP", "").strip().lower() in _TRUTHY:
         await sync_products_328()
+    elif await db.products.estimated_document_count() == 0 and data.get("products"):
+        await db.products.insert_many(data["products"])
+        logger.info("seeded %d products from seed.json", len(data["products"]))
     if await db.articles.count_documents({}) == 0:
         await db.articles.insert_many(data["articles"])
         logger.info("seeded %d articles", len(data["articles"]))
@@ -113,4 +121,18 @@ async def seed_if_empty() -> None:
         logger.info("seeded %d market commodities", len(commodities))
     await db.commodities.create_index("id", unique=True)
     await db.commodities.create_index("type")
+
+
+async def _cli(action: str) -> None:
+    if action == "sync":
+        synced = await sync_products_328()
+        print(f"Synced {synced} products")
+    else:
+        await seed_if_empty()
+        print("Seed check completed")
+
+
+if __name__ == "__main__":
+    cmd = sys.argv[1] if len(sys.argv) > 1 else "sync"
+    asyncio.run(_cli(cmd))
 

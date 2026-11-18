@@ -1,13 +1,66 @@
+import asyncio
+import json
+import logging
 import re
+import time
+from collections import defaultdict
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query
+from pymongo import UpdateOne
 
 from db import NO_ID, db
 
+logger = logging.getLogger(__name__)
 router = APIRouter(tags=["catalog"])
 PAGE_SIZE = 24
 PUBLIC = {"status": {"$nin": ["draft", "archived"]}}
+
+_COUNT_TTL_SECONDS = 15.0
+_COUNT_CACHE: dict[str, tuple[float, int]] = {}
+_article_read_buffer: dict[str, int] = defaultdict(int)
+_flush_task: Optional[asyncio.Task] = None
+_background_tasks: set[asyncio.Task] = set()
+
+
+async def _get_cached_product_count(flt: dict) -> int:
+    key = json.dumps(flt, sort_keys=True, default=str)
+    now = time.monotonic()
+    cached = _COUNT_CACHE.get(key)
+    if cached and cached[0] > now:
+        return cached[1]
+    total = await db.products.count_documents(flt)
+    if len(_COUNT_CACHE) > 256:
+        _COUNT_CACHE.clear()
+    _COUNT_CACHE[key] = (now + _COUNT_TTL_SECONDS, total)
+    return total
+
+
+async def _flush_article_reads() -> None:
+    global _flush_task
+    try:
+        await asyncio.sleep(0.25)
+        if not _article_read_buffer:
+            return
+        pending = dict(_article_read_buffer)
+        _article_read_buffer.clear()
+        ops = [UpdateOne({"id": aid}, {"$inc": {"reads": count}}) for aid, count in pending.items() if count > 0]
+        if ops:
+            await db.articles.bulk_write(ops, ordered=False)
+    except Exception as exc:
+        logger.warning("Failed to flush batched article reads: %s", exc)
+    finally:
+        _flush_task = None
+
+
+def _queue_article_read(aid: str) -> None:
+    global _flush_task
+    _article_read_buffer[aid] += 1
+    if _flush_task is None or _flush_task.done():
+        task = asyncio.create_task(_flush_article_reads())
+        _flush_task = task
+        _background_tasks.add(task)
+        task.add_done_callback(_background_tasks.discard)
 
 
 def _rx(q: str):
@@ -76,12 +129,6 @@ async def list_products(
     limit: int = Query(24, ge=1, le=500),
     id: Optional[str] = None,
 ):
-    from pathlib import Path
-    frontend_json = Path("/home/user/NYOTA-Clients/mqulima-ANDROID-APP/frontend/src/data/products_328.json")
-    if await db.products.count_documents({}) < 300 or not frontend_json.exists():
-        from seed import sync_products_328
-        await sync_products_328()
-
     if id:
         doc = await db.products.find_one({"id": id, **PUBLIC}, NO_ID)
         if not doc:
@@ -108,9 +155,11 @@ async def list_products(
         else:
             f.update(q_filter)
 
-
-    total = await db.products.count_documents(f)
     items = await db.products.find(f, NO_ID).skip((page - 1) * limit).limit(limit).to_list(limit)
+    if page == 1 and len(items) < limit:
+        total = len(items)
+    else:
+        total = await _get_cached_product_count(f)
     return {
         "success": True,
         "items": items,
@@ -156,10 +205,11 @@ async def list_articles(group: str = "All", category: Optional[str] = None):
 @router.get("/articles/{aid}")
 @router.get("/news/{aid}")
 async def get_article(aid: str):
-    doc = await db.articles.find_one_and_update({"id": aid, **PUBLIC}, {"$inc": {"reads": 1}}, projection=NO_ID, return_document=True)
+    doc = await db.articles.find_one({"id": aid, **PUBLIC}, NO_ID)
     if not doc:
         raise HTTPException(status_code=404, detail="Article not found")
-    return doc
+    _queue_article_read(aid)
+    return {**doc, "reads": int(doc.get("reads", 0)) + _article_read_buffer.get(aid, 0)}
 
 
 

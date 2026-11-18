@@ -28,8 +28,32 @@ async def ensure_indexes() -> None:
         await db.users.create_index([("id", ASCENDING)], unique=True, background=True)
         await db.users.create_index([("email", ASCENDING)], unique=True, background=True)
         await db.orders.create_index([("user_id", ASCENDING), ("created_at", DESCENDING)], background=True)
-        await db.threads.create_index([("created_at", DESCENDING), ("tag", ASCENDING)], background=True)
+
+        await db.products.create_index([("id", ASCENDING)], unique=True, background=True)
         await db.products.create_index([("category", ASCENDING), ("status", ASCENDING)], background=True)
+        await db.products.create_index([("status", ASCENDING), ("category", ASCENDING)], background=True)
+        await db.products.create_index([("status", ASCENDING), ("featured", DESCENDING)], background=True)
+
+        await db.articles.create_index([("id", ASCENDING)], unique=True, background=True)
+        await db.articles.create_index([("group", ASCENDING)], background=True)
+        await db.articles.create_index([("category", ASCENDING)], background=True)
+        await db.articles.create_index([("created_at", DESCENDING)], background=True)
+        await db.articles.create_index([("status", ASCENDING), ("featured", DESCENDING), ("created_at", DESCENDING)], background=True)
+        await db.articles.create_index([("group", ASCENDING), ("status", ASCENDING), ("featured", DESCENDING), ("created_at", DESCENDING)], background=True)
+        await db.articles.create_index([("category", ASCENDING), ("status", ASCENDING), ("featured", DESCENDING), ("created_at", DESCENDING)], background=True)
+
+        await db.threads.create_index([("id", ASCENDING)], unique=True, background=True)
+        await db.threads.create_index([("hidden", ASCENDING)], background=True)
+        await db.threads.create_index([("tag", ASCENDING)], background=True)
+        await db.threads.create_index([("created_at", DESCENDING)], background=True)
+        await db.threads.create_index([("saved_by", ASCENDING)], background=True)
+        await db.threads.create_index([("created_at", DESCENDING), ("tag", ASCENDING)], background=True)
+        await db.threads.create_index([("hidden", ASCENDING), ("created_at", DESCENDING)], background=True)
+        await db.threads.create_index([("tag", ASCENDING), ("hidden", ASCENDING), ("created_at", DESCENDING)], background=True)
+        await db.threads.create_index([("saved_by", ASCENDING), ("hidden", ASCENDING), ("created_at", DESCENDING)], background=True)
+
+        await db.media.create_index([("id", ASCENDING)], unique=True, background=True)
+
         await db.ai_messages.create_index([("session_id", ASCENDING), ("created_at", DESCENDING)], background=True)
         await db.login_limits.create_index([("expires_at", ASCENDING)], expireAfterSeconds=0, background=True)
         logger.info("MongoDB production indexes verified.")
