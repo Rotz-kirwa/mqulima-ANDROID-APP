@@ -474,12 +474,13 @@ export function matchProductTokens(p: Product, q: string): boolean {
 export const api = {
   // ---- 1. Authentication & Farmer Profile ----
 
-  register: async (body: { name: string; email: string; phone: string; county: string; password: string }) => {
+  register: async (body: { name: string; email: string; phone: string; county?: string; password: string }) => {
     const names = body.name.trim().split(" ");
     const firstName = names[0] || "Farmer";
     const lastName = names.slice(1).join(" ") || "Mqulima";
     const cleanEmail = body.email.trim().toLowerCase();
     const cleanPhone = body.phone.replace(/\s+/g, "");
+    const resolvedCounty = body.county?.trim() || "Kenya";
 
     const payload = JSON.stringify({
       name: body.name.trim(),
@@ -488,8 +489,8 @@ export const api = {
       lastName,
       email: cleanEmail,
       phoneNumber: cleanPhone,
-      county: body.county,
-      deliveryLocation: body.county,
+      county: resolvedCounty,
+      deliveryLocation: resolvedCounty,
       farmingType: "Crops",
       password: body.password,
     });

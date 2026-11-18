@@ -24,7 +24,7 @@ export default function SignIn() {
   const submit = async () => {
     const err: Record<string, string> = {};
     if (!EMAIL_RE.test(email.trim())) err.email = "Enter a valid email address";
-    if (pw.length < 6) err.pw = "Password must be at least 6 characters";
+    if (pw.length < 4) err.pw = "Password must be at least 4 characters";
     setE(err);
     if (Object.keys(err).length) return;
     setLoading(true);
