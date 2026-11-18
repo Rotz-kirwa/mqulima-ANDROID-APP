@@ -1,11 +1,13 @@
+from collections import OrderedDict
+import hashlib
 import io
 import os
 import threading
 import requests
 from PIL import Image, UnidentifiedImageError
 from dotenv import load_dotenv
-from fastapi import APIRouter, HTTPException, UploadFile, File
-from fastapi.responses import Response
+from fastapi import APIRouter, File, HTTPException, Request, UploadFile
+from fastapi.responses import RedirectResponse, Response
 from starlette.concurrency import run_in_threadpool
 from auth import AdminUser, new_id, now_iso
 from db import NO_ID, db
@@ -15,8 +17,48 @@ load_dotenv()
 router = APIRouter(tags=["media"])
 STORAGE_BASE = (os.environ.get("INTEGRATION_PROXY_URL") or "").strip() or "https://integrations.emergentagent.com"
 STORAGE_URL = STORAGE_BASE.rstrip("/") + "/objstore/api/v1/storage"
+MEDIA_PUBLIC_BASE_URL = (os.environ.get("MEDIA_PUBLIC_BASE_URL") or "").strip().rstrip("/")
 _key = None
 _lock = threading.Lock()
+
+_CACHE_MAX_ENTRIES = 128
+_CACHE_MAX_BYTES = 32 * 1024 * 1024
+_cache_lock = threading.Lock()
+# Maps media identifier -> (content_bytes, content_type, etag)
+_media_cache: OrderedDict[str, tuple[bytes, str, str]] = OrderedDict()
+_media_cache_bytes = 0
+
+
+def _cache_get(identifier: str) -> tuple[bytes, str, str] | None:
+    with _cache_lock:
+        entry = _media_cache.get(identifier)
+        if entry is not None:
+            _media_cache.move_to_end(identifier)
+        return entry
+
+
+def _cache_put(identifier: str, content: bytes, content_type: str, etag: str) -> None:
+    global _media_cache_bytes
+    size = len(content)
+    if size > _CACHE_MAX_BYTES // 4:
+        return
+    with _cache_lock:
+        existing = _media_cache.pop(identifier, None)
+        if existing is not None:
+            _media_cache_bytes -= len(existing[0])
+        while _media_cache and (
+            len(_media_cache) >= _CACHE_MAX_ENTRIES or _media_cache_bytes + size > _CACHE_MAX_BYTES
+        ):
+            _, evicted = _media_cache.popitem(last=False)
+            _media_cache_bytes -= len(evicted[0])
+        _media_cache[identifier] = (content, content_type, etag)
+        _media_cache_bytes += size
+
+
+def _etag_matches(header_value: str | None, etag: str) -> bool:
+    if not header_value:
+        return False
+    return any(tag.strip() in (etag, "*") for tag in header_value.split(","))
 
 
 def init_storage():
@@ -68,19 +110,59 @@ async def upload_image(admin: AdminUser, file: UploadFile = File(...)):
         result = await run_in_threadpool(storage_request, "PUT", path, data, "image/webp")
     except requests.RequestException:
         raise HTTPException(503, "Image storage is unavailable. Please try again later.")
-    await db.media.insert_one({"id": identifier, "owner_id": admin["id"], "audience": "public_content", "storage_path": result.json()["path"], "created_at": now_iso(), "content_type": "image/webp"})
+    storage_path = result.json()["path"]
+    public_url = f"{MEDIA_PUBLIC_BASE_URL}/{storage_path.lstrip('/')}" if MEDIA_PUBLIC_BASE_URL else None
+    doc = {
+        "id": identifier,
+        "owner_id": admin["id"],
+        "audience": "public_content",
+        "storage_path": storage_path,
+        "created_at": now_iso(),
+        "content_type": "image/webp",
+    }
+    if public_url:
+        doc["public_url"] = public_url
+    await db.media.insert_one(doc)
     await audit(admin, "uploaded image", "media", identifier, file.filename or "Image")
-    return {"image": f"/api/media/{identifier}"}
+    return {"image": public_url or f"/api/media/{identifier}"}
 
 
 @router.get("/media/{identifier}")
-async def public_image(identifier: str):
+async def public_image(identifier: str, request: Request):
     # Only explicitly public catalogue/editorial assets are served here, never private user uploads.
     doc = await db.media.find_one({"id": identifier, "audience": "public_content"}, NO_ID)
     if not doc or not doc.get("owner_id"):
         raise HTTPException(404, "Image not found")
+
+    headers = {
+        "Cache-Control": "public, max-age=86400",
+        "X-Content-Type-Options": "nosniff",
+    }
+
+    cdn_url = doc.get("public_url") or (
+        f"{MEDIA_PUBLIC_BASE_URL}/{doc['storage_path'].lstrip('/')}"
+        if MEDIA_PUBLIC_BASE_URL and doc.get("storage_path")
+        else None
+    )
+    if cdn_url:
+        return RedirectResponse(url=cdn_url, status_code=307, headers=headers)
+
+    if_none_match = request.headers.get("if-none-match")
+    cached = _cache_get(identifier)
+    if cached is not None:
+        content, content_type, etag = cached
+        if _etag_matches(if_none_match, etag):
+            return Response(status_code=304, headers={**headers, "ETag": etag})
+        return Response(content, media_type=content_type, headers={**headers, "ETag": etag})
+
     try:
         response = await run_in_threadpool(storage_request, "GET", doc["storage_path"])
     except requests.RequestException:
         raise HTTPException(503, "Image temporarily unavailable")
-    return Response(response.content, media_type=doc["content_type"], headers={"Cache-Control": "public, max-age=86400", "X-Content-Type-Options": "nosniff"})
+
+    content = response.content
+    etag = f'"{hashlib.sha256(content).hexdigest()[:32]}"'
+    _cache_put(identifier, content, doc["content_type"], etag)
+    if _etag_matches(if_none_match, etag):
+        return Response(status_code=304, headers={**headers, "ETag": etag})
+    return Response(content, media_type=doc["content_type"], headers={**headers, "ETag": etag})
