@@ -53,3 +53,4 @@ module.exports = function withOptionalHardwareFeatures(config) {
     return cfg;
   });
 };
+
