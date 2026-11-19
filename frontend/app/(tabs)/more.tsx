@@ -97,7 +97,6 @@ const ITEMS = [
   { id: "tools", label: "Tools", icon: "wrench", route: "/tools", bg: "#2563EB", fg: "#FFFFFF" },
   { id: "services", label: "Services", icon: "briefcase", route: "/services", bg: "#EA580C", fg: "#FFFFFF" },
   { id: "ai", label: "Mqulima AI", icon: "bot", route: "/ai", bg: "#7C3AED", fg: "#FFFFFF" },
-  { id: "onboarding", label: "Welcome Tour", icon: "sparkles", route: "/onboarding", bg: "#FACC15", fg: "#0B2117" },
   { id: "about", label: "About", icon: "info", route: "/about", bg: "#0891B2", fg: "#FFFFFF" },
   { id: "contact", label: "Contact", icon: "phone", route: "/contact", bg: "#16A34A", fg: "#FFFFFF" },
   { id: "legal", label: "Terms / Privacy", icon: "file-text", route: "/legal", bg: "#4F46E5", fg: "#FFFFFF" },
@@ -109,7 +108,7 @@ export default function More() {
   const { colors } = useTheme();
   const router = useRouter();
   const bottom = useTabBottom();
-  const { user, resetOnboarding } = useAuth();
+  const { user } = useAuth();
   return (
     <View style={s.root} testID="more-screen">
       <TopBar />
@@ -120,10 +119,6 @@ export default function More() {
             <Pressable
               testID={`more-item-${it.id}`}
               onPress={() => {
-                if (it.id === "onboarding") {
-                  resetOnboarding();
-                  return;
-                }
                 router.push((it.id === "account" && !user ? "/auth/sign-in" : it.route) as any);
               }}
               style={({ pressed }) => [s.row, { opacity: pressed ? 0.8 : 1 }]}

@@ -7,21 +7,57 @@ import { fonts, makeStyles, useTheme } from "@/src/theme";
 export const PHONE_RE = /^(\+?254|0)[17]\d{8}$/;
 export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export function Field({ label, error, testID, ...rest }: TextInputProps & { label: string; error?: string; testID?: string }) {
+export function Field({ label, error, testID, secureTextEntry, style, onFocus, onBlur, ...rest }: TextInputProps & { label: string; error?: string; testID?: string }) {
   const s = useStyles();
   const { colors } = useTheme();
   const [focus, setFocus] = useState(false);
+  const [hidden, setHidden] = useState(Boolean(secureTextEntry));
+  const isPassword = Boolean(secureTextEntry);
+
+  const handleFocus: TextInputProps["onFocus"] = (e) => {
+    setFocus(true);
+    onFocus?.(e);
+  };
+  const handleBlur: TextInputProps["onBlur"] = (e) => {
+    setFocus(false);
+    onBlur?.(e);
+  };
+
   return (
     <View style={{ gap: 6 }}>
       <Text testID={testID ? `${testID}-label` : undefined} style={s.label}>{label}</Text>
-      <TextInput
-        testID={testID}
-        placeholderTextColor={colors.subtle}
-        onFocus={() => setFocus(true)}
-        onBlur={() => setFocus(false)}
-        style={[s.input, focus && { borderColor: colors.brandPrimary }, !!error && { borderColor: colors.error }, rest.multiline && { minHeight: 110, textAlignVertical: "top", paddingTop: 12 }]}
-        {...rest}
-      />
+      {isPassword ? (
+        <View style={[s.passwordWrap, focus && { borderColor: colors.brandPrimary }, !!error && { borderColor: colors.error }]}>
+          <TextInput
+            {...rest}
+            testID={testID}
+            secureTextEntry={hidden}
+            placeholderTextColor={colors.subtle}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+            style={[s.passwordInput, style]}
+          />
+          <Pressable
+            testID={testID ? `${testID}-toggle-visibility` : undefined}
+            accessibilityRole="button"
+            accessibilityLabel={hidden ? "Show password" : "Hide password"}
+            hitSlop={8}
+            onPress={() => setHidden((prev) => !prev)}
+            style={({ pressed }) => [s.eyeBtn, pressed && { opacity: 0.65 }]}
+          >
+            <Lucide name={hidden ? "eye" : "eye-off"} size={20} color={colors.muted} />
+          </Pressable>
+        </View>
+      ) : (
+        <TextInput
+          {...rest}
+          testID={testID}
+          placeholderTextColor={colors.subtle}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          style={[s.input, focus && { borderColor: colors.brandPrimary }, !!error && { borderColor: colors.error }, rest.multiline && { minHeight: 110, textAlignVertical: "top", paddingTop: 12 }, style]}
+        />
+      )}
       {error ? <Text testID={testID ? `${testID}-error` : undefined} style={s.error}>{error}</Text> : null}
     </View>
   );
@@ -75,6 +111,9 @@ export function SuccessState({ title, text, children, testID }: { title: string;
 const useStyles = makeStyles((c) => ({
   label: { fontFamily: fonts.b700, fontSize: 13, color: c.onSurface },
   input: { minHeight: 50, borderWidth: 1, borderColor: c.border, borderRadius: 12, paddingHorizontal: 14, backgroundColor: c.surfaceSecondary, fontFamily: fonts.b500, fontSize: 14, color: c.onSurface },
+  passwordWrap: { minHeight: 50, borderWidth: 1, borderColor: c.border, borderRadius: 12, paddingLeft: 14, paddingRight: 4, backgroundColor: c.surfaceSecondary, flexDirection: "row", alignItems: "center" },
+  passwordInput: { flex: 1, minHeight: 48, fontFamily: fonts.b500, fontSize: 14, color: c.onSurface, paddingVertical: 0 },
+  eyeBtn: { width: 44, height: 44, alignItems: "center", justifyContent: "center", borderRadius: 10 },
   error: { fontFamily: fonts.b600, fontSize: 12, color: c.error },
   sheet: { backgroundColor: c.surfaceSecondary, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 16, paddingTop: 8 },
   handle: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: c.border, marginBottom: 12 },
