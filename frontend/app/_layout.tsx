@@ -3,13 +3,14 @@ import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client
 import NetInfo from "@react-native-community/netinfo";
 import * as Sentry from "@sentry/react-native";
 import { Stack, usePathname, useRouter } from "expo-router";
-import { LogBox, Platform, StyleSheet, Text, View } from "react-native";
+import { AppState, LogBox, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { StatusBar } from "expo-status-bar";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect, useRef, useState } from "react";
+import * as Updates from "expo-updates";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Lucide } from "@react-native-vector-icons/lucide";
 
 import { ErrorBoundary } from "@/src/components/error-boundary";
@@ -55,6 +56,89 @@ function OfflineBanner() {
     <View testID="offline-status-banner" style={styles.offlineBanner}>
       <Lucide name="wifi-off" size={14} color="#92400E" />
       <Text style={styles.offlineText}>Offline mode — showing saved catalog, market & weather data</Text>
+    </View>
+  );
+}
+
+const UPDATE_CHECK_INTERVAL_MS = 5 * 60 * 1000;
+
+function UpdateBanner() {
+  const [updateReady, setUpdateReady] = useState(false);
+  const [reloading, setReloading] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+  const checkingRef = useRef(false);
+  const lastCheckRef = useRef(0);
+
+  const checkForOtaUpdate = useCallback(async () => {
+    if (__DEV__ || Platform.OS === "web" || !Updates.isEnabled) return;
+    if (checkingRef.current) return;
+    const now = Date.now();
+    if (now - lastCheckRef.current < UPDATE_CHECK_INTERVAL_MS) return;
+
+    checkingRef.current = true;
+    lastCheckRef.current = now;
+    try {
+      const check = await Updates.checkForUpdateAsync();
+      if (check.isAvailable) {
+        const fetched = await Updates.fetchUpdateAsync();
+        if (fetched.isNew) {
+          setDismissed(false);
+          setUpdateReady(true);
+        }
+      }
+    } catch {
+      // Ignore network/offline update check failures silently
+    } finally {
+      checkingRef.current = false;
+    }
+  }, []);
+
+  useEffect(() => {
+    checkForOtaUpdate();
+    const sub = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active") {
+        checkForOtaUpdate();
+      }
+    });
+    return () => sub.remove();
+  }, [checkForOtaUpdate]);
+
+  if (!updateReady || dismissed) return null;
+
+  const applyUpdate = async () => {
+    if (reloading) return;
+    setReloading(true);
+    try {
+      await Updates.reloadAsync();
+    } catch {
+      setReloading(false);
+    }
+  };
+
+  return (
+    <View testID="ota-update-banner" style={styles.updateBanner}>
+      <Pressable
+        testID="ota-update-apply-btn"
+        accessibilityRole="button"
+        accessibilityLabel="Restart Mqulima to apply new update"
+        onPress={applyUpdate}
+        style={styles.updateBannerMain}
+      >
+        <Lucide name="refresh-cw" size={14} color="#FFFFFF" />
+        <Text style={styles.updateText}>
+          {reloading ? "Applying update..." : "New update ready — Tap to restart"}
+        </Text>
+      </Pressable>
+      <Pressable
+        testID="ota-update-dismiss-btn"
+        accessibilityRole="button"
+        accessibilityLabel="Dismiss update notice"
+        hitSlop={8}
+        onPress={() => setDismissed(true)}
+        style={styles.updateDismissBtn}
+      >
+        <Lucide name="x" size={14} color="#D1FAE5" />
+      </Pressable>
     </View>
   );
 }
@@ -128,6 +212,7 @@ function AppContent() {
       <StatusBar style="dark" />
       <View style={styles.root}>
         <OfflineBanner />
+        <UpdateBanner />
         {/* Unconditionally mount Stack so Expo Router never unmounts / resets navigation state */}
         <Stack screenOptions={{ headerShown: false, animation: "slide_from_right", contentStyle: { backgroundColor: colors.surface } }}>
           <Stack.Screen name="(tabs)" />
@@ -209,6 +294,32 @@ const styles = StyleSheet.create({
     fontFamily: fonts.b600,
     fontSize: 11.5,
     color: "#92400E",
+  },
+  updateBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#14532D",
+    borderBottomWidth: 1,
+    borderBottomColor: "#166534",
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  updateBannerMain: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  updateText: {
+    fontFamily: fonts.b700,
+    fontSize: 12,
+    color: "#FFFFFF",
+  },
+  updateDismissBtn: {
+    padding: 4,
+    marginLeft: 8,
   },
 });
 
