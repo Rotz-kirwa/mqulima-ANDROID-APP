@@ -54,7 +54,7 @@ export default function SignIn() {
           <Text style={s.sub}>Sign in to your Mqulima account</Text>
         </View>
         <Field testID="sign-in-email-input" label="Email" value={email} onChangeText={setEmail} placeholder="you@example.com" keyboardType="email-address" autoCapitalize="none" error={e.email} />
-        <Field testID="sign-in-password-input" label="Password" value={pw} onChangeText={setPw} placeholder="••••••••" secureTextEntry error={e.pw} />
+        <Field testID="sign-in-password-input" label="Password" value={pw} onChangeText={setPw} placeholder="••••" secureTextEntry error={e.pw} />
         <Pressable testID="sign-in-forgot-link" onPress={() => router.push("/auth/forgot")} style={{ alignSelf: "flex-end", minHeight: 44, justifyContent: "center" }}>
           <Text style={s.link}>Forgot password?</Text>
         </Pressable>

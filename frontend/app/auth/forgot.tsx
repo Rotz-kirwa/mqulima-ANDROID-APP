@@ -45,14 +45,19 @@ export default function Forgot() {
     }
   };
 
+  const setPin = (setter: (v: string) => void) => (v: string) => {
+    setter(v.replace(/\D/g, "").slice(0, 4));
+    setErr("");
+  };
+
   const completeReset = async () => {
     const cleanCode = code.trim();
     if (!/^\d{6}$/.test(cleanCode)) {
       setErr("Enter the 6-digit recovery code sent to your email or SMS.");
       return;
     }
-    if (newPassword.length < 8) {
-      setErr("New password must be at least 8 characters long.");
+    if (!/^\d{4}$/.test(newPassword)) {
+      setErr("New password must be exactly 4 digits.");
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -136,18 +141,22 @@ export default function Forgot() {
             />
             <Field
               testID="forgot-new-pw-input"
-              label="New Password"
+              label="New 4-Digit Password"
               value={newPassword}
-              onChangeText={(v) => { setNewPassword(v); setErr(""); }}
-              placeholder="At least 8 characters"
+              onChangeText={setPin(setNewPassword)}
+              placeholder="Enter 4-digit password"
+              keyboardType="number-pad"
+              maxLength={4}
               secureTextEntry
             />
             <Field
               testID="forgot-confirm-pw-input"
-              label="Confirm New Password"
+              label="Confirm 4-Digit Password"
               value={confirmPassword}
-              onChangeText={(v) => { setConfirmPassword(v); setErr(""); }}
-              placeholder="Repeat new password"
+              onChangeText={setPin(setConfirmPassword)}
+              placeholder="Repeat 4-digit password"
+              keyboardType="number-pad"
+              maxLength={4}
               secureTextEntry
               error={err}
             />

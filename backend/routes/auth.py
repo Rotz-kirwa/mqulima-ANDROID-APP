@@ -22,7 +22,7 @@ class RegisterIn(BaseModel):
     county: str = Field(default="", max_length=60)
     deliveryLocation: Optional[str] = ""
     farmingType: Optional[str] = "Crops"
-    password: str = Field(min_length=6, max_length=128)
+    password: str = Field(min_length=4, max_length=128)
 
 
 class LoginIn(BaseModel):
